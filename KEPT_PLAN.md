@@ -305,6 +305,8 @@ Manual checks:
 
 ## 11. Publishing (the owner does the Azure portal part)
 
+> Update 2026-10-28: the owner has no Azure account now. The host (Vercel, Netlify or GitHub Pages) is chosen at the start of milestone 6; `deploy.cmd` and the host's header settings file follow that choice instead of `staticwebapp.config.json`.
+
 Use Azure Static Web Apps on the Free plan:
 
 1. In the Azure portal, go to Create a resource → Static Web App. Use a new resource group `rg-kept`, name `kept`, Plan **Free**, Deployment source **Other**. Create it.
