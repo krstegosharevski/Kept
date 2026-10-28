@@ -242,11 +242,13 @@ export function startWater(canvas){
 
 /* ---------- the dandelion ---------- */
 const WIND_DEG=-25, SEED_COUNT=42, STAY_COUNT=3, CX=150, CY=130; // a few seeds stubbornly stay on the stem
-/* timeline in ms: the flower holds, a gust sweeps through, the seeds release and drift away, then it fades */
-const T={windStart:760,scatterStart:920,fadeStart:2250,fadeDuration:750};
+/* timelines in ms: the flower holds, gusts sweep through, the seeds release (the side the wind heads toward first) and drift away, then it fades.
+   QUICK is the website's intro; SLOW lets the flower live about a minute. */
+const QUICK={windStart:760,gusts:1,gustEvery:0,scatter:1220,release:780,jitter:120,flight:[1000,1500],settle:2500,fadeStart:2250,fadeDuration:750};
+const SLOW={windStart:1500,gusts:4,gustEvery:15000,scatter:3000,release:42000,jitter:6000,flight:[5000,8000],settle:8000,fadeStart:56000,fadeDuration:4000};
 const n=v=>Number(v.toFixed(1));
 
-/* randomised every time, so no two are the same */
+/* the flower's shape, randomised every time so no two are the same */
 function buildDandelion(){
   const wr=WIND_DEG*Math.PI/180, wind={x:Math.cos(wr),y:Math.sin(wr)}, perp={x:-wind.y,y:wind.x};
   const stay=new Set(); while(stay.size<STAY_COUNT) stay.add(Math.floor(Math.random()*SEED_COUNT));
@@ -260,12 +262,11 @@ function buildDandelion(){
       const a=rad+(j/(tuftCount-1)-.5)*2.2+rand(-.05,.05), len=rand(5,9);
       tufts.push(`<line x1="${n(tipX)}" y1="${n(tipY)}" x2="${n(tipX+Math.cos(a)*len)}" y2="${n(tipY+Math.sin(a)*len)}" stroke-width=".6"/>`);
     }
-    /* seeds on the side the wind is heading toward go first, the upwind side last */
-    const releaseOrder=(1-(Math.cos(rad)*wind.x+Math.sin(rad)*wind.y))/2, distance=rand(230,400), wobble=rand(8,20);
+    const distance=rand(230,400), wobble=rand(8,20);
     seeds.push({
       stays:stay.has(i),
       svg:`<g class="seed"><path d="M${n(baseX)},${n(baseY)} Q${n(midX)},${n(midY)} ${n(tipX)},${n(tipY)}" stroke-width="${rand(.7,1).toFixed(2)}" fill="none"/>${tufts.join('')}</g>`,
-      delay:300+releaseOrder*780+rand(0,120), duration:rand(1000,1500), rotation:rand(-30,60),
+      order:(1-(Math.cos(rad)*wind.x+Math.sin(rad)*wind.y))/2, jitter:Math.random(), flight:Math.random(), rotation:rand(-30,60),
       midX:n(wind.x*distance*.42+perp.x*rand(-wobble/2,wobble/2)), midY:n(wind.y*distance*.42+perp.y*rand(-wobble/2,wobble/2)),
       endX:n(wind.x*distance), endY:n(wind.y*distance), settleX:n(rand(-.8,.8)), settleY:n(rand(0,1)),
     });
@@ -277,32 +278,46 @@ function buildDandelion(){
   }
   return {seeds,winds};
 }
-
-/* blows the dandelion once, over the lower middle of the screen; skipped under reduced motion */
-export function blowDandelion(){
-  if(reduced()||document.querySelector('.dandelion')) return;
-  const {seeds,winds}=buildDandelion();
+function dandelionEl(className,{seeds,winds}){
   const el=document.createElement('div');
-  el.className='dandelion'; el.setAttribute('aria-hidden','true');
+  el.className=className; el.setAttribute('aria-hidden','true');
   el.innerHTML=`<svg viewBox="0 0 300 320" stroke="currentColor" stroke-linecap="round">
     ${winds.map(w=>`<path class="wind" d="${w.d}" fill="none" stroke-width="1" style="stroke:var(--tint);stroke-dasharray:${w.length};stroke-dashoffset:${w.length};opacity:0"/>`).join('')}
     <path d="M150,300 C138,255 168,195 150,130" stroke-width="1.3" fill="none"/>
     <path d="M150,222 C166,219 180,202 174,187 C159,193 148,209 150,222 Z" stroke-width="1" fill="none"/>
     <circle cx="150" cy="130" r="4.5" stroke-width="1" fill="none"/>
     ${seeds.map(s=>s.svg).join('')}</svg>`;
-  document.body.append(el);
-  el.animate([{opacity:0},{opacity:1}],{duration:300,easing:'ease-out'});
-  el.querySelectorAll('.wind').forEach((p,i)=>{const w=winds[i];
-    p.animate([{strokeDashoffset:w.length,opacity:0},{strokeDashoffset:0,opacity:.6,offset:.5},{strokeDashoffset:-w.length*.3,opacity:0}],
-      {duration:w.duration,delay:T.windStart+w.delay,easing:'ease-in-out',fill:'forwards'})});
+  return el;
+}
+/* runs the timeline T on a flower; resolves when it has faded out */
+function play(el,{seeds,winds},T){
+  el.querySelectorAll('.wind').forEach((p,i)=>{const w=winds[i], every=T.gustEvery||w.duration, L=w.length;
+    p.animate([{strokeDashoffset:L,opacity:0,offset:0},{strokeDashoffset:0,opacity:.6,offset:w.duration/2/every},{strokeDashoffset:-L*.3,opacity:0,offset:w.duration/every},{strokeDashoffset:-L*.3,opacity:0,offset:1}],
+      {duration:every,iterations:T.gusts,delay:T.windStart+w.delay,easing:'ease-in-out',fill:'forwards'})});
   el.querySelectorAll('.seed').forEach((g,i)=>{const s=seeds[i];
     if(s.stays) g.animate([{transform:'translate(0px, 0px)'},{transform:`translate(${s.settleX}px, ${s.settleY}px)`}],
-      {duration:2500,delay:T.scatterStart+rand(40,360),easing:'ease-out',fill:'forwards'});
+      {duration:T.settle,delay:T.scatter-260+rand(40,360),easing:'ease-out',fill:'forwards'});
     else g.animate([
       {transform:'translate(0px, 0px) rotate(0deg)',opacity:1},
       {transform:`translate(${s.midX}px, ${s.midY}px) rotate(${(s.rotation*.5).toFixed(0)}deg)`,opacity:1,offset:.5},
       {transform:`translate(${s.endX}px, ${s.endY}px) rotate(${s.rotation.toFixed(0)}deg)`,opacity:0}],
-      {duration:s.duration,delay:T.scatterStart+s.delay,easing:'cubic-bezier(0.5, 0, 0.85, 1)',fill:'forwards'});
+      {duration:T.flight[0]+s.flight*(T.flight[1]-T.flight[0]),delay:T.scatter+s.order*T.release+s.jitter*T.jitter,easing:'cubic-bezier(0.5, 0, 0.85, 1)',fill:'forwards'});
   });
-  el.animate([{opacity:1},{opacity:0}],{duration:T.fadeDuration,delay:T.fadeStart,easing:'cubic-bezier(0.25, 1, 0.5, 1)',fill:'forwards'}).finished.then(()=>el.remove(),()=>el.remove());
+  return el.animate([{opacity:1},{opacity:0}],{duration:T.fadeDuration,delay:T.fadeStart,easing:'cubic-bezier(0.25, 1, 0.5, 1)',fill:'forwards'}).finished;
+}
+
+/* the website's intro: blows once, quickly, over the lower middle of the screen; skipped under reduced motion */
+export function blowDandelion(){
+  if(reduced()||document.querySelector('.dandelion')) return;
+  const geom=buildDandelion(), el=dandelionEl('dandelion',geom);
+  document.body.append(el);
+  el.animate([{opacity:0},{opacity:1}],{duration:300,easing:'ease-out'});
+  play(el,geom,QUICK).then(()=>el.remove(),()=>el.remove());
+}
+/* a flower to place in the page, whose seeds leave slowly until it is gone after about a minute.
+   Under reduced motion it simply stays. Animations keep running when the element is moved, so the caller can re-insert it after a re-render. */
+export function slowDandelion(){
+  const geom=buildDandelion(), el=dandelionEl('dandelion-slow',geom);
+  if(!reduced()) play(el,geom,SLOW).then(()=>{el.dataset.done='1';el.remove()},()=>{});
+  return el;
 }

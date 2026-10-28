@@ -1,7 +1,7 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,normalize,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
 import {load,save} from './store.js';
-import {startWater,blowDandelion} from './scene.js';
+import {startWater,blowDandelion,slowDandelion} from './scene.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
 const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#FF2D55'];
@@ -18,6 +18,7 @@ if(!loaded.data&&!loaded.error) navigator.storage?.persist?.().catch(()=>{}); //
 let view='today', viewDate=TODAY(), statMode='week', weekRef=weekStart(TODAY()), monthRef=new Date(TODAY().getFullYear(),TODAY().getMonth(),1);
 let edit=null, confirmDel=false, confirmClear=false, sheetOpening=false;
 let ringFrac=null, popId=null; // the ring animates from its last value; popId is the routine that was just checked off
+let quietDandelion=null; // the slow dandelion of the "No routines yet" screen, made once per start and moved into each re-render
 
 const short=k=>{const d=parse(k);return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`};
 const commit=()=>{if(!save(S))toast("Couldn't save. Your iPhone storage may be full.")};
@@ -65,7 +66,7 @@ function renderToday(){
   if(rest){
     html+=`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
   } else if(!S.routines.length){
-    html+=`<div class="empty"><img class="logo" src="icons/icon.svg" alt="" width="88" height="88"><h3>No routines yet</h3><p>Add your first one, like “Eat healthy”, and tick it off each day.</p><button class="primary" data-act="new">Add a routine</button></div>`;
+    html+=`<div class="empty"><div class="dslot"></div><h3>No routines yet</h3><p>Add your first one, like “Eat healthy”, and tick it off each day.</p><button class="primary" data-act="new">Add a routine</button></div>`;
   } else if(!due.length){
     html+=`<div class="empty"><h3>Nothing scheduled</h3><p>No routines are due on this day.</p></div>`;
   } else {
@@ -79,6 +80,8 @@ function renderToday(){
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
   $app.innerHTML=html; popId=null;
+  const slot=$app.querySelector('.dslot');
+  if(slot){quietDandelion??=slowDandelion(); if(!quietDandelion.dataset.done) slot.append(quietDandelion)}
   const p=$app.querySelector('.ring .prog'); if(p){p.getBoundingClientRect();p.style.strokeDashoffset=p.dataset.to}
 }
 
@@ -141,7 +144,7 @@ function renderStats(){
 
 function renderSettings(){
   $app.innerHTML=`<header class="head"><div class="titles"><h1>Settings</h1></div></header>
-  <div class="group"><div class="row appcard"><img src="icons/icon.svg" alt="" width="60" height="60"><div class="body"><div class="appname">Kept</div><div class="hint">Your data lives only on this device.</div></div></div></div>
+  <div class="group"><div class="row appcard"><div class="body"><div class="appname">Kept</div><div class="hint">Your data lives only on this device.</div></div></div></div>
   <div class="gh">Backup</div>
   <div class="group"><button class="row link" data-act="showBackup">Show backup code</button>
     <textarea id="backupText" readonly hidden aria-label="Backup code"></textarea>
@@ -265,4 +268,4 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)return;cons
 render();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
 startWater(document.getElementById('water'));
-blowDandelion(); // the intro, as on the owner's website
+if(S.routines.length) blowDandelion(); // the intro, as on the owner's website; with no routines the slow one plays instead

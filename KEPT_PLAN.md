@@ -219,7 +219,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - **Look:** iOS-native.
   - Large bold titles, a gray grouped background with rounded white lists and hairline separators, capsule segmented controls, iOS steppers and bottom sheets.
   - A glass (blurred, see-through) floating tab bar and round glass buttons.
-  - A top bar with the logo and the name "Kept" is always visible on every screen. It turns to glass once content scrolls under it.
+  - A top bar with the logo and the name "Kept", on the left, is always visible on every screen. It turns to glass once content scrolls under it.
   - Light and dark follow the iPhone setting (`prefers-color-scheme`), with no theme toggle.
 - **Font:** the iPhone system font (SF Pro) through `-apple-system`, with SF Pro Rounded (`ui-rounded`) for big numbers. No font files and no requests to Google. On Windows the preview falls back to Segoe UI.
 - **Key colors** (Apple system colors, light / dark):
@@ -231,7 +231,8 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - **Scenery** from the owner's Krtse XO website (`E:\krste-xo\krste-website-xo\src\components`), ported to plain JavaScript in `js/scene.js`:
   - Lake Prespa along the bottom of every screen, behind the content and the tab bar: moving wave bands, Golem Grad, three pelicans riding the waves, and now and then a bird, a jumping fish and ripples. 30fps, paused in the background, a single still frame under reduced motion.
   - The dandelion: it appears over the lake and its seeds blow away on the wind, each time the app starts and again when the last routine due today is checked off. Skipped under reduced motion.
-- **Logo:** the owner's studio mark (section 7) is the app icon. It also appears with the name in the top bar, in the Today empty state and at the top of Settings.
+  - With no routines yet, the empty state shows a slow dandelion instead of the logo (and the quick intro is skipped): gusts every 15 seconds, the seeds leave one by one, and it is gone after about a minute. Under reduced motion it simply stays.
+- **Logo:** the owner's studio mark (section 7) is the app icon. It also appears with the name in the top bar. Settings shows the name without the logo.
 - **Layout and accessibility:**
   - Phone-first, max width 480px, centered.
   - Tap targets at least 40px; 44px is better.
