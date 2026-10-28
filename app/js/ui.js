@@ -141,7 +141,8 @@ function renderSettings(){
   <div class="group"><textarea id="restoreText" placeholder="Paste a backup code" aria-label="Backup code to restore"></textarea>
     <button class="row link" data-act="restore">Restore from code</button></div>
   <div class="gh">Data</div>
-  <div class="group"><button class="row danger" data-act="clear">${confirmClear?'Tap again to erase everything':'Erase all data'}</button></div>`;
+  <div class="group"><button class="row danger" data-act="clear">${confirmClear?'Tap again to erase everything':'Erase all data'}</button></div>
+  <p class="credit">Powered by <b>Krtse XO</b></p>`;
 }
 
 function render(){

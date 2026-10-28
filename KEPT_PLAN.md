@@ -208,6 +208,7 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
 - **Erase all data:** two-tap confirm. Clears the data and the meta key.
 - **About:** the app version and a short "How to install on iPhone" text.
 - **No example data:** remove the demo's seed data and its "Load example data" button.
+- **Credit:** "Powered by Krtse XO" at the bottom of Settings (the owner asked for it; spelled as on the owner's website).
 
 ## 6. Design
 
