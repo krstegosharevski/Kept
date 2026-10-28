@@ -301,3 +301,5 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)return;cons
 render();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
 startWater(document.getElementById('water'));
+/* offline support; the service worker also brings updates in the next time the app opens online */
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
