@@ -13,11 +13,14 @@ export const TODAY=()=>sod(new Date());
 export const maxD=(a,b)=>a>b?a:b, minD=(a,b)=>a<b?a:b;
 
 /* ---------- data ---------- */
+/* the demo's routine colors, mapped to the Apple system colors the app uses now */
+const DEMO_COLORS={'#1F9D74':'#34C759','#2E7DD7':'#007AFF','#7B5CD6':'#AF52DE','#3A9FB0':'#30B0C7','#D9822B':'#FF9500','#C2417A':'#FF2D55'};
 /* keeps stored data consistent with the rules: no check-ins on rest days, no weekend days in schedules */
 export function normalize(d){
   if(!d||!Array.isArray(d.routines)||!d.checks||typeof d.checks!=='object') return null;
   for(const k of Object.keys(d.checks)) if(isRest(parse(k))) delete d.checks[k];
   for(const r of d.routines){
+    r.color=DEMO_COLORS[String(r.color).toUpperCase()]||r.color;
     if(r.sched.type==='days'){r.sched.days=r.sched.days.filter(i=>i<5);if(!r.sched.days.length)r.sched={type:'daily'}}
     if(r.sched.type==='weekly') r.sched.target=Math.min(5,Math.max(1,r.sched.target|0));
   }

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img">
+  <title>Kept</title>
+  <!--
+    Kept app icon: the owner's Krtse XO studio mark, copied from
+    E:\krste-xo\krste-website-xo\dist\logo.svg. apple-touch-icon.png, icon-192.png
+    and icon-512.png in this folder are rendered from the same mark; regenerate
+    them if this file changes.
+  -->
+  <defs>
+    <clipPath id="shape">
+      <rect x="4" y="4" width="92" height="92" rx="24" />
+    </clipPath>
+
+    <radialGradient id="body" cx="45%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="0.65" stop-color="#f6f7f9" />
+      <stop offset="1" stop-color="#e6e8ee" />
+    </radialGradient>
+
+    <!-- Colour survives only near the edge: white everywhere, minus a softly
+         blurred inset square. -->
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" />
+    </filter>
+    <mask id="rim" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <rect x="0" y="0" width="100" height="100" fill="#fff" />
+      <rect x="10" y="10" width="80" height="80" rx="18" fill="#000" filter="url(#soft)" />
+    </mask>
+
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" />
+    </filter>
+  </defs>
+
+  <g clip-path="url(#shape)">
+    <rect x="4" y="4" width="92" height="92" fill="url(#body)" />
+
+    <g mask="url(#rim)" filter="url(#glow)">
+      <ellipse cx="86" cy="10" rx="26" ry="14" fill="#1f5eff" />
+      <ellipse cx="98" cy="40" rx="10" ry="22" fill="#5aa8ff" />
+      <ellipse cx="94" cy="86" rx="18" ry="16" fill="#1a4fd6" />
+      <ellipse cx="12" cy="94" rx="26" ry="12" fill="#5aa8ff" />
+      <ellipse cx="4" cy="70" rx="10" ry="20" fill="#1f5eff" />
+      <ellipse cx="6" cy="40" rx="8" ry="16" fill="#0b1a4a" />
+      <ellipse cx="22" cy="5" rx="16" ry="7" fill="#8fb4ff" />
+      <ellipse cx="60" cy="98" rx="20" ry="6" fill="#8fb4ff" />
+    </g>
+  </g>
+
+  <!-- Faint dark fringe just inside the edge, where the light bends. -->
+  <g clip-path="url(#shape)">
+    <rect x="7.5" y="7.5" width="85" height="85" rx="21" fill="none"
+          stroke="#0b1a4a" stroke-opacity="0.18" stroke-width="1.5" filter="url(#soft)" />
+  </g>
+
+  <!-- Thin glassy edge so the shape reads crisply on white backgrounds. -->
+  <rect x="4.5" y="4.5" width="91" height="91" rx="23.5" fill="none"
+        stroke="#ffffff" stroke-opacity="0.7" stroke-width="1" />
+
+  <g fill="#14161a">
+    <circle cx="63.1" cy="64.3" r="12" />
+    <circle cx="60.1" cy="35" r="11.25" />
+    <circle cx="33.1" cy="51.5" r="8.25" />
+  </g>
+</svg>

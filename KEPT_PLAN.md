@@ -4,7 +4,7 @@
 
 You are building **Kept**, a personal routine tracker for one person (the owner). It runs only on the owner's own iPhone and will **not** go to the App Store. It is a Progressive Web App (PWA): static files on a free HTTPS host, installed to the iPhone Home Screen from Safari.
 
-- `kept-demo.html` (next to this file) is the demo the owner has already approved. Reuse its CSS, markup patterns and logic as your starting point. It was written for a sandbox that added its own `<html>/<head>/<body>` skeleton and safe-area padding, so the real app must add those itself.
+- `kept-demo.html` (next to this file) is the demo the owner has already approved. Reuse its markup patterns and logic as your starting point. Its look has since been replaced by an Apple style (section 6). It was written for a sandbox that added its own `<html>/<head>/<body>` skeleton and safe-area padding, so the real app must add those itself.
 - Work through the milestones in section 9, in order. After each milestone, give a short summary and ask the owner to check it with `preview.cmd`.
 - Ask the owner before you add anything that is not in this plan.
 
@@ -12,7 +12,7 @@ You are building **Kept**, a personal routine tracker for one person (the owner)
 
 - **Owner's computer:** Windows PC (no Mac), with VS Code and Azure. Node.js LTS is required: check `node -v`, and if it is missing ask the owner to install it from nodejs.org.
 - **Target device:** an iPhone running Safari, with the app installed as a Home Screen web app. After the first open it must work fully offline.
-- **No backend:** single user, single device. No accounts, no server, no analytics, and no third-party requests at runtime (fonts are self-hosted).
+- **No backend:** single user, single device. No accounts, no server, no analytics, and no third-party requests at runtime (the app uses the iPhone's system font, so there are no font files).
 - **Data storage:** data lives on the phone in localStorage. Backups are files that the owner saves to Files or iCloud Drive.
 - **Tech:** plain HTML, CSS and JavaScript (ES modules). No framework, no bundler, no build step. npm tools are used only through `npx`, and only in the helper scripts.
 - **Language:** English UI.
@@ -38,8 +38,7 @@ kept/
    ├─ sw.js
    ├─ manifest.webmanifest
    ├─ staticwebapp.config.json
-   ├─ icons/                   icon.svg, apple-touch-icon.png (180), icon-192.png, icon-512.png, icon-maskable-512.png
-   └─ fonts/                   woff2 files
+   └─ icons/                   icon.svg, apple-touch-icon.png (180), icon-192.png, icon-512.png, icon-maskable-512.png
 ```
 
 Initialize a git repository and commit after each milestone.
@@ -71,7 +70,7 @@ localStorage key `kept-data-v1`:
       "id": "r_lx3k9a",
       "name": "Eat healthy",
       "emoji": "🥗",
-      "color": "#1F9D74",
+      "color": "#34C759",
       "created": "2026-10-28",
       "stopped": null,
       "schedules": [
@@ -111,7 +110,8 @@ localStorage key `kept-data-v1`:
   - removes 5 and 6 from `days` (an empty list becomes daily),
   - clamps the weekly target to 1–5,
   - sorts `schedules`,
-  - migrates the demo's shape (a single `sched` object) into `schedules: [{from: created, ...sched}]`.
+  - migrates the demo's shape (a single `sched` object) into `schedules: [{from: created, ...sched}]`,
+  - maps the demo's six routine colors to the Apple routine colors in section 6.
 - **Storage errors:** wrap every localStorage read and write in try/catch. If a save fails, show the toast "Couldn't save. Your iPhone storage may be full."
 - **Persistent storage:** on first run, call `navigator.storage?.persist?.()` and ignore the result.
 
@@ -150,7 +150,7 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
 - **Editor (bottom sheet):**
   - Name: required, max 40 characters.
   - Icon: the 16 emoji from the demo.
-  - Color: the 6 colors from the demo.
+  - Color: the 6 routine colors in section 6.
   - How often: a segmented control with "Mon – Fri", "Some days" and "× per week".
     - Some days: M T W T F chips, plus S S chips shown black and disabled.
     - × per week: a stepper from 1 to 5.
@@ -210,27 +210,27 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
 
 ## 6. Design
 
-- **Look:** keep the demo's tokens, fonts, spacing and components, and copy its CSS.
+The owner changed the look on 2026-10-28: Kept should look like an Apple app (the iOS 26 Liquid Glass style) and use the owner's logo. The demo's screens, texts and rules stay the same.
+
+- **Look:** iOS-native.
+  - Large bold titles, a gray grouped background with rounded white lists and hairline separators, capsule segmented controls, iOS steppers and bottom sheets.
+  - A glass (blurred, see-through) floating tab bar and round glass buttons.
+  - A compact title bar fades in at the top once the large title scrolls away.
   - Light and dark follow the iPhone setting (`prefers-color-scheme`), with no theme toggle.
-- **Fonts:**
-  - Self-host the fonts in `app/fonts` as latin woff2 files. Variable font files are fine.
-  - Bricolage Grotesque, weights 500/700/800, for display text.
-  - Figtree, weights 400/500/600/700, for body text.
-  - JetBrains Mono, weights 500/700, for numbers.
-  - Download them from Google Fonts once, for example with google-webfonts-helper.
-  - Declare them with `@font-face` and `font-display: swap`, and keep the system fallbacks.
-  - Make no requests to Google at runtime.
-- **Key colors:**
-  - Accent: #17705B (dark #4CC6A2).
-  - Background: #EEF1F4 (dark #0E141A).
-  - Rest days: #0B0D10 (dark #000000).
-  - Routine colors: #1F9D74 #2E7DD7 #7B5CD6 #3A9FB0 #D9822B #C2417A.
+- **Font:** the iPhone system font (SF Pro) through `-apple-system`, with SF Pro Rounded (`ui-rounded`) for big numbers. No font files and no requests to Google. On Windows the preview falls back to Segoe UI.
+- **Key colors** (Apple system colors, light / dark):
+  - Buttons and links: #007AFF / #0A84FF.
+  - Progress (ring, bars, heatmap): #34C759 / #30D158.
+  - Background: #F2F2F7 / #000000. Lists and cards: #FFFFFF / #1C1C1E.
+  - Rest days: #000000 in both, with a faint outline in dark mode so they stay visible.
+  - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500 #FF2D55.
+- **Logo:** the owner's studio mark (section 7) is the app icon. It also appears in the Today empty state and at the top of Settings.
 - **Layout and accessibility:**
   - Phone-first, max width 480px, centered.
   - Tap targets at least 40px; 44px is better.
   - Input text at least 16px, which stops iOS from zooming in.
   - Respect `prefers-reduced-motion`.
-- **Safe areas:** use `env(safe-area-inset-*)` so the sticky header clears the status bar and the tab bar clears the home indicator.
+- **Safe areas:** use `env(safe-area-inset-*)` so the title bar clears the status bar and the floating tab bar clears the home indicator.
 
 ## 7. PWA and iPhone setup
 
@@ -247,12 +247,12 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
   - display "standalone",
   - background_color and theme_color from the tokens,
   - icons at 192 and 512, plus a maskable 512.
-- **Icons:**
-  - Master file `icons/icon.svg`: an accent-green square with a white rounded check mark and no transparency. iOS adds the rounded corners itself.
-  - Render the PNGs (180, 192, 512, and a maskable 512 with safe padding), for example with `npx sharp-cli` or a small Node script.
+- **Icons:** the owner's logo (the Krtse XO studio mark), copied from `E:\krste-xo\krste-website-xo\dist`.
+  - `icons/icon.svg` is the master (from `logo.svg`). `apple-touch-icon.png` (180, no transparency), `icon-192.png` and `icon-512.png` are copied as they are.
+  - Still to make in milestone 4: `icon-maskable-512.png` with safe padding, rendered from `icon.svg`, for example with `npx sharp-cli` or a small Node script.
   - Commit the PNGs.
 - **`sw.js`:**
-  - Precache every app file (html, css, js, manifest, icons, fonts) in a cache named from a `VERSION` constant, for example `kept-v1`.
+  - Precache every app file (html, css, js, manifest, icons) in a cache named from a `VERSION` constant, for example `kept-v1`.
   - For navigations and same-origin GET requests, go network-first with a 3-second timeout, then fall back to the cache.
   - Write network responses back into the cache. That way updates arrive whenever the app opens online, it still opens offline, and no manual version bump is needed for normal updates.
   - Call `skipWaiting()` on install. On activate, delete old caches and call `clients.claim()`.
@@ -273,7 +273,7 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
 1. **Scaffold:** create the structure and `git init`. Move the demo into `app/`, split into html, css and js modules, with a full document head. Remove the example data. The app runs with `preview.cmd`.
 2. **Core rules and data model:** schedule history, stopped routines, locked past days, rest days, normalize and migration, storage error handling.
 3. **Settings:** real backup and restore with the share sheet, the reminder banner, and erase.
-4. **PWA:** manifest, icons, local fonts, service worker, iOS meta tags, `staticwebapp.config.json`. Verify offline mode in the Edge or Chrome DevTools.
+4. **PWA:** manifest, the maskable icon, service worker, iOS meta tags, `staticwebapp.config.json`. Verify offline mode in the Edge or Chrome DevTools.
 5. **Tests:** write `tests/logic.test.mjs` for `node --test` (see section 10). All tests pass.
 6. **Ship:** write the scripts and README, then help the owner publish (section 11) and install (section 12).
 
