@@ -92,6 +92,12 @@ button.row:active{background-color:var(--fill-2)}
 .pill{flex:none;min-height:36px;padding:0 16px;border:0;border-radius:999px;background:var(--tint-soft);color:var(--tint);font-size:15px;font-weight:600}
 .pill:active{opacity:.7}
 .gf.first{padding-top:0}
+.pill.quiet{background:var(--fill);color:var(--ink)}
+.reminder{margin-bottom:20px}
+.reminder .row.actions{gap:10px;padding-top:4px;background:none}
+.filepick{cursor:pointer;position:relative}
+.filepick input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px}
+.filepick:has(input:focus-visible){outline:2px solid var(--tint);outline-offset:-2px}
 .addicon{width:40px;flex:none;display:grid;place-items:center;color:var(--tint)}
 .gh{font-size:13px;letter-spacing:-.006em;text-transform:uppercase;color:var(--muted);padding:0 16px 7px;margin-top:24px}
 .gf{font-size:13px;letter-spacing:-.006em;color:var(--muted);padding:7px 16px 0;margin:0}

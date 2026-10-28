@@ -1,6 +1,6 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,normalize,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
-import {load,save} from './store.js';
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
+import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,blowDandelion,slowDandelion} from './scene.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
@@ -11,7 +11,9 @@ const DAYS1=['M','T','W','T','F','S','S'];
 const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+const VERSION='1.0.0';
 const empty=()=>({schema:1,routines:[],checks:{}});
+let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
 if(!loaded.data&&!loaded.error) navigator.storage?.persist?.().catch(()=>{}); // first run: ask the browser to keep the data; the answer does not matter
@@ -22,6 +24,14 @@ let quietDandelion=null; // the slow dandelion of the "No routines yet" screen, 
 
 const short=k=>{const d=parse(k);return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`};
 const commit=()=>{if(!save(S))toast("Couldn't save. Your iPhone storage may be full.")};
+const setMeta=m=>{meta={...meta,...m};saveMeta(meta)};
+/* due when there is at least one check-in and no backup in the last 7 days, unless put off until tomorrow */
+const reminderDue=()=>Object.keys(S.checks).length>0&&meta.reminderDismissedOn!==key(TODAY())&&(!meta.lastBackupAt||Date.now()-Date.parse(meta.lastBackupAt)>7*864e5);
+function ago(iso){
+  if(!iso) return 'Never';
+  const days=Math.round((TODAY()-new Date(new Date(iso).toDateString()))/864e5);
+  return days<=0?'Today':days===1?'Yesterday':`${days} days ago`;
+}
 
 function schedText(r,d){
   const s=schedOn(r,d||TODAY());
@@ -63,6 +73,9 @@ function renderToday(){
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
     <div class="daynav"><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
     ${isToday?'':'<button class="gpill glass" data-act="goToday">Back to today</button>'}</div>`;
+  if(isToday&&reminderDue()) html+=`<div class="group reminder"><div class="row"><div class="body"><div class="name">Time for a backup</div>
+    <div class="hint">Last backup: ${ago(meta.lastBackupAt)}. Save one to Files or iCloud Drive.</div></div></div>
+    <div class="row actions"><button class="pill" data-act="saveBackup">Save backup</button><button class="pill quiet" data-act="later">Later</button></div></div>`;
   if(rest){
     html+=`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
   } else if(!S.routines.length){
@@ -146,15 +159,18 @@ function renderSettings(){
   $app.innerHTML=`<header class="head"><div class="titles"><h1>Settings</h1></div></header>
   <div class="group"><div class="row appcard"><div class="body"><div class="appname">Kept</div><div class="hint">Your data lives only on this device.</div></div></div></div>
   <div class="gh">Backup</div>
-  <div class="group"><button class="row link" data-act="showBackup">Show backup code</button>
-    <textarea id="backupText" readonly hidden aria-label="Backup code"></textarea>
-    <button class="row link" id="copyBackup" data-act="copyBackup" hidden>Copy</button></div>
-  <p class="gf">Copy the backup code and keep it somewhere safe.</p>
+  <div class="group"><button class="row link" data-act="saveBackup">Save backup</button></div>
+  <p class="gf">Last backup: ${ago(meta.lastBackupAt)}. On iPhone, choose Save to Files or iCloud Drive.</p>
   <div class="gh">Restore</div>
-  <div class="group"><textarea id="restoreText" placeholder="Paste a backup code" aria-label="Backup code to restore"></textarea>
-    <button class="row link" data-act="restore">Restore from code</button></div>
+  ${pendingRestore?`<div class="group"><div class="row"><div class="body"><div class="name">Replace your current data with this backup?</div>
+      <div class="hint">${pendingRestore.routines.length} routine${pendingRestore.routines.length===1?'':'s'}, ${Object.values(pendingRestore.checks).flat().length} check-ins</div></div></div>
+    <button class="row danger" data-act="confirmRestore">Replace my data</button><button class="row link" data-act="cancelRestore">Cancel</button></div>`
+  :`<div class="group"><label class="row link filepick">Restore from file<input type="file" id="restoreFile" accept=".json,application/json"></label></div>`}
   <div class="gh">Data</div>
   <div class="group"><button class="row danger" data-act="clear">${confirmClear?'Tap again to erase everything':'Erase all data'}</button></div>
+  <div class="gh">About</div>
+  <div class="group"><div class="row"><div class="body">Version</div><span class="hint">${VERSION}</span></div>
+    <div class="row"><div class="body"><div class="name">Install on iPhone</div><div class="hint">Open Kept in Safari, tap Share, then Add to Home Screen. Open it once while online; after that it works offline.</div></div></div></div>
   <p class="credit">Powered by <b>Krtse XO</b></p>`;
 }
 
@@ -249,17 +265,34 @@ document.addEventListener('click',e=>{
       S.routines=S.routines.filter(r=>r.id!==edit.id);
       for(const k in S.checks){S.checks[k]=S.checks[k].filter(id=>id!==edit.id);if(!S.checks[k].length)delete S.checks[k]}
       commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
-    case 'showBackup': { const ta=document.getElementById('backupText'); ta.value=JSON.stringify(S); ta.hidden=false; document.getElementById('copyBackup').hidden=false; break; }
-    case 'copyBackup': { const ta=document.getElementById('backupText');
-      navigator.clipboard?.writeText(ta.value).then(()=>toast('Backup copied'),()=>{ta.select();toast('Select all and copy')}) ?? (ta.select(),toast('Select all and copy')); break; }
-    case 'restore': try{ const d=normalize(JSON.parse(document.getElementById('restoreText').value));
-        if(!d)throw 0; S=d; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render();
-      }catch(err){toast('That code is not a valid backup')} break;
+    case 'saveBackup': saveBackup(); break;
+    case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
+    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
+    case 'cancelRestore': pendingRestore=null; render(); break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
-      S=empty(); commit(); confirmClear=false; toast('All data erased'); render(); break;
+      eraseAll(); S=empty(); meta=loadMeta(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&edit){edit=null;renderSheet()}});
+
+/* ---------- backup and restore ---------- */
+/* the share sheet on iPhone (Save to Files or iCloud Drive), a download elsewhere. Only a finished share or download counts as a backup. */
+async function saveBackup(){
+  const file=backupFile(S);
+  if(navigator.canShare?.({files:[file]})){
+    try{await navigator.share({files:[file]})}catch(e){return} // cancelled: not a backup
+  } else {
+    const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+  setMeta({lastBackupAt:new Date().toISOString()}); toast('Backup saved'); render();
+}
+document.addEventListener('change',async e=>{
+  if(e.target.id!=='restoreFile'||!e.target.files[0]) return;
+  const d=readBackup(await e.target.files[0].text());
+  if(!d){toast("That file isn't a Kept backup");e.target.value='';return}
+  pendingRestore=d; render();
+});
 /* the top bar turns to glass once content scrolls under it, like iOS */
 addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>2),{passive:true});
 /* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
