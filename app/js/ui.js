@@ -250,3 +250,4 @@ let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 render();
 startWater(document.getElementById('water'));
+blowDandelion(); // the intro, as on the owner's website
