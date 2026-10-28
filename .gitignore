@@ -1,0 +1,6 @@
+# Vercel's link to your project, made by deploy.cmd on this computer
+.vercel/
+# npm's download cache, kept on E: by preview.cmd and deploy.cmd
+.npm-cache/
+
+.claude

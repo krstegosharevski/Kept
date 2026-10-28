@@ -270,6 +270,8 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 
 ## 8. Scripts (Windows .cmd, so PowerShell's execution policy cannot block them)
 
+> Update 2026-10-28: the host is **Vercel**. `deploy.cmd` runs `node --test`, then `npx --yes vercel deploy app --prod` (log in once through the browser; no token is stored by the script). `app/vercel.json` sets the no-cache and manifest headers. Both scripts keep npm's cache in `.npm-cache` on E:, because C: is nearly full.
+
 - **`preview.cmd`:** opens http://localhost:3000 and runs `npx --yes serve app -l 3000`.
 - **`deploy.cmd`:**
   - If `SWA_CLI_DEPLOYMENT_TOKEN` is not set, ask for it with `set /p`. Never write the token to a file.
