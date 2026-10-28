@@ -230,8 +230,8 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
   - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500 #FF2D55.
 - **Scenery** from the owner's Krtse XO website (`E:\krste-xo\krste-website-xo\src\components`), ported to plain JavaScript in `js/scene.js`:
   - Lake Prespa along the bottom of every screen, behind the content and the tab bar: moving wave bands, Golem Grad, three pelicans riding the waves, and now and then a bird, a jumping fish and ripples. 30fps, paused in the background, a single still frame under reduced motion.
-  - The dandelion: it appears over the lake and its seeds blow away on the wind, each time the app starts and again when the last routine due today is checked off. Skipped under reduced motion.
-  - With no routines yet, the empty state shows a slow dandelion instead of the logo (and the quick intro is skipped): gusts every 15 seconds, the seeds leave one by one, and it is gone after about a minute. Under reduced motion it simply stays.
+  - The dandelion: when the last routine due today is checked off, it appears over the lake and its seeds blow away on the wind. Skipped under reduced motion. (The owner asked for no dandelion when the app starts.)
+  - With no routines yet, the empty state shows a slow dandelion instead of the logo: gusts every 15 seconds, the seeds leave one by one, and it is gone after about a minute. Under reduced motion it simply stays.
 - **Logo:** the owner's studio mark (section 7) is the app icon. It also appears with the name in the top bar. Settings shows the name without the logo.
 - **Layout and accessibility:**
   - Phone-first, max width 480px, centered.

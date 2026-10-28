@@ -306,7 +306,7 @@ function play(el,{seeds,winds},T){
   return el.animate([{opacity:1},{opacity:0}],{duration:T.fadeDuration,delay:T.fadeStart,easing:'cubic-bezier(0.25, 1, 0.5, 1)',fill:'forwards'}).finished;
 }
 
-/* the website's intro: blows once, quickly, over the lower middle of the screen; skipped under reduced motion */
+/* blows once, quickly, over the lower middle of the screen, like the website's intro; skipped under reduced motion */
 export function blowDandelion(){
   if(reduced()||document.querySelector('.dandelion')) return;
   const geom=buildDandelion(), el=dandelionEl('dandelion',geom);

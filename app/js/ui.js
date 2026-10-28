@@ -268,4 +268,3 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)return;cons
 render();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
 startWater(document.getElementById('water'));
-if(S.routines.length) blowDandelion(); // the intro, as on the owner's website; with no routines the slow one plays instead
