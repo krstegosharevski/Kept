@@ -215,7 +215,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - **Look:** iOS-native.
   - Large bold titles, a gray grouped background with rounded white lists and hairline separators, capsule segmented controls, iOS steppers and bottom sheets.
   - A glass (blurred, see-through) floating tab bar and round glass buttons.
-  - A compact title bar fades in at the top once the large title scrolls away.
+  - A top bar with the logo and the name "Kept" is always visible on every screen. It turns to glass once content scrolls under it.
   - Light and dark follow the iPhone setting (`prefers-color-scheme`), with no theme toggle.
 - **Font:** the iPhone system font (SF Pro) through `-apple-system`, with SF Pro Rounded (`ui-rounded`) for big numbers. No font files and no requests to Google. On Windows the preview falls back to Segoe UI.
 - **Key colors** (Apple system colors, light / dark):
@@ -224,7 +224,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
   - Background: #F2F2F7 / #000000. Lists and cards: #FFFFFF / #1C1C1E.
   - Rest days: #000000 in both, with a faint outline in dark mode so they stay visible.
   - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500 #FF2D55.
-- **Logo:** the owner's studio mark (section 7) is the app icon. It also appears in the Today empty state and at the top of Settings.
+- **Logo:** the owner's studio mark (section 7) is the app icon. It also appears with the name in the top bar, in the Today empty state and at the top of Settings.
 - **Layout and accessibility:**
   - Phone-first, max width 480px, centered.
   - Tap targets at least 40px; 44px is better.

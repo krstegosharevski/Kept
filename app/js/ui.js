@@ -36,7 +36,7 @@ const PLUS='<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><
 
 /* ---------- render ---------- */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const $app=document.getElementById('app'), $nav=document.getElementById('navTitle');
+const $app=document.getElementById('app');
 
 function ring(done,total){
   const r=26,c=2*Math.PI*r,f=total?done/total:0,from=ringFrac??f; ringFrac=f;
@@ -53,7 +53,6 @@ function renderToday(){
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
   const date=`${isToday||yest?DAYS_FULL[dow(d)]+' ':''}${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear()!==t.getFullYear()?' '+d.getFullYear():''}`;
-  $nav.textContent=title;
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
     <div class="daynav"><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
     ${isToday?'':'<button class="gpill glass" data-act="goToday">Back to today</button>'}</div>`;
@@ -78,7 +77,6 @@ function renderToday(){
 }
 
 function renderRoutines(){
-  $nav.textContent='Routines';
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${S.routines.length} active · weekends off</div><h1>Routines</h1></div></header>`;
   if(S.routines.length) html+='<div class="group tiles">'+S.routines.map(r=>`<button class="row" style="--c:${r.color}" data-act="edit" data-id="${r.id}">
     <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
@@ -92,7 +90,6 @@ const kpi=(pct,cap)=>`<div class="kpi"><div class="cap">${cap}</div><div class="
 
 function renderStats(){
   const t=TODAY();
-  $nav.textContent='Statistics';
   let html=`<header class="head"><div class="titles"><h1>Statistics</h1></div></header>
   <div class="seg" role="group" aria-label="Period"><button data-act="mode" data-m="week" aria-pressed="${statMode==='week'}">Week</button><button data-act="mode" data-m="month" aria-pressed="${statMode==='month'}">Month</button></div>`;
   if(!S.routines.length){$app.innerHTML=html+'<div class="empty"><h3>No data yet</h3><p>Add routines and check them off to see stats here.</p></div>';return}
@@ -132,7 +129,6 @@ function renderStats(){
 }
 
 function renderSettings(){
-  $nav.textContent='Settings';
   $app.innerHTML=`<header class="head"><div class="titles"><h1>Settings</h1></div></header>
   <div class="group"><div class="row appcard"><img src="icons/icon.svg" alt="" width="60" height="60"><div class="body"><div class="appname">Kept</div><div class="hint">Your data lives only on this device.</div></div></div></div>
   <div class="gh">Backup</div>
@@ -243,8 +239,8 @@ document.addEventListener('click',e=>{
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&edit){edit=null;renderSheet()}});
-/* the compact title bar fades in once the large title has scrolled away, like iOS */
-addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>30),{passive:true});
+/* the top bar turns to glass once content scrolls under it, like iOS */
+addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>2),{passive:true});
 /* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
