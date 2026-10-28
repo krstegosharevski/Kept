@@ -1,6 +1,7 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,normalize,isDue,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
 import {load,save} from './store.js';
+import {startWater,blowDandelion} from './scene.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
 const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#FF2D55'];
@@ -197,7 +198,9 @@ document.addEventListener('click',e=>{
   if(a==='closeBg'&&e.target!==el)return;
   switch(a){
     case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
-      const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); if(isDone(S,{id},k))popId=id; save(S); render(); break; }
+      const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); save(S);
+      if(isDone(S,{id},k)){popId=id; if(S.routines.filter(r=>isDue(r,viewDate)).every(r=>isDone(S,r,k)))blowDandelion()} // the last one for today
+      render(); break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); render(); break;
     case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); render(); break;
     case 'goToday': viewDate=TODAY(); render(); break;
@@ -245,3 +248,4 @@ addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 render();
+startWater(document.getElementById('water'));

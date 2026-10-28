@@ -34,7 +34,8 @@ kept/
    ├─ js/
    │  ├─ logic.js              pure functions: dates, schedules, stats, streaks, normalize (no DOM)
    │  ├─ store.js              load/save localStorage, backup export/import
-   │  └─ ui.js                 rendering and events
+   │  ├─ ui.js                 rendering and events
+   │  └─ scene.js              scenery from the owner's website: the lake and the dandelion
    ├─ sw.js
    ├─ manifest.webmanifest
    ├─ staticwebapp.config.json
@@ -224,6 +225,9 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
   - Background: #F2F2F7 / #000000. Lists and cards: #FFFFFF / #1C1C1E.
   - Rest days: #000000 in both, with a faint outline in dark mode so they stay visible.
   - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500 #FF2D55.
+- **Scenery** from the owner's Krtse XO website (`E:\krste-xo\krste-website-xo\src\components`), ported to plain JavaScript in `js/scene.js`:
+  - Lake Prespa along the bottom of every screen, behind the content and the tab bar: moving wave bands, Golem Grad, three pelicans riding the waves, and now and then a bird, a jumping fish and ripples. 30fps, paused in the background, a single still frame under reduced motion.
+  - The dandelion: when the last routine due today is checked off, it appears over the lake and its seeds blow away on the wind. Skipped under reduced motion.
 - **Logo:** the owner's studio mark (section 7) is the app icon. It also appears with the name in the top bar, in the Today empty state and at the top of Settings.
 - **Layout and accessibility:**
   - Phone-first, max width 480px, centered.
