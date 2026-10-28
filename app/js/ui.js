@@ -1,5 +1,5 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,normalize,isDue,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,normalize,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
 import {load,save} from './store.js';
 import {startWater,blowDandelion} from './scene.js';
 
@@ -12,14 +12,19 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const empty=()=>({schema:1,routines:[],checks:{}});
-let S=load()||empty();
+const loaded=load();
+let S=loaded.data||empty();
+if(!loaded.data&&!loaded.error) navigator.storage?.persist?.().catch(()=>{}); // first run: ask the browser to keep the data; the answer does not matter
 let view='today', viewDate=TODAY(), statMode='week', weekRef=weekStart(TODAY()), monthRef=new Date(TODAY().getFullYear(),TODAY().getMonth(),1);
 let edit=null, confirmDel=false, confirmClear=false, sheetOpening=false;
 let ringFrac=null, popId=null; // the ring animates from its last value; popId is the routine that was just checked off
 
+const short=k=>{const d=parse(k);return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`};
+const commit=()=>{if(!save(S))toast("Couldn't save. Your iPhone storage may be full.")};
+
 function schedText(r,d){
-  const s=r.sched;
-  if(s.type==='daily') return 'Mon – Fri';
+  const s=schedOn(r,d||TODAY());
+  if(s.type==='daily'||s.type==='off') return 'Mon – Fri';
   if(s.type==='days') return s.days.length>=5?'Mon – Fri':s.days.slice().sort().map(i=>DAYS[i]).join(' · ');
   return d?`${weekDone(S,r,d)} of ${s.target} this week`:`${s.target}× per week`;
 }
@@ -65,11 +70,11 @@ function renderToday(){
     html+=`<div class="empty"><h3>Nothing scheduled</h3><p>No routines are due on this day.</p></div>`;
   } else {
     if(past) html+=`<div class="lockline">${LOCK}Past day, view only. You can only check off today.</div>`;
-    html+='<div class="group tiles">'+due.map(r=>{const dn=isDone(S,r,k);
-      const hint=past?(dn?'Completed':(r.sched.type==='weekly'?'Not done':'Missed')):schedText(r,d);
+    html+='<div class="group tiles">'+due.map(r=>{const dn=isDone(S,r,k),weekly=schedOn(r,d).type==='weekly';
+      const hint=past?(dn?'Completed':(weekly?'Not done':'Missed')):schedText(r,d);
       const ctl=past?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
-      return `<div class="row item${dn?' done':''}${past?' locked':''}${past&&!dn&&r.sched.type!=='weekly'?' missed':''}${r.id===popId?' pop':''}" style="--c:${r.color}">
+      return `<div class="row item${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${r.color}">
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
@@ -78,10 +83,15 @@ function renderToday(){
 }
 
 function renderRoutines(){
-  let html=`<header class="head"><div class="titles"><div class="eyebrow">${S.routines.length} active · weekends off</div><h1>Routines</h1></div></header>`;
-  if(S.routines.length) html+='<div class="group tiles">'+S.routines.map(r=>`<button class="row" style="--c:${r.color}" data-act="edit" data-id="${r.id}">
+  const active=S.routines.filter(r=>!r.stopped), stopped=S.routines.filter(r=>r.stopped);
+  let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends off</div><h1>Routines</h1></div></header>`;
+  if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row" style="--c:${r.color}" data-act="edit" data-id="${r.id}">
     <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
   html+=`<div class="group tiles"><button class="row link" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
+  if(stopped.length) html+=`<div class="gh">Stopped</div><div class="group tiles">${stopped.map(r=>`<div class="row stopped" style="--c:${r.color}">
+    <button class="rowbtn" data-act="edit" data-id="${r.id}"><div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">Stopped ${short(r.stopped)}</div></div></button>
+    <button class="pill" data-act="resume" data-id="${r.id}">Resume</button></div>`).join('')}</div>
+    <p class="gf">Stopped routines keep their history. Resume one to track it again from today.</p>`;
   $app.innerHTML=html;
 }
 
@@ -105,7 +115,7 @@ function renderStats(){
       const fut=d>t,v=fut?null:dayRatio(S,d),h=v==null?0:Math.round(v*100);
       return `<div class="bar${fut?' future':h?'':' zero'}${td}"><span class="p">${fut||v==null?'':h+'%'}</span><div class="cw"><div class="col" style="height:${h}%"></div></div><span class="d">${DAYS1[i]}</span></div>`}).join('')}</div></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat" style="--c:${r.color}">
-      <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${r.sched.type==='weekly'?r.sched.target:e}</div>
+      <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
       <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(dd>t||!isDue(r,dd))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?'on':''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
     const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0),bEff=minD(b,t);
@@ -153,10 +163,9 @@ function render(){
 /* ---------- editor sheet ---------- */
 const $sheet=document.getElementById('sheetRoot');
 function openEditor(id){
-  const r=S.routines.find(x=>x.id===id);
-  edit=r?JSON.parse(JSON.stringify(r)):{id:null,name:'',emoji:EMOJI[0],color:COLORS[0],sched:{type:'daily'}};
-  if(!edit.sched.days)edit.sched.days=[0,2,4];
-  if(!edit.sched.target)edit.sched.target=3;
+  const r=S.routines.find(x=>x.id===id), {from,...s}=r?schedOn(r,TODAY()):{type:'daily'};
+  edit={id:r?.id??null,name:r?.name??'',emoji:r?.emoji??EMOJI[0],color:r?.color??COLORS[0],stopped:r?.stopped??null,
+    sched:{days:[0,2,4],target:3,...(s.type==='off'?{type:'daily'}:JSON.parse(JSON.stringify(s)))}};
   confirmDel=false; sheetOpening=true; renderSheet(); setTimeout(()=>{const i=document.getElementById('rname');if(i&&!edit.id)i.focus()},50);
 }
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
@@ -172,7 +181,7 @@ function renderSheet(){
     <div class="group pad"><div class="picks">${EMOJI.map(e=>`<button class="emo" data-act="emo" data-v="${e}" aria-pressed="${edit.emoji===e}">${e}</button>`).join('')}</div></div>
     <div class="gh">Color</div>
     <div class="group pad"><div class="picks colors">${COLORS.map(c=>`<button class="sw" style="--c:${c}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
-    <div class="gh">How often</div>
+    ${edit.stopped?`<div class="gh">How often</div><p class="gf first">Stopped ${short(edit.stopped)}. Resume tracking to change how often.</p>`:`<div class="gh">How often</div>
     <div class="group pad"><div class="seg" role="group" aria-label="How often">
       <button data-act="stype" data-v="daily" aria-pressed="${s.type==='daily'}">Mon – Fri</button>
       <button data-act="stype" data-v="days" aria-pressed="${s.type==='days'}">Some days</button>
@@ -180,9 +189,12 @@ function renderSheet(){
       ${s.type==='days'?`<div class="daysrow">${DAYS1.map((d,i)=>i>=5?`<span class="dayc rest" role="img" aria-label="${DAYS[i]}, rest day">${d}</span>`:`<button class="dayc" data-act="day" data-v="${i}" aria-pressed="${s.days.includes(i)}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>`:''}
       ${s.type==='weekly'?`<div class="stepper"><span><b class="num">${s.target}</b> ${s.target===1?'time':'times'} per week</span><span class="ctl"><button data-act="tgt" data-v="-1" aria-label="Fewer" ${s.target<=1?'disabled':''}>−</button><button data-act="tgt" data-v="1" aria-label="More" ${s.target>=5?'disabled':''}>+</button></span></div>`:''}
     </div>
-    <p class="gf">Saturday and Sunday are always rest days.</p>
+    <p class="gf">Saturday and Sunday are always rest days.${edit.id?' Schedule changes apply from today. Past days keep their old schedule.':''}</p>`}
     <button class="primary" data-act="saveR">${edit.id?'Save changes':'Add routine'}</button>
-    ${edit.id?`<div class="group"><button class="row danger center" data-act="delR">${confirmDel?'Tap again to delete with its history':'Delete routine'}</button></div>`:''}
+    ${edit.id?`<div class="group"><button class="row link center" data-act="${edit.stopped?'resume':'stopR'}" data-id="${edit.id}">${edit.stopped?'Resume tracking':'Stop tracking'}</button></div>
+    ${edit.stopped?'':'<p class="gf">Stopping keeps its history. You can resume it later.</p>'}
+    <div class="group"><button class="row danger center" data-act="delR">${confirmDel?'Delete routine and all its history':'Delete routine'}</button></div>
+    ${confirmDel?'<p class="gf">Tap again to delete it for good. This cannot be undone.</p>':''}`:''}
   </div></div>`;
   $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
 }
@@ -199,7 +211,7 @@ document.addEventListener('click',e=>{
   if(a==='closeBg'&&e.target!==el)return;
   switch(a){
     case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
-      const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); save(S);
+      const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); commit();
       if(isDone(S,{id},k)){popId=id; if(S.routines.filter(r=>isDue(r,viewDate)).every(r=>isDone(S,r,k)))blowDandelion()} // the last one for today
       render(); break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); render(); break;
@@ -223,23 +235,25 @@ document.addEventListener('click',e=>{
       syncName(); const name=edit.name.trim();
       if(!name){toast('Give the routine a name');document.getElementById('rname').focus();break}
       const s=edit.sched, sched=s.type==='days'?{type:'days',days:s.days.slice().sort()}:s.type==='weekly'?{type:'weekly',target:s.target}:{type:'daily'};
-      if(edit.id){const r=S.routines.find(x=>x.id===edit.id);Object.assign(r,{name,emoji:edit.emoji,color:edit.color,sched});toast('Routine saved')}
-      else{S.routines.push({id:'r_'+Date.now().toString(36),name,emoji:edit.emoji,color:edit.color,sched,created:key(TODAY())});toast('Routine added')}
-      save(S); edit=null; renderSheet(); render(); break;
+      if(edit.id){const r=S.routines.find(x=>x.id===edit.id);Object.assign(r,{name,emoji:edit.emoji,color:edit.color});if(!r.stopped)changeSchedule(r,sched,TODAY());toast('Routine saved')}
+      else{const k=key(TODAY());S.routines.push({id:'r_'+Date.now().toString(36),name,emoji:edit.emoji,color:edit.color,created:k,stopped:null,schedules:[{from:k,...sched}]});toast('Routine added')}
+      commit(); edit=null; renderSheet(); render(); break;
     }
+    case 'stopR': { const r=S.routines.find(x=>x.id===el.dataset.id); stopRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Stopped. Its history is kept.'); break; }
+    case 'resume': { const r=S.routines.find(x=>x.id===el.dataset.id); resumeRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Tracking again from today'); break; }
     case 'delR':
       if(!confirmDel){confirmDel=true;syncName();renderSheet();break}
       S.routines=S.routines.filter(r=>r.id!==edit.id);
       for(const k in S.checks){S.checks[k]=S.checks[k].filter(id=>id!==edit.id);if(!S.checks[k].length)delete S.checks[k]}
-      save(S); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
+      commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
     case 'showBackup': { const ta=document.getElementById('backupText'); ta.value=JSON.stringify(S); ta.hidden=false; document.getElementById('copyBackup').hidden=false; break; }
     case 'copyBackup': { const ta=document.getElementById('backupText');
       navigator.clipboard?.writeText(ta.value).then(()=>toast('Backup copied'),()=>{ta.select();toast('Select all and copy')}) ?? (ta.select(),toast('Select all and copy')); break; }
     case 'restore': try{ const d=normalize(JSON.parse(document.getElementById('restoreText').value));
-        if(!d)throw 0; S={schema:1,routines:d.routines,checks:d.checks}; save(S); toast('Backup restored'); view='today'; viewDate=TODAY(); render();
+        if(!d)throw 0; S=d; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render();
       }catch(err){toast('That code is not a valid backup')} break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
-      S=empty(); save(S); confirmClear=false; toast('All data erased'); render(); break;
+      S=empty(); commit(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&edit){edit=null;renderSheet()}});
@@ -249,5 +263,6 @@ addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 render();
+if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
 startWater(document.getElementById('water'));
 blowDandelion(); // the intro, as on the owner's website

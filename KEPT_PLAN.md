@@ -91,6 +91,7 @@ localStorage key `kept-data-v1`:
   - The schedule for a given date is the last entry with `from <= date`.
   - Editing a schedule appends `{from: today, ...}`. If the last entry's `from` is already today, replace that entry instead.
 - **`stopped`:** a date string or null. A stopped routine is not due on or after that date, and its history is kept.
+  - Resuming appends `{from: stopped, type:"off"}` and then the old schedule `{from: today, ...}`, and clears `stopped`. The `off` entry keeps the stopped stretch not due, so the past stays as it was.
 - **`checks`:** maps a date key to the array of routine ids completed that day.
 - **Meta key `kept-meta-v1`:** a separate key holding `{ "lastBackupAt": ISO string | null, "reminderDismissedOn": "YYYY-MM-DD" | null }`.
 
@@ -114,6 +115,7 @@ localStorage key `kept-data-v1`:
   - migrates the demo's shape (a single `sched` object) into `schedules: [{from: created, ...sched}]`,
   - maps the demo's six routine colors to the Apple routine colors in section 6.
 - **Storage errors:** wrap every localStorage read and write in try/catch. If a save fails, show the toast "Couldn't save. Your iPhone storage may be full."
+  - If the saved data cannot be read, copy it to `kept-data-v1-unreadable`, start empty, and show "Couldn't read your saved data. A copy was set aside."
 - **Persistent storage:** on first run, call `navigator.storage?.persist?.()` and ignore the result.
 
 ## 5. Features and screens

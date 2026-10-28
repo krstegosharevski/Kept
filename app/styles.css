@@ -84,9 +84,17 @@ button.row:active{background-color:var(--fill-2)}
 .row.danger{color:var(--danger)}
 .row.center{justify-content:center}
 .disc{flex:none;color:var(--faint)}
+.row.stopped{padding-block:6px}
+.rowbtn{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:44px;padding:0;border:0;background:transparent;text-align:left;font-size:17px}
+.row.stopped .tile{filter:grayscale(1);opacity:.6}
+.row.stopped .name{color:var(--muted)}
+.pill{flex:none;min-height:36px;padding:0 16px;border:0;border-radius:999px;background:var(--tint-soft);color:var(--tint);font-size:15px;font-weight:600}
+.pill:active{opacity:.7}
+.gf.first{padding-top:0}
 .addicon{width:40px;flex:none;display:grid;place-items:center;color:var(--tint)}
 .gh{font-size:13px;letter-spacing:-.006em;text-transform:uppercase;color:var(--muted);padding:0 16px 7px;margin-top:24px}
 .gf{font-size:13px;letter-spacing:-.006em;color:var(--muted);padding:7px 16px 0;margin:0}
+.gf + .group{margin-top:20px}
 .sh{font-size:22px;font-weight:700;letter-spacing:-.012em;margin:28px 0 10px}
 .note{text-align:center;color:var(--muted);font-size:15px;margin:18px 0 0}
 .tile{width:40px;height:40px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:22px;letter-spacing:0;background:color-mix(in srgb,var(--c) 18%,transparent)}
