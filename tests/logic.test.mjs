@@ -1,7 +1,7 @@
 /* Kept logic tests. Run with: node --test */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats} from '../app/js/logic.js';
+import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -108,4 +108,36 @@ test('range stats leave out routines that did not exist in the range', ()=>{
   assert.equal(st.per.length,1);
   assert.equal(st.exp,5);
   assert.equal(st.pct,1/5);
+});
+
+test('ranks follow the month %: the edges of every rank', ()=>{
+  const name=p=>RANKS[rankIndex(p/100)].name;
+  assert.deepEqual([0,50,50.1,60,60.1,70,70.1,78,78.1,85,85.1,95,95.1,100].map(name),
+    ['Comfort Zone','Comfort Zone','Starter','Starter','Student','Student','Builder','Builder','Iron Will','Iron Will','Stoic','Stoic','Focused (Chosen)','Focused (Chosen)']);
+  assert.equal(name(78.04),'Builder'); // rounds to 78.0
+  assert.equal(name(78.05),'Iron Will'); // rounds to 78.1
+  assert.deepEqual(RANKS.map((_,i)=>rankFrom(i)),[0,50.1,60.1,70.1,78.1,85.1,95.1]);
+});
+
+test('a month gets the rank of its %, counts only the days so far, and has no rank when nothing was expected', ()=>{
+  const r=routine({type:'daily'}); // October 2026 has 22 weekdays
+  const checks={}; for(let d=1;d<=31;d++){const k=`2026-10-${String(d).padStart(2,'0')}`; if(!isRest(D(k))&&d>7) checks[k]=['a']} // misses 1, 2, 5, 6 and 7 October
+  const data={routines:[r],checks};
+  const oct=monthResult(data,D('2026-10-01'),D('2026-11-10'));
+  assert.equal(oct.final,true);
+  assert.equal(pct1(oct.pct),77.3); // 17 of 22
+  assert.equal(RANKS[oct.rank].name,'Builder');
+  const mid=monthResult(data,D('2026-10-01'),D('2026-10-09')); // 2 of 7 so far
+  assert.equal(mid.final,false);
+  assert.equal(RANKS[mid.rank].name,'Comfort Zone');
+  assert.equal(monthResult(data,D('2026-10-01'),D('2026-10-31')).final,false); // the last day is still running
+  assert.equal(monthResult(data,D('2026-09-01'),D('2026-11-10')).rank,null); // before the routine existed
+  assert.equal(monthResult(data,D('2026-11-01'),D('2026-11-01')).rank,null); // only a Sunday so far
+  assert.equal(monthResult(data,D('2026-12-01'),D('2026-11-10')).rank,null); // a future month
+});
+
+test('the months to rank run from the first routine to this month', ()=>{
+  const data={routines:[routine({type:'daily'},{created:'2026-11-03'}),routine({type:'daily'},{id:'b',created:'2026-08-20'})],checks:{}};
+  assert.deepEqual(rankMonths(data,D('2026-11-10')).map(key),['2026-08-01','2026-09-01','2026-10-01','2026-11-01']);
+  assert.deepEqual(rankMonths({routines:[],checks:{}},D('2026-11-10')),[]);
 });

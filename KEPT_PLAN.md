@@ -120,7 +120,7 @@ localStorage key `kept-data-v1`:
 
 ## 5. Features and screens
 
-The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
+The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 
 ### Today
 
@@ -171,7 +171,8 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
   - Per routine: done/expected and 7 dots (filled = done, empty = due but not done, dashed = not due, black = rest day).
 - **Month:**
   - ‹ › month navigation.
-  - A big % for the month.
+  - The month's rank as a banner above the card ("Rank so far" for the current month, "Final rank" for a finished one). Tapping it opens Ranks.
+  - A big % for the month, to one decimal.
   - A calendar heatmap: weeks start Monday, 5 green levels, weekends black, future days dimmed, today outlined.
   - Tapping a past weekday opens it on the Today tab, read-only.
   - A legend from Less to More, plus Rest.
@@ -190,6 +191,25 @@ The bottom tab bar is Today · Routines · Stats · Settings, as in the demo.
     - Best = the longest run ever.
   - **Streak (weekly routines):** consecutive weeks that met the target. The current week counts only once its target is met.
   - **Units:** "d" for days, "wk" for weeks.
+
+### Ranks
+
+- Every month earns a rank from its Range %, rounded to one decimal:
+
+  | Month % | Rank |
+  |---|---|
+  | 0 – 50 | Comfort Zone |
+  | 50.1 – 60 | Starter |
+  | 60.1 – 70 | Student |
+  | 70.1 – 78 | Builder |
+  | 78.1 – 85 | Iron Will |
+  | 85.1 – 95 | Stoic |
+  | 95.1 – 100 | Focused (Chosen) |
+
+- The current month's rank is "so far" (days up to today) and becomes final when the month ends. A month with nothing expected has no rank.
+- Ranks are computed from the routines and check-ins each time; nothing extra is stored, so backups are unchanged.
+- **Ranks tab:** a large banner with this month's rank, its % and how much more the next rank needs; the list of all ranks with their ranges and "You" on the current one; then one banner per finished month, newest first, from the month the first routine was created. Tapping a month's banner opens that month in Stats.
+- Each rank has its own banner color and emoji; the top rank is black and gold.
 
 ### Settings
 
@@ -297,6 +317,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - A schedule change from today leaves past expected counts unchanged.
 - A stopped routine is not due after its stop date, and its history is kept.
 - Demo-shaped data (a single `sched`) migrates to `schedules`.
+- Ranks: the edges of every rank, a month's rank from its %, no rank when nothing was expected, and the list of months to rank.
 
 Manual checks:
 - Edge or Chrome device toolbar at iPhone size.

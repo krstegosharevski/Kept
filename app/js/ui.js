@@ -1,5 +1,5 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks} from './logic.js';
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,blowDandelion,slowDandelion} from './scene.js';
 
@@ -17,7 +17,7 @@ let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for 
 const loaded=load();
 let S=loaded.data||empty();
 if(!loaded.data&&!loaded.error) navigator.storage?.persist?.().catch(()=>{}); // first run: ask the browser to keep the data; the answer does not matter
-let view='today', viewDate=TODAY(), statMode='week', weekRef=weekStart(TODAY()), monthRef=new Date(TODAY().getFullYear(),TODAY().getMonth(),1);
+let view='today', viewDate=TODAY(), statMode='week', weekRef=weekStart(TODAY()), monthRef=monthStart(TODAY());
 let edit=null, confirmDel=false, confirmClear=false, sheetOpening=false;
 let ringFrac=null, popId=null; // the ring animates from its last value; popId is the routine that was just checked off
 let quietDandelion=null; // the slow dandelion of the "No routines yet" screen, made once per start and moved into each re-render
@@ -113,7 +113,14 @@ function renderRoutines(){
 
 const rangeHead=(x,label,isCur)=>`<div class="rangehead"><button class="gbtn glass" data-act="prev${x}" aria-label="Previous ${x==='W'?'week':'month'}">${CHEV_L}</button>
   <div class="lbl">${label}</div><button class="gbtn glass" data-act="next${x}" aria-label="Next ${x==='W'?'week':'month'}" ${isCur?'disabled':''}>${CHEV_R}</button></div>`;
-const kpi=(pct,cap)=>`<div class="kpi"><div class="cap">${cap}</div><div class="v">${Math.round(pct*100)}<small>%</small></div></div>`;
+const kpi=(n,cap)=>`<div class="kpi"><div class="cap">${cap}</div><div class="v">${n}<small>%</small></div></div>`;
+const monthName=d=>`${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+/* a rank's banner, in the rank's own colors. With `act` it is a button. */
+function rankBanner(i,{eyebrow,sub='',act='',big=false}){
+  const r=RANKS[i], tag=act?'button':'div';
+  return `<${tag} class="rank rk${i}${big?' big':''}"${act?' '+act:''}><span class="rbody"><span class="reyebrow">${eyebrow}</span><span class="rname">${r.name}</span>${sub?`<span class="rsub">${sub}</span>`:''}</span>
+    <span class="remoji" aria-hidden="true">${r.emoji}</span>${act?DISC:''}</${tag}>`;
+}
 
 function renderStats(){
   const t=TODAY();
@@ -125,7 +132,7 @@ function renderStats(){
     const st=rangeStats(S,a,bEff);
     const isCur=+a===+weekStart(t);
     html+=rangeHead('W',isCur?'This week':`${a.getDate()} ${MONTHS[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MONTHS[b.getMonth()].slice(0,3)}`,isCur)
-    +`<div class="card">${kpi(st.pct,'Completed')}
+    +`<div class="card">${kpi(Math.round(st.pct*100),'Completed')}
     <div class="bars">${[...Array(7)].map((_,i)=>{const d=addDays(a,i),td=+d===+t?' today':'';
       if(isRest(d)) return `<div class="bar rest${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Rest</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
       const fut=d>t,v=fut?null:dayRatio(S,d),h=v==null?0:Math.round(v*100);
@@ -134,16 +141,18 @@ function renderStats(){
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
       <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(dd>t||!isDue(r,dd))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?'on':''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
-    const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0),bEff=minD(b,t);
-    const st=rangeStats(S,a,bEff);
+    const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0);
+    const st=monthResult(S,a,t);
     const isCur=a.getFullYear()===t.getFullYear()&&a.getMonth()===t.getMonth();
     let cells=DAYS1.map(x=>`<span class="h">${x}</span>`).join('')+'<span class="day blank"></span>'.repeat(dow(a));
     for(let d=a;d<=b;d=addDays(d,1)){const td=+d===+t?' today':'';
       if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
       const fut=d>t,lv=fut?0:level(dayRatio(S,d));
       cells+=`<button class="day l${lv}${fut?' future':''}${td}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
-    html+=rangeHead('M',`${MONTHS[a.getMonth()]} ${a.getFullYear()}`,isCur)
-    +`<div class="card">${kpi(st.pct,'Completed this month')}
+    const rankCap=st.final?'Final rank':'Rank so far';
+    html+=rangeHead('M',monthName(a),isCur)
+    +(st.rank==null?'':rankBanner(st.rank,{eyebrow:rankCap,act:`data-act="openRanks" aria-label="${rankCap}: ${RANKS[st.rank].name}. Show all ranks"`}))
+    +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
     <div class="legend">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More<i class="day rest gapl"></i>Rest</div>
     <p class="foot">Tap a day to see what you did. Black days are rest days.</p></div>
@@ -152,6 +161,28 @@ function renderStats(){
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>
       <div class="meta"><span class="num">${d}</span> of <span class="num">${e}</span> · streak <span class="num">${s.cur}${s.unit}</span> · best <span class="num">${s.best}${s.unit}</span></div></div>`}).join('')}</div>`;
   }
+  $app.innerHTML=html;
+}
+
+function renderRanks(){
+  const t=TODAY(), cur=monthResult(S,monthStart(t),t);
+  let html=`<header class="head"><div class="titles"><div class="eyebrow">${monthName(t)}</div><h1>Ranks</h1></div></header>`;
+  if(!S.routines.length){$app.innerHTML=html+'<div class="empty"><h3>No rank yet</h3><p>Add routines and check them off. Every month earns a rank.</p></div>';return}
+  if(cur.rank==null) html+='<div class="rank none big"><span class="rbody"><span class="reyebrow">This month so far</span><span class="rname">No rank yet</span><span class="rsub">It appears after the first day with something to do.</span></span></div>';
+  else{
+    const p=pct1(cur.pct), next=RANKS[cur.rank+1];
+    html+=rankBanner(cur.rank,{big:true,eyebrow:'This month so far',act:`data-act="openMonth" data-k="${key(cur.first)}"`,
+      sub:`<b class="num">${p}%</b> completed${next?` · <span class="num">${Math.round((rankFrom(cur.rank+1)-p)*10)/10}%</span> more for ${next.name}`:' · the top rank'}`});
+  }
+  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends.</p>
+  <h2 class="sh">All ranks</h2><div class="group tiles">${RANKS.map((r,i)=>`<div class="row${i===cur.rank?' you':''}"><div class="tile rk${i}">${r.emoji}</div>
+    <div class="body"><div class="name">${r.name}</div><div class="hint num">${rankFrom(i)} – ${r.max}%</div></div>${i===cur.rank?'<span class="pill rk'+i+'">You</span>':''}</div>`).reverse().join('')}</div>`;
+  const past=rankMonths(S,t).map(m=>monthResult(S,m,t)).filter(m=>m.final).reverse();
+  html+='<h2 class="sh">Past months</h2>';
+  if(!past.length) html+='<p class="gf first">Each finished month is kept here with the rank you ended on.</p>';
+  else html+=past.map(m=>{const act=`data-act="openMonth" data-k="${key(m.first)}"`;
+    return m.rank==null?`<button class="rank none" ${act}><span class="rbody"><span class="reyebrow">${monthName(m.first)}</span><span class="rname">No rank</span><span class="rsub">Nothing was scheduled</span></span>${DISC}</button>`
+      :rankBanner(m.rank,{eyebrow:monthName(m.first),sub:`<b class="num">${pct1(m.pct)}%</b> completed`,act})}).join('');
   $app.innerHTML=html;
 }
 
@@ -176,7 +207,7 @@ function renderSettings(){
 
 function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===view?'page':'false'));
-  ({today:renderToday,routines:renderRoutines,stats:renderStats,settings:renderSettings})[view]();
+  ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings})[view]();
 }
 
 /* ---------- editor sheet ---------- */
@@ -238,6 +269,8 @@ document.addEventListener('click',e=>{
     case 'goToday': viewDate=TODAY(); render(); break;
     case 'openDay': viewDate=parse(el.dataset.k); view='today'; render(); window.scrollTo(0,0); break;
     case 'mode': statMode=el.dataset.m; render(); break;
+    case 'openRanks': view='ranks'; render(); window.scrollTo(0,0); break;
+    case 'openMonth': monthRef=parse(el.dataset.k); statMode='month'; view='stats'; render(); window.scrollTo(0,0); break;
     case 'prevW': weekRef=addDays(weekRef,-7); render(); break;
     case 'nextW': weekRef=addDays(weekRef,7); render(); break;
     case 'prevM': monthRef=new Date(monthRef.getFullYear(),monthRef.getMonth()-1,1); render(); break;

@@ -146,3 +146,25 @@ export function streaks(data,r,t){
   let best=0,run=0; for(let d=c;d<=end;d=addDays(d,1)){ if(!dueDaily(r,d))continue; if(isDone(data,r,key(d))){run++;best=Math.max(best,run)} else if(+d!==+t) run=0 }
   return {cur,best,unit:'d'};
 }
+
+/* ---------- ranks ---------- */
+/* a month's rank comes from its completion %, to one decimal: up to 50 Comfort Zone, 50.1–60 Starter, … 95.1 and up Focused (Chosen) */
+export const RANKS=[{name:'Comfort Zone',emoji:'🛋️',max:50},{name:'Starter',emoji:'🌱',max:60},{name:'Student',emoji:'📖',max:70},{name:'Builder',emoji:'🧱',max:78},
+  {name:'Iron Will',emoji:'🛡️',max:85},{name:'Stoic',emoji:'🏛️',max:95},{name:'Focused (Chosen)',emoji:'🎯',max:100}];
+export const pct1=v=>Math.round(v*1000)/10; // 0.7834 → 78.3
+export function rankIndex(v){const p=pct1(v),i=RANKS.findIndex(r=>p<=r.max);return i<0?RANKS.length-1:i}
+/* the lowest % that earns rank i */
+export const rankFrom=i=>i?Math.round(RANKS[i-1].max*10+1)/10:0;
+export const monthStart=d=>new Date(d.getFullYear(),d.getMonth(),1);
+/* a month's result as of day t: the stats of its days up to t, the rank they earn (null when nothing was expected yet), and whether the month is over */
+export function monthResult(data,first,t){
+  const last=new Date(first.getFullYear(),first.getMonth()+1,0), end=minD(last,t);
+  const st=end<first?{pct:0,per:[],exp:0}:rangeStats(data,first,end);
+  return {...st,first,rank:st.exp?rankIndex(st.pct):null,final:last<t};
+}
+/* the months to rank, oldest first: from the month the first routine was created to the month of day t */
+export function rankMonths(data,t){
+  const c=data.routines.map(r=>r.created).sort()[0], out=[];
+  if(c) for(let d=monthStart(parse(c));d<=t;d=new Date(d.getFullYear(),d.getMonth()+1,1)) out.push(d);
+  return out;
+}

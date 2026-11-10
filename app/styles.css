@@ -192,6 +192,35 @@ button.row:active{background-color:var(--fill-2)}
 .dots i.rest{background:var(--rest);border:1px solid var(--rest-line)}
 .meta{font-size:13px;letter-spacing:-.006em;color:var(--muted)}
 
+/* ranks: each rank has its own colors. --a and --b fill its banner, --c tints its tile and pill. */
+.rk0{--a:#6E6E73;--b:#48484A;--c:#8E8E93}
+.rk1{--a:#167C8B;--b:#0C5967;--c:#30B0C7}
+.rk2{--a:#1F6FEB;--b:#1550B8;--c:#007AFF}
+.rk3{--a:#BA5408;--b:#8A3B06;--c:#FF9500}
+.rk4{--a:#56657A;--b:#2B3645;--c:#7C8DA6}
+.rk5{--a:#7D4FE0;--b:#5230B0;--c:#AF52DE}
+.rk6{--a:#33290A;--b:#000000;--c:#D9A400;--gold:#FFD60A}
+.rank{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:14px 16px 14px 18px;border:0;border-radius:var(--radius);text-align:left;
+  color:#fff;background:linear-gradient(135deg,var(--a),var(--b));transition:transform .15s}
+.rank + .rank{margin-top:10px}
+.rank + .card{margin-top:12px}
+button.rank:active{transform:scale(.98)}
+.rank.rk6{color:var(--gold);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 55%,transparent)} /* the top rank is black and gold */
+.rank.none{background:var(--surface);color:var(--ink)}
+.rank.none .rname{color:var(--muted)}
+.rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.reyebrow{font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;opacity:.85}
+.rname{font-family:var(--font-round);font-size:24px;font-weight:700;line-height:1.15;letter-spacing:0}
+.rsub{font-size:14px;letter-spacing:-.01em;opacity:.9;margin-top:2px}
+.rsub b{font-weight:700}
+.remoji{flex:none;font-size:34px;line-height:1;letter-spacing:0}
+.rank .disc{color:currentColor;opacity:.6}
+.rank.big{padding:20px 16px 20px 20px}
+.rank.big .rname{font-size:32px}
+.rank.big .remoji{font-size:52px}
+.row.you .name{font-weight:600}
+.pill[class*="rk"]{display:grid;place-items:center;min-height:28px;padding:0 12px;font-size:13px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--ink)}
+
 /* settings */
 .appcard{gap:14px;padding:14px 16px}
 .appname{font-size:22px;font-weight:700;letter-spacing:-.012em}
@@ -209,7 +238,7 @@ button.row:active{background-color:var(--fill-2)}
 /* floating glass tab bar */
 .tabs{position:fixed;z-index:20;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));margin:0 auto;max-width:440px;
   bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 8px));border-radius:999px;padding:4px}
-.tabs nav{display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs nav{display:grid;grid-template-columns:repeat(5,1fr)}
 .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:54px;border:0;border-radius:999px;background:transparent;
   color:var(--ink);font-size:10px;font-weight:600;letter-spacing:.01em;transition:background-color .2s,color .2s}
 .tabs svg{width:26px;height:26px}
