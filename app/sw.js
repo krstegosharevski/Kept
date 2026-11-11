@@ -1,9 +1,9 @@
 /* Kept service worker: the app opens offline after the first visit.
    Network first (3-second timeout), falling back to the cache, and every network response is written back,
    so updates arrive whenever the app opens online. VERSION only needs a bump if this file's cache list changes. */
-const VERSION='kept-v2';
+const VERSION='kept-v3';
 const RANK_IDS=['comfort-zone','starter','student','builder','iron-will','stoic','focused']; // the same ids as RANKS in logic.js
-const FILES=['./','styles.css','js/ui.js','js/logic.js','js/store.js','js/scene.js','manifest.webmanifest',
+const FILES=['./','styles.css','js/ui.js','js/logic.js','js/art.js','js/store.js','js/scene.js','manifest.webmanifest',
   'icons/icon.svg','icons/apple-touch-icon.png','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png',
   ...RANK_IDS.flatMap(id=>[`ranks/banner-${id}.svg`,`ranks/badge-${id}.svg`]),'fonts/bricolage-grotesque-800.woff2','fonts/figtree.woff2'];
 

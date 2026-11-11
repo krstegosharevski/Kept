@@ -216,6 +216,40 @@ button.row:active{background-color:var(--fill-2)}
 button.hero:active{transform:scale(.98)}
 .hero .art{border-radius:3.33cqw;box-shadow:0 14px 30px -14px var(--glow,var(--a)),0 4px 14px -6px color-mix(in srgb,var(--glow,var(--a)) 55%,transparent)}
 .hero + .card{margin-top:16px}
+/* the rank you hold comes alive, while its picture stays still: comets streak around the ring, appearing and fading away, the gems on the ring twinkle,
+   the glow behind it pulses, and a sheen crosses the banner now and then. Reduce Motion turns all of it off (see the end of this file). */
+.comet{opacity:0} /* hidden everywhere else, and when motion is reduced */
+.hero .comet{animation:comet 4s linear infinite}
+.hero .gem{transform-box:fill-box;transform-origin:center;animation:gem 2.8s ease-in-out infinite}
+.hero .aura{animation:aura 4.5s ease-in-out infinite}
+.hero .art{overflow:hidden}
+.hero .art::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-100%);
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,var(--shine,.16)) 50%,transparent 65%);animation:shine var(--shine-t,7s) ease-in-out 1s infinite}
+/* a comet appears, races about three quarters of the way round the ring, and fades out */
+@keyframes comet{0%{stroke-dashoffset:0;opacity:0}12%{opacity:1}60%{opacity:1}78%{opacity:0}100%{stroke-dashoffset:-100;opacity:0}}
+@keyframes gem{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.55}}
+@keyframes aura{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes shine{0%{transform:translateX(-100%)}25%,100%{transform:translateX(100%)}}
+/* higher ranks shine more: Platinum a little, Emerald clearly, The Chosen most. The shine is brighter and comes more often,
+   four-point sparkles twinkle around the circle in two alternating sets, and on Emerald and The Chosen the glow breathes. */
+.hero{position:relative;--star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 0C11 7 13 9 20 10C13 11 11 13 10 20C9 13 7 11 0 10C7 9 9 7 10 0Z' fill='white'/%3E%3C/svg%3E")}
+.hero[data-rk="4"]{--shine:.24;--shine-t:5.5s}
+.hero[data-rk="5"]{--shine:.32;--shine-t:4.5s}
+.hero[data-rk="6"]{--shine:.4;--shine-t:3.8s}
+.hero[data-rk="4"]::before,.hero[data-rk="5"]::before,.hero[data-rk="6"]::before,.hero[data-rk="5"]::after,.hero[data-rk="6"]::after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;animation:sparkle 2.4s ease-in-out infinite}
+.hero[data-rk]::after{animation-delay:-1.2s} /* the second set twinkles half a beat after the first */
+.hero[data-rk="4"]::before{background:var(--star) 63% 18%/12px no-repeat,var(--star) 92% 72%/10px no-repeat,var(--star) 70% 86%/8px no-repeat}
+.hero[data-rk="5"]::before{background:var(--star) 62% 16%/16px no-repeat,var(--star) 93% 30%/12px no-repeat,var(--star) 88% 86%/10px no-repeat,var(--star) 58% 62%/9px no-repeat}
+.hero[data-rk="5"]::after{background:var(--star) 76% 5%/11px no-repeat,var(--star) 97% 56%/14px no-repeat,var(--star) 66% 90%/12px no-repeat,var(--star) 55% 34%/8px no-repeat}
+.hero[data-rk="6"]::before{background:var(--star) 57% 14%/20px no-repeat,var(--star) 95% 24%/15px no-repeat,var(--star) 92% 84%/13px no-repeat,var(--star) 54% 64%/11px no-repeat,var(--star) 81% 3%/10px no-repeat}
+.hero[data-rk="6"]::after{background:var(--star) 70% 4%/14px no-repeat,var(--star) 98% 52%/18px no-repeat,var(--star) 63% 94%/15px no-repeat,var(--star) 51% 38%/10px no-repeat,var(--star) 86% 96%/9px no-repeat}
+.hero[data-rk="5"] .art,.hero[data-rk="6"] .art{animation:glow 3s ease-in-out infinite}
+@keyframes sparkle{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 14px 30px -14px var(--glow,var(--a)),0 4px 14px -6px color-mix(in srgb,var(--glow,var(--a)) 55%,transparent)}
+  50%{box-shadow:0 18px 44px -10px var(--glow,var(--a)),0 0 26px -2px color-mix(in srgb,var(--glow,var(--a)) 70%,transparent)}}
+.rankrow{margin-bottom:20px}
+.rankrow .row{padding:6px 12px}
 .goal{margin:8px 4px 0;font-size:15px;letter-spacing:-.016em;color:var(--muted)}
 .goal b{font-weight:600;color:var(--ink)}
 .group.months{--sep:100px}

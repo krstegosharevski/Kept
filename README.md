@@ -10,6 +10,8 @@ Double-click `preview.cmd`, or run `.\preview.cmd` in VS Code's terminal. Your b
 
 To check the rules: `node --test`.
 
+To see all seven ranks and their animation, double-click `ranks-demo.html`. After changing the rank artwork, run `node tools/ranks-demo.mjs` to rebuild it. It is never published.
+
 ## Publish (Vercel)
 
 Run `deploy.cmd`. It runs the tests, then publishes the `app` folder.

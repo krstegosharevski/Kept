@@ -2,6 +2,7 @@
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,blowDandelion,slowDandelion} from './scene.js';
+import {emblem} from './art.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
 const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#FF2D55'];
@@ -76,6 +77,10 @@ function renderToday(){
   if(isToday&&reminderDue()) html+=`<div class="group reminder"><div class="row"><div class="body"><div class="name">Time for a backup</div>
     <div class="hint">Last backup: ${ago(meta.lastBackupAt)}. Save one to Files or iCloud Drive.</div></div></div>
     <div class="row actions"><button class="pill" data-act="saveBackup">Save backup</button><button class="pill quiet" data-act="later">Later</button></div></div>`;
+  /* this month's rank badge, on today only; it opens Ranks */
+  const rk=isToday&&S.routines.length?monthResult(S,monthStart(t),t):null;
+  if(rk?.rank!=null) html+=`<div class="group rankrow"><button class="row" data-act="openRanks" aria-label="Your rank this month: ${RANKS[rk.rank].name}, ${pct1(rk.pct)}%. Show all ranks">
+    <span class="slot">${art('badge',rk.rank)}</span><div class="body"><div class="name">${RANKS[rk.rank].name}</div><div class="hint">Your rank this month · <span class="num">${pct1(rk.pct)}%</span></div></div>${DISC}</button></div>`;
   if(rest){
     html+=`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
   } else if(!S.routines.length){
@@ -127,12 +132,12 @@ async function loadArt(){
   document.fonts?.load("500 16px 'Figtree'").catch(()=>{});
   await Promise.all(RANKS.flatMap((r,i)=>['banner','badge'].map(async kind=>{
     try{
-      const res=await fetch(new URL(`../ranks/${kind}-${r.id}.svg`,import.meta.url)), svg=res.ok?await res.text():'';
+      const res=await fetch(new URL(`../ranks/${kind}-${r.id}.svg`,import.meta.url)), raw=res.ok?await res.text():'', svg=kind==='banner'?emblem(raw):raw;
       const vb=svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
       if(vb) ART[`${kind}-${i}`]={svg,ratio:`${vb[1]}/${vb[2]}`};
     }catch(e){}
   })));
-  if(view==='ranks'||view==='stats') render();
+  if(view==='ranks'||view==='stats'||view==='today') render();
 }
 /* each copy gets its own ids (kept-… becomes kept7-…), so one artwork can appear twice on a page. Badges sit next to text that names the rank, so screen readers skip them. */
 function art(kind,i){
@@ -170,7 +175,7 @@ function renderStats(){
       cells+=`<button class="day l${lv}${fut?' future':''}${td}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
     /* the month's rank next to its %: final (locked) once the month is over, live until then */
     const rk=st.rank==null?'':`<div class="ycap${st.final?' final':''}">${st.final?LOCK+'Final rank':'Rank so far'}</div>
-      <button class="hero" data-act="openRanks" aria-label="${st.final?'Final rank':'Rank so far'}: ${RANKS[st.rank].name}. Show all ranks">${art('banner',st.rank)}</button>`;
+      <button class="hero" data-rk="${st.rank}" data-act="openRanks" aria-label="${st.final?'Final rank':'Rank so far'}: ${RANKS[st.rank].name}. Show all ranks">${art('banner',st.rank)}</button>`;
     html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
@@ -192,7 +197,7 @@ function renderRanks(){
   else if(now==null) html+='<p class="gf first ranknote">No rank yet this month. It appears after the first day with something to do.</p>';
   else{
     const p=pct1(cur.pct), next=RANKS[now+1];
-    html+=`<div class="ycap">Your rank this month</div><div class="hero">${art('banner',now)}</div>
+    html+=`<div class="ycap">Your rank this month</div><div class="hero" data-rk="${now}">${art('banner',now)}</div>
       <p class="goal"><b class="num">${p}%</b> completed${next?` · <b class="num">${Math.round((rankFrom(now+1)-p)*10)/10}%</b> to ${next.name}`:''}</p>`;
   }
   html+=`${now==null?'':'<h2 class="sh">All ranks</h2>'}<div class="ladder">${RANKS.map((r,i)=>`<div class="rung${now==null||i>now?' unreached':''}">${art('banner',i)}</div>`).join('')}</div>`;

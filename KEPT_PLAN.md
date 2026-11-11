@@ -214,6 +214,8 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - At the top: "Your rank this month" and its banner with a soft glow in the rank's color, then the % and how much more the next rank needs (not on Focused).
   - All ranks: the 7 banners from Comfort Zone up, full width at their own height (higher ranks are taller). Ranks above this month's are gray and faded, on a solid backing so the lake doesn't show through.
   - Past months: one row per finished month, newest first, from the month the first routine was created, with its badge, rank and %. Tapping one opens that month in Stats.
+- **Today:** on today only, a row with this month's rank badge, name and %; tapping it opens Ranks.
+- **Animation:** only the banner of the rank you hold moves (top of Ranks, and the month's banner in Stats): the picture stays still while two comets streak around the ring, appearing and fading away, the gems on the ring twinkle, the glow behind it pulses, and a sheen crosses the banner now and then. The loader marks up each banner for this: it wraps the medallion (everything between its glow and its first line of text) in `<g class="emblem">`, tags the gems on the ring, and lays the comets on the ring. Reduce Motion turns it off.
 - **Artwork** (`app/ranks/`, from the owner's rank pack): the SVGs are put into the page inline, not with `<img>`, so their text uses the two fonts in `app/fonts/`. Each copy gets its own ids, so one artwork can appear twice on a page. Until they load, a block in the rank's colors holds each one's place. The service worker caches them all for offline use.
 
 ### Settings
