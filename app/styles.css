@@ -192,35 +192,36 @@ button.row:active{background-color:var(--fill-2)}
 .dots i.rest{background:var(--rest);border:1px solid var(--rest-line)}
 .meta{font-size:13px;letter-spacing:-.006em;color:var(--muted)}
 
-/* ranks: each rank has its own colors. --a and --b fill its banner, --c tints its tile and pill. */
-.rk0{--a:#6E6E73;--b:#48484A;--c:#8E8E93}
-.rk1{--a:#167C8B;--b:#0C5967;--c:#30B0C7}
-.rk2{--a:#1F6FEB;--b:#1550B8;--c:#007AFF}
-.rk3{--a:#BA5408;--b:#8A3B06;--c:#FF9500}
-.rk4{--a:#56657A;--b:#2B3645;--c:#7C8DA6}
-.rk5{--a:#7D4FE0;--b:#5230B0;--c:#AF52DE}
-.rk6{--a:#33290A;--b:#000000;--c:#D9A400;--gold:#FFD60A}
-.rank{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:14px 16px 14px 18px;border:0;border-radius:var(--radius);text-align:left;
-  color:#fff;background:linear-gradient(135deg,var(--a),var(--b));transition:transform .15s}
-.rank + .rank{margin-top:10px}
-.rank + .card{margin-top:12px}
-button.rank:active{transform:scale(.98)}
-.rank.rk6{color:var(--gold);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 55%,transparent)} /* the top rank is black and gold */
-.rank.none{background:var(--surface);color:var(--ink)}
-.rank.none .rname{color:var(--muted)}
-.rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.reyebrow{font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;opacity:.85}
-.rname{font-family:var(--font-round);font-size:24px;font-weight:700;line-height:1.15;letter-spacing:0}
-.rsub{font-size:14px;letter-spacing:-.01em;opacity:.9;margin-top:2px}
-.rsub b{font-weight:700}
-.remoji{flex:none;font-size:34px;line-height:1;letter-spacing:0}
-.rank .disc{color:currentColor;opacity:.6}
-.rank.big{padding:20px 16px 20px 20px}
-.rank.big .rname{font-size:32px}
-.rank.big .remoji{font-size:52px}
-.row.you .name{font-weight:600}
-.pill[class*="rk"]{display:grid;place-items:center;min-height:28px;padding:0 12px;font-size:13px;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--ink)}
-
+/* ranks: the artwork in ranks/ is drawn with these two fonts (SIL Open Font License, see fonts/). Only the artwork uses them; the app keeps the system font. */
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:800;font-display:swap;src:url(fonts/bricolage-grotesque-800.woff2) format('woff2')}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:500 700;font-display:swap;src:url(fonts/figtree.woff2) format('woff2')}
+.art{display:block;position:relative}
+.art svg{display:block;width:100%;height:100%}
+/* until the artwork loads, a block in the rank's colors holds its place */
+.rk0{--a:#6E7178;--b:#3C3F45} .rk1{--a:#9C6238;--b:#55311A} .rk2{--a:#8C98A7;--b:#4E5A68} .rk3{--a:#B08524;--b:#664A0F}
+.rk4{--a:#2E8A8E;--b:#123F49} .rk5{--a:#12884E;--b:#053A26} .rk6{--a:#1D1B22;--b:#050506;--glow:#FF4D5E}
+.art.banner.ph{display:flex;align-items:center;padding:0 6%;border-radius:12px;background:linear-gradient(135deg,var(--a),var(--b));color:#fff;font-size:26px;font-weight:800}
+.art.badge.ph::before,.art.badge.none::before{content:"";position:absolute;inset:20% 24% 13%;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b))}
+.art.badge.none{aspect-ratio:560/430}
+.art.badge.none::before{background:none;border:2px dashed var(--ring-off)}
+.ranknote{margin-bottom:14px}
+.ladder{display:flex;flex-direction:column;gap:12px;container-type:inline-size}
+/* faded on a solid backing, so the lake doesn't show through; the corners match the artwork's (40 of 1200) */
+.rung.unreached{background:var(--bg);border-radius:3.33cqw}
+.rung.unreached .art{filter:grayscale(1);opacity:.45}
+.ycap{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;letter-spacing:.01em;text-transform:uppercase;color:var(--tint);padding:0 4px 8px}
+.ycap.final{color:var(--muted)}
+/* this month's banner (Ranks) and a month's banner (Stats): lifted off the page by a glow in the rank's color; corners match the artwork's (40 of 1200) */
+.hero{display:block;width:100%;margin:0;padding:0;border:0;background:none;container-type:inline-size;transition:transform .15s}
+button.hero:active{transform:scale(.98)}
+.hero .art{border-radius:3.33cqw;box-shadow:0 14px 30px -14px var(--glow,var(--a)),0 4px 14px -6px color-mix(in srgb,var(--glow,var(--a)) 55%,transparent)}
+.hero + .card{margin-top:16px}
+.goal{margin:8px 4px 0;font-size:15px;letter-spacing:-.016em;color:var(--muted)}
+.goal b{font-weight:600;color:var(--ink)}
+.group.months{--sep:100px}
+.group.months .row{padding:6px 12px}
+.slot{flex:none;width:76px;height:58px;display:grid;place-items:center}
+.slot .art{height:100%}
 /* settings */
 .appcard{gap:14px;padding:14px 16px}
 .appname{font-size:22px;font-weight:700;letter-spacing:-.012em}

@@ -1,6 +1,7 @@
 /* Kept logic tests. Run with: node --test */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths} from '../app/js/logic.js';
 
 const D=parse;
@@ -113,7 +114,7 @@ test('range stats leave out routines that did not exist in the range', ()=>{
 test('ranks follow the month %: the edges of every rank', ()=>{
   const name=p=>RANKS[rankIndex(p/100)].name;
   assert.deepEqual([0,50,50.1,60,60.1,70,70.1,78,78.1,85,85.1,95,95.1,100].map(name),
-    ['Comfort Zone','Comfort Zone','Starter','Starter','Student','Student','Builder','Builder','Iron Will','Iron Will','Stoic','Stoic','Focused (Chosen)','Focused (Chosen)']);
+    ['Comfort Zone','Comfort Zone','Starter','Starter','Student','Student','Builder','Builder','Iron Will','Iron Will','Stoic','Stoic','Focused','Focused']);
   assert.equal(name(78.04),'Builder'); // rounds to 78.0
   assert.equal(name(78.05),'Iron Will'); // rounds to 78.1
   assert.deepEqual(RANKS.map((_,i)=>rankFrom(i)),[0,50.1,60.1,70.1,78.1,85.1,95.1]);
@@ -140,4 +141,12 @@ test('the months to rank run from the first routine to this month', ()=>{
   const data={routines:[routine({type:'daily'},{created:'2026-11-03'}),routine({type:'daily'},{id:'b',created:'2026-08-20'})],checks:{}};
   assert.deepEqual(rankMonths(data,D('2026-11-10')).map(key),['2026-08-01','2026-09-01','2026-10-01','2026-11-01']);
   assert.deepEqual(rankMonths({routines:[],checks:{}},D('2026-11-10')),[]);
+});
+
+test('every rank has its artwork, and the service worker keeps it for offline use', ()=>{
+  const sw=readFileSync(new URL('../app/sw.js',import.meta.url),'utf8');
+  for(const r of RANKS){
+    for(const kind of ['banner','badge']) assert.ok(existsSync(new URL(`../app/ranks/${kind}-${r.id}.svg`,import.meta.url)),`${kind}-${r.id}.svg is missing`);
+    assert.ok(sw.includes(`'${r.id}'`),`sw.js does not cache the ${r.id} artwork`);
+  }
 });

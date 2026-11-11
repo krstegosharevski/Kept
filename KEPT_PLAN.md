@@ -39,7 +39,9 @@ kept/
    ├─ sw.js
    ├─ manifest.webmanifest
    ├─ staticwebapp.config.json
-   └─ icons/                   icon.svg, apple-touch-icon.png (180), icon-192.png, icon-512.png, icon-maskable-512.png
+   ├─ icons/                   icon.svg, apple-touch-icon.png (180), icon-192.png, icon-512.png, icon-maskable-512.png
+   ├─ ranks/                   rank artwork: banner-<id>.svg (Ranks tab) and badge-<id>.svg (Stats → Month)
+   └─ fonts/                   Bricolage Grotesque 800 and Figtree, used only by the rank artwork (SIL OFL)
 ```
 
 Initialize a git repository and commit after each milestone.
@@ -171,7 +173,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - Per routine: done/expected and 7 dots (filled = done, empty = due but not done, dashed = not due, black = rest day).
 - **Month:**
   - ‹ › month navigation.
-  - The month's rank as a banner above the card ("Rank so far" for the current month, "Final rank" for a finished one). Tapping it opens Ranks.
+  - The month's rank banner above the card, with a soft glow in the rank's color: "Rank so far" for the current month, "Final rank" with a lock for a finished one. Tapping it opens Ranks.
   - A big % for the month, to one decimal.
   - A calendar heatmap: weeks start Monday, 5 green levels, weekends black, future days dimmed, today outlined.
   - Tapping a past weekday opens it on the Today tab, read-only.
@@ -204,12 +206,15 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   | 70.1 – 78 | Builder |
   | 78.1 – 85 | Iron Will |
   | 85.1 – 95 | Stoic |
-  | 95.1 – 100 | Focused (Chosen) |
+  | 95.1 – 100 | Focused ("The Chosen") |
 
 - The current month's rank is "so far" (days up to today) and becomes final when the month ends. A month with nothing expected has no rank.
 - Ranks are computed from the routines and check-ins each time; nothing extra is stored, so backups are unchanged.
-- **Ranks tab:** a large banner with this month's rank, its % and how much more the next rank needs; the list of all ranks with their ranges and "You" on the current one; then one banner per finished month, newest first, from the month the first routine was created. Tapping a month's banner opens that month in Stats.
-- Each rank has its own banner color and emoji; the top rank is black and gold.
+- **Ranks tab:**
+  - At the top: "Your rank this month" and its banner with a soft glow in the rank's color, then the % and how much more the next rank needs (not on Focused).
+  - All ranks: the 7 banners from Comfort Zone up, full width at their own height (higher ranks are taller). Ranks above this month's are gray and faded, on a solid backing so the lake doesn't show through.
+  - Past months: one row per finished month, newest first, from the month the first routine was created, with its badge, rank and %. Tapping one opens that month in Stats.
+- **Artwork** (`app/ranks/`, from the owner's rank pack): the SVGs are put into the page inline, not with `<img>`, so their text uses the two fonts in `app/fonts/`. Each copy gets its own ids, so one artwork can appear twice on a page. Until they load, a block in the rank's colors holds each one's place. The service worker caches them all for offline use.
 
 ### Settings
 
@@ -317,7 +322,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - A schedule change from today leaves past expected counts unchanged.
 - A stopped routine is not due after its stop date, and its history is kept.
 - Demo-shaped data (a single `sched`) migrates to `schedules`.
-- Ranks: the edges of every rank, a month's rank from its %, no rank when nothing was expected, and the list of months to rank.
+- Ranks: the edges of every rank, a month's rank from its %, no rank when nothing was expected, and the list of months to rank. Every rank has its banner and badge, and sw.js caches them.
 
 Manual checks:
 - Edge or Chrome device toolbar at iPhone size.

@@ -115,11 +115,30 @@ const rangeHead=(x,label,isCur)=>`<div class="rangehead"><button class="gbtn gla
   <div class="lbl">${label}</div><button class="gbtn glass" data-act="next${x}" aria-label="Next ${x==='W'?'week':'month'}" ${isCur?'disabled':''}>${CHEV_R}</button></div>`;
 const kpi=(n,cap)=>`<div class="kpi"><div class="cap">${cap}</div><div class="v">${n}<small>%</small></div></div>`;
 const monthName=d=>`${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-/* a rank's banner, in the rank's own colors. With `act` it is a button. */
-function rankBanner(i,{eyebrow,sub='',act='',big=false}){
-  const r=RANKS[i], tag=act?'button':'div';
-  return `<${tag} class="rank rk${i}${big?' big':''}"${act?' '+act:''}><span class="rbody"><span class="reyebrow">${eyebrow}</span><span class="rname">${r.name}</span>${sub?`<span class="rsub">${sub}</span>`:''}</span>
-    <span class="remoji" aria-hidden="true">${r.emoji}</span>${act?DISC:''}</${tag}>`;
+
+/* ---------- rank artwork (app/ranks/): a banner for the Ranks page and a badge for Stats → Month ---------- */
+/* It goes into the page as inline SVG, so its text can use the two fonts in styles.css (an <img> could not).
+   Until it has loaded, or if it can't load, a block in the rank's colors holds its place at the same size. */
+const ART={};
+const artRatio=(kind,i)=>kind==='banner'?`1200/${[440,460,480,500,520,540,620][i]}`:i===6?'640/595':'560/430';
+let artN=0;
+async function loadArt(){
+  document.fonts?.load("800 16px 'Bricolage Grotesque'").catch(()=>{}); // load the fonts now, so the text doesn't change font as it appears
+  document.fonts?.load("500 16px 'Figtree'").catch(()=>{});
+  await Promise.all(RANKS.flatMap((r,i)=>['banner','badge'].map(async kind=>{
+    try{
+      const res=await fetch(new URL(`../ranks/${kind}-${r.id}.svg`,import.meta.url)), svg=res.ok?await res.text():'';
+      const vb=svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
+      if(vb) ART[`${kind}-${i}`]={svg,ratio:`${vb[1]}/${vb[2]}`};
+    }catch(e){}
+  })));
+  if(view==='ranks'||view==='stats') render();
+}
+/* each copy gets its own ids (kept-… becomes kept7-…), so one artwork can appear twice on a page. Badges sit next to text that names the rank, so screen readers skip them. */
+function art(kind,i){
+  const a=ART[`${kind}-${i}`], n=++artN;
+  return `<span class="art ${kind} rk${i}${a?'':' ph'}" style="aspect-ratio:${a?a.ratio:artRatio(kind,i)}"${kind==='badge'?' aria-hidden="true"':''}>${
+    a?a.svg.replace(/(["#])kept-/g,`$1kept${n}-`):kind==='banner'?`<span>${RANKS[i].name}</span>`:''}</span>`;
 }
 
 function renderStats(){
@@ -149,9 +168,10 @@ function renderStats(){
       if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
       const fut=d>t,lv=fut?0:level(dayRatio(S,d));
       cells+=`<button class="day l${lv}${fut?' future':''}${td}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
-    const rankCap=st.final?'Final rank':'Rank so far';
-    html+=rangeHead('M',monthName(a),isCur)
-    +(st.rank==null?'':rankBanner(st.rank,{eyebrow:rankCap,act:`data-act="openRanks" aria-label="${rankCap}: ${RANKS[st.rank].name}. Show all ranks"`}))
+    /* the month's rank next to its %: final (locked) once the month is over, live until then */
+    const rk=st.rank==null?'':`<div class="ycap${st.final?' final':''}">${st.final?LOCK+'Final rank':'Rank so far'}</div>
+      <button class="hero" data-act="openRanks" aria-label="${st.final?'Final rank':'Rank so far'}: ${RANKS[st.rank].name}. Show all ranks">${art('banner',st.rank)}</button>`;
+    html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
     <div class="legend">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More<i class="day rest gapl"></i>Rest</div>
@@ -164,25 +184,26 @@ function renderStats(){
   $app.innerHTML=html;
 }
 
+/* this month's rank at the top, then all seven banners from the lowest up; the ranks above this month's are grayed out */
 function renderRanks(){
-  const t=TODAY(), cur=monthResult(S,monthStart(t),t);
+  const t=TODAY(), cur=monthResult(S,monthStart(t),t), now=cur.rank;
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${monthName(t)}</div><h1>Ranks</h1></div></header>`;
-  if(!S.routines.length){$app.innerHTML=html+'<div class="empty"><h3>No rank yet</h3><p>Add routines and check them off. Every month earns a rank.</p></div>';return}
-  if(cur.rank==null) html+='<div class="rank none big"><span class="rbody"><span class="reyebrow">This month so far</span><span class="rname">No rank yet</span><span class="rsub">It appears after the first day with something to do.</span></span></div>';
+  if(!S.routines.length) html+='<p class="gf first ranknote">Add routines and check them off. Every month earns a rank.</p>';
+  else if(now==null) html+='<p class="gf first ranknote">No rank yet this month. It appears after the first day with something to do.</p>';
   else{
-    const p=pct1(cur.pct), next=RANKS[cur.rank+1];
-    html+=rankBanner(cur.rank,{big:true,eyebrow:'This month so far',act:`data-act="openMonth" data-k="${key(cur.first)}"`,
-      sub:`<b class="num">${p}%</b> completed${next?` · <span class="num">${Math.round((rankFrom(cur.rank+1)-p)*10)/10}%</span> more for ${next.name}`:' · the top rank'}`});
+    const p=pct1(cur.pct), next=RANKS[now+1];
+    html+=`<div class="ycap">Your rank this month</div><div class="hero">${art('banner',now)}</div>
+      <p class="goal"><b class="num">${p}%</b> completed${next?` · <b class="num">${Math.round((rankFrom(now+1)-p)*10)/10}%</b> to ${next.name}`:''}</p>`;
   }
-  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends.</p>
-  <h2 class="sh">All ranks</h2><div class="group tiles">${RANKS.map((r,i)=>`<div class="row${i===cur.rank?' you':''}"><div class="tile rk${i}">${r.emoji}</div>
-    <div class="body"><div class="name">${r.name}</div><div class="hint num">${rankFrom(i)} – ${r.max}%</div></div>${i===cur.rank?'<span class="pill rk'+i+'">You</span>':''}</div>`).reverse().join('')}</div>`;
-  const past=rankMonths(S,t).map(m=>monthResult(S,m,t)).filter(m=>m.final).reverse();
-  html+='<h2 class="sh">Past months</h2>';
-  if(!past.length) html+='<p class="gf first">Each finished month is kept here with the rank you ended on.</p>';
-  else html+=past.map(m=>{const act=`data-act="openMonth" data-k="${key(m.first)}"`;
-    return m.rank==null?`<button class="rank none" ${act}><span class="rbody"><span class="reyebrow">${monthName(m.first)}</span><span class="rname">No rank</span><span class="rsub">Nothing was scheduled</span></span>${DISC}</button>`
-      :rankBanner(m.rank,{eyebrow:monthName(m.first),sub:`<b class="num">${pct1(m.pct)}%</b> completed`,act})}).join('');
+  html+=`${now==null?'':'<h2 class="sh">All ranks</h2>'}<div class="ladder">${RANKS.map((r,i)=>`<div class="rung${now==null||i>now?' unreached':''}">${art('banner',i)}</div>`).join('')}</div>`;
+  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends.</p>`;
+  if(S.routines.length){
+    const past=rankMonths(S,t).map(m=>monthResult(S,m,t)).filter(m=>m.final).reverse();
+    html+='<h2 class="sh">Past months</h2>'+(past.length?`<div class="group months">${past.map(m=>`<button class="row" data-act="openMonth" data-k="${key(m.first)}">
+      <span class="slot">${m.rank==null?'<span class="art badge none" aria-hidden="true"></span>':art('badge',m.rank)}</span>
+      <div class="body"><div class="name">${monthName(m.first)}</div><div class="hint">${m.rank==null?'No rank · nothing was scheduled':`${RANKS[m.rank].name} · <span class="num">${pct1(m.pct)}%</span>`}</div></div>${DISC}</button>`).join('')}</div>`
+      :'<p class="gf first">Each finished month is kept here with the rank you ended on.</p>');
+  }
   $app.innerHTML=html;
 }
 
@@ -269,8 +290,7 @@ document.addEventListener('click',e=>{
     case 'goToday': viewDate=TODAY(); render(); break;
     case 'openDay': viewDate=parse(el.dataset.k); view='today'; render(); window.scrollTo(0,0); break;
     case 'mode': statMode=el.dataset.m; render(); break;
-    case 'openRanks': view='ranks'; render(); window.scrollTo(0,0); break;
-    case 'openMonth': monthRef=parse(el.dataset.k); statMode='month'; view='stats'; render(); window.scrollTo(0,0); break;
+    case 'openRanks': view='ranks'; render(); window.scrollTo(0,0); break;    case 'openMonth': monthRef=parse(el.dataset.k); statMode='month'; view='stats'; render(); window.scrollTo(0,0); break;
     case 'prevW': weekRef=addDays(weekRef,-7); render(); break;
     case 'nextW': weekRef=addDays(weekRef,7); render(); break;
     case 'prevM': monthRef=new Date(monthRef.getFullYear(),monthRef.getMonth()-1,1); render(); break;
@@ -332,6 +352,7 @@ addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 render();
+loadArt();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
 startWater(document.getElementById('water'));
 /* offline support; the service worker also brings updates in the next time the app opens online */

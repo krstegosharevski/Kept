@@ -148,9 +148,10 @@ export function streaks(data,r,t){
 }
 
 /* ---------- ranks ---------- */
-/* a month's rank comes from its completion %, to one decimal: up to 50 Comfort Zone, 50.1–60 Starter, … 95.1 and up Focused (Chosen) */
-export const RANKS=[{name:'Comfort Zone',emoji:'🛋️',max:50},{name:'Starter',emoji:'🌱',max:60},{name:'Student',emoji:'📖',max:70},{name:'Builder',emoji:'🧱',max:78},
-  {name:'Iron Will',emoji:'🛡️',max:85},{name:'Stoic',emoji:'🏛️',max:95},{name:'Focused (Chosen)',emoji:'🎯',max:100}];
+/* a month's rank comes from its completion %, to one decimal: up to 50 Comfort Zone, 50.1–60 Starter, … 95.1 and up Focused ("The Chosen").
+   Each rank's artwork is app/ranks/banner-<id>.svg and badge-<id>.svg. */
+export const RANKS=[{id:'comfort-zone',name:'Comfort Zone',max:50},{id:'starter',name:'Starter',max:60},{id:'student',name:'Student',max:70},{id:'builder',name:'Builder',max:78},
+  {id:'iron-will',name:'Iron Will',max:85},{id:'stoic',name:'Stoic',max:95},{id:'focused',name:'Focused',title:'The Chosen',max:100}];
 export const pct1=v=>Math.round(v*1000)/10; // 0.7834 → 78.3
 export function rankIndex(v){const p=pct1(v),i=RANKS.findIndex(r=>p<=r.max);return i<0?RANKS.length-1:i}
 /* the lowest % that earns rank i */

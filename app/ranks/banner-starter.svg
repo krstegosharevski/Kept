@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" role="img" aria-label="Rank 2 of 7: Starter, 50–60%">
+<defs>
+<linearGradient id="kept-starter-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C6238"/><stop offset="1" stop-color="#55311A"/></linearGradient>
+<radialGradient id="kept-starter-glow" cx="0.771" cy=".5" r="0.36"><stop offset="0" stop-color="#EDB887" stop-opacity="0.26"/><stop offset="1" stop-color="#EDB887" stop-opacity="0"/></radialGradient>
+<clipPath id="kept-starter-clip"><rect width="1200" height="460" rx="40"/></clipPath>
+</defs>
+<g clip-path="url(#kept-starter-clip)">
+<rect width="1200" height="460" fill="url(#kept-starter-bg)"/>
+<rect width="1200" height="460" fill="url(#kept-starter-glow)"/>
+<circle cx="925" cy="230" r="120" fill="#55311A" fill-opacity=".55" stroke="#EDB887" stroke-opacity=".8" stroke-width="3"/><g transform="translate(925 230) scale(1.0)"><path d="M-80 70 Q0 30 80 70 Z" fill="#EDB887" fill-opacity=".45" stroke="#FFF4EA" stroke-width="8" stroke-linejoin="round"/><path d="M0 56 C0 20 -4 -10 2 -40" fill="none" stroke="#FFF4EA" stroke-width="8" stroke-linecap="round"/><path d="M1 -6 C-20 -10 -52 -6 -64 -36 C-36 -50 -8 -36 1 -6 Z" fill="#EDB887" stroke="#FFF4EA" stroke-width="6" stroke-linejoin="round"/><path d="M2 -36 C16 -44 44 -70 70 -64 C66 -36 36 -22 2 -36 Z" fill="#EDB887" fill-opacity=".75" stroke="#FFF4EA" stroke-width="6" stroke-linejoin="round"/><path d="M-6 -12 L-40 -30 M8 -40 L46 -58" stroke="#FFF4EA" stroke-width="3" stroke-opacity=".6" stroke-linecap="round"/></g><circle cx="925" cy="230" r="130" fill="none" stroke="#EDB887" stroke-width="6"/>
+<text x="72" y="102" font-family="'Figtree',-apple-system,'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="4" fill="#EDB887">RANK 2 OF 7  ·  BRONZE  ·  50–60%</text>
+
+<text x="68" y="208" font-family="'Bricolage Grotesque','Avenir Next',system-ui,-apple-system,sans-serif" font-weight="800" font-size="100" letter-spacing="-2" fill="#FFF4EA">Starter</text>
+<text x="72" y="274" font-family="'Figtree',-apple-system,'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="32" fill="#FFF4EA" fill-opacity=".86">You've taken the first steps.</text>
+<text x="72" y="316" font-family="'Figtree',-apple-system,'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="32" fill="#FFF4EA" fill-opacity=".86">Keep them coming.</text>
+<rect x="72" y="380" width="56" height="10" rx="5" fill="#EDB887" fill-opacity="1"/><rect x="138" y="380" width="56" height="10" rx="5" fill="#EDB887" fill-opacity="1"/><rect x="204" y="380" width="56" height="10" rx="5" fill="#FFF4EA" fill-opacity="0.22"/><rect x="270" y="380" width="56" height="10" rx="5" fill="#FFF4EA" fill-opacity="0.22"/><rect x="336" y="380" width="56" height="10" rx="5" fill="#FFF4EA" fill-opacity="0.22"/><rect x="402" y="380" width="56" height="10" rx="5" fill="#FFF4EA" fill-opacity="0.22"/><rect x="468" y="380" width="56" height="10" rx="5" fill="#FFF4EA" fill-opacity="0.22"/>
+</g>
+<rect x="1.5" y="1.5" width="1197" height="457" rx="39" fill="none" stroke="#EDB887" stroke-opacity="0.31" stroke-width="2.2"/>
+</svg>
