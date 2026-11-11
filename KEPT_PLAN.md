@@ -220,6 +220,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 
 ### Settings
 
+- **Appearance:** a Dark mode switch. Until it is used, Kept follows the device's light or dark setting. Using it saves `theme` ('light' or 'dark') with the backup bookkeeping in localStorage, and "Use device setting" clears it. index.html applies the saved choice before the page draws, so it never flashes; the status bar colour and the lake follow it. Erase all data resets it.
 - **Save backup:**
   - Create the file `kept-backup-YYYY-MM-DD.json` containing `{app:"kept", schema:1, exportedAt, routines, checks}`.
   - If `navigator.canShare({files:[file]})` is true, call `navigator.share({files:[file]})`. On the iPhone this opens the share sheet, where the owner chooses Save to Files or iCloud Drive.
@@ -247,7 +248,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
   - Large bold titles, a gray grouped background with rounded white lists and hairline separators, capsule segmented controls, iOS steppers and bottom sheets.
   - A glass (blurred, see-through) floating tab bar and round glass buttons.
   - A top bar with the logo and the name "Kept", on the left, is always visible on every screen. It turns to glass once content scrolls under it.
-  - Light and dark follow the iPhone setting (`prefers-color-scheme`), with no theme toggle.
+  - Light and dark follow the iPhone setting (`prefers-color-scheme`) unless Settings → Dark mode chooses one (the wording says "device", not "iPhone", so it fits any phone).
 - **Font:** the iPhone system font (SF Pro) through `-apple-system`, with SF Pro Rounded (`ui-rounded`) for big numbers. No font files and no requests to Google. On Windows the preview falls back to Segoe UI.
 - **Key colors** (Apple system colors, light / dark):
   - Buttons and links: #007AFF / #0A84FF.

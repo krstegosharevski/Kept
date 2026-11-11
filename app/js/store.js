@@ -15,10 +15,11 @@ export function load(){
 }
 export function save(data){try{localStorage.setItem(KEY,JSON.stringify(data));return true}catch(e){return false}}
 
-/* backup bookkeeping: when the last backup was made, and the day the reminder was put off */
+/* settings kept outside the data: when the last backup was made, the day the reminder was put off,
+   and the appearance chosen in Settings ('light' or 'dark'; null follows the iPhone). index.html reads the appearance too. */
 export function loadMeta(){
-  try{const m=JSON.parse(localStorage.getItem(META)||'{}');return {lastBackupAt:m.lastBackupAt??null,reminderDismissedOn:m.reminderDismissedOn??null}}
-  catch(e){return {lastBackupAt:null,reminderDismissedOn:null}}
+  try{const m=JSON.parse(localStorage.getItem(META)||'{}');return {lastBackupAt:m.lastBackupAt??null,reminderDismissedOn:m.reminderDismissedOn??null,theme:m.theme==='light'||m.theme==='dark'?m.theme:null}}
+  catch(e){return {lastBackupAt:null,reminderDismissedOn:null,theme:null}}
 }
 export function saveMeta(meta){try{localStorage.setItem(META,JSON.stringify(meta));return true}catch(e){return false}}
 export function eraseAll(){try{localStorage.removeItem(KEY);localStorage.removeItem(META);return true}catch(e){return false}}

@@ -26,6 +26,15 @@ let quietDandelion=null; // the slow dandelion of the "No routines yet" screen, 
 const short=k=>{const d=parse(k);return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`};
 const commit=()=>{if(!save(S))toast("Couldn't save. Your iPhone storage may be full.")};
 const setMeta=m=>{meta={...meta,...m};saveMeta(meta)};
+/* appearance: Settings → Dark mode sets meta.theme to 'light' or 'dark'; null follows the device */
+const systemDark=matchMedia('(prefers-color-scheme: dark)');
+const isDark=()=>meta.theme?meta.theme==='dark':systemDark.matches;
+function applyTheme(){
+  const r=document.documentElement; if(meta.theme) r.setAttribute('data-theme',meta.theme); else r.removeAttribute('data-theme');
+  /* the status bar colour: both tags show the chosen colour, or each its own when following the device */
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.content=(meta.theme?meta.theme==='dark':m.media.includes('dark'))?'#000000':'#F2F2F7'});
+  dispatchEvent(new Event('kept-theme')); // the lake repaints in the new colours
+}
 /* due when there is at least one check-in and no backup in the last 7 days, unless put off until tomorrow */
 const reminderDue=()=>Object.keys(S.checks).length>0&&meta.reminderDismissedOn!==key(TODAY())&&(!meta.lastBackupAt||Date.now()-Date.parse(meta.lastBackupAt)>7*864e5);
 function ago(iso){
@@ -215,6 +224,10 @@ function renderRanks(){
 function renderSettings(){
   $app.innerHTML=`<header class="head"><div class="titles"><h1>Settings</h1></div></header>
   <div class="group"><div class="row appcard"><div class="body"><div class="appname">Kept</div><div class="hint">Your data lives only on this device.</div></div></div></div>
+  <div class="gh">Appearance</div>
+  <div class="group"><div class="row"><div class="body">Dark mode</div><button class="switch" role="switch" aria-checked="${isDark()}" aria-label="Dark mode" data-act="theme"><span></span></button></div>
+    ${meta.theme?'<button class="row link" data-act="themeAuto">Use device setting</button>':''}</div>
+  <p class="gf">${meta.theme?`Kept stays ${meta.theme} whatever your device is set to.`:'Kept follows your device\'s light or dark setting until you change it here.'}</p>
   <div class="gh">Backup</div>
   <div class="group"><button class="row link" data-act="saveBackup">Save backup</button></div>
   <p class="gf">Last backup: ${ago(meta.lastBackupAt)}. On iPhone, choose Save to Files or iCloud Drive.</p>
@@ -323,12 +336,14 @@ document.addEventListener('click',e=>{
       S.routines=S.routines.filter(r=>r.id!==edit.id);
       for(const k in S.checks){S.checks[k]=S.checks[k].filter(id=>id!==edit.id);if(!S.checks[k].length)delete S.checks[k]}
       commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
+    case 'theme': { const dark=!isDark(); el.setAttribute('aria-checked',dark); setMeta({theme:dark?'dark':'light'}); applyTheme(); setTimeout(render,220); break; } // let the switch slide first
+    case 'themeAuto': setMeta({theme:null}); applyTheme(); render(); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
     case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
     case 'cancelRestore': pendingRestore=null; render(); break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
-      eraseAll(); S=empty(); meta=loadMeta(); confirmClear=false; toast('All data erased'); render(); break;
+      eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&edit){edit=null;renderSheet()}});
@@ -356,6 +371,8 @@ addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>
 /* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
+applyTheme();
+systemDark.addEventListener('change',()=>{applyTheme();if(view==='settings')render()}); // the device switched while Kept follows it
 render();
 loadArt();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");

@@ -235,7 +235,9 @@ export function startWater(canvas){
 
   resize(); draw();
   let timer; new ResizeObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>{resize();if(!running)draw()},150)}).observe(canvas);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{palette=readPalette(canvas);if(!running)draw()});
+  const repaint=()=>{palette=readPalette(canvas);if(!running)draw()};
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',repaint);
+  addEventListener('kept-theme',repaint); // Settings → Dark mode changed the colours
   if(still) return;
   document.addEventListener('visibilitychange',sync); sync();
 }
