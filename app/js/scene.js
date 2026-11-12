@@ -305,16 +305,15 @@ function play(el,{seeds,winds},T){
       {transform:`translate(${s.endX}px, ${s.endY}px) rotate(${s.rotation.toFixed(0)}deg)`,opacity:0}],
       {duration:T.flight[0]+s.flight*(T.flight[1]-T.flight[0]),delay:T.scatter+s.order*T.release+s.jitter*T.jitter,easing:'cubic-bezier(0.5, 0, 0.85, 1)',fill:'forwards'});
   });
+  if(T.fadeStart==null) return Promise.resolve(); // a flower that stays once its seeds are gone
   return el.animate([{opacity:1},{opacity:0}],{duration:T.fadeDuration,delay:T.fadeStart,easing:'cubic-bezier(0.25, 1, 0.5, 1)',fill:'forwards'}).finished;
 }
 
-/* blows once, quickly, over the lower middle of the screen, like the website's intro; skipped under reduced motion */
-export function blowDandelion(){
-  if(reduced()||document.querySelector('.dandelion')) return;
-  const geom=buildDandelion(), el=dandelionEl('dandelion',geom);
-  document.body.append(el);
-  el.animate([{opacity:0},{opacity:1}],{duration:300,easing:'ease-out'});
-  play(el,geom,QUICK).then(()=>el.remove(),()=>el.remove());
+/* for the "All done" pop-up: blows once, quickly, like the website's intro, and the bare stem stays. Under reduced motion it simply stands. */
+export function doneDandelion(){
+  const geom=buildDandelion(), el=dandelionEl('dandelion-done',geom);
+  if(!reduced()) play(el,geom,{...QUICK,windStart:500,scatter:900,fadeStart:null});
+  return el;
 }
 /* a flower to place in the page, whose seeds leave slowly until it is gone after about a minute.
    Under reduced motion it simply stays. Animations keep running when the element is moved, so the caller can re-insert it after a re-render. */

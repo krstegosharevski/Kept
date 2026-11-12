@@ -1,7 +1,7 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
-import {startWater,blowDandelion,slowDandelion} from './scene.js';
+import {startWater,doneDandelion,slowDandelion} from './scene.js';
 import {emblem} from './art.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
@@ -290,6 +290,19 @@ function renderSheet(){
 function syncName(){const i=document.getElementById('rname');if(i&&edit)edit.name=i.value}
 
 /* ---------- toast ---------- */
+/* ---------- "All done" pop-up, when the last routine for today is checked off ---------- */
+/* the dandelion blows inside the card, then how many routines were kept; Done closes it, and so do a tap outside and Escape */
+const $done=document.getElementById('doneRoot');
+function showDone(count){
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard" role="dialog" aria-modal="true" aria-labelledby="doneTitle" tabindex="-1">
+    <div class="dslot"></div><h2 id="doneTitle">All done for today</h2>
+    <p>You kept ${count===1?'your routine':`all <span class="num">${count}</span> routines`}. See you tomorrow.</p>
+    <button class="primary" data-act="done">Done</button></div></div>`;
+  $done.querySelector('.dslot').append(doneDandelion());
+  $done.querySelector('.donecard').focus({preventScroll:true}); // into the dialog, without outlining the button
+}
+function closeDone(){$done.innerHTML=''}
+
 let tt; function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,1800)}
 
 /* ---------- events ---------- */
@@ -297,12 +310,14 @@ document.addEventListener('click',e=>{
   const tab=e.target.closest('[data-tab]'); if(tab){view=tab.dataset.tab;confirmClear=false;if(view==='today')viewDate=TODAY();render();window.scrollTo(0,0);return}
   const el=e.target.closest('[data-act]'); if(!el)return;
   const a=el.dataset.act;
-  if(a==='closeBg'&&e.target!==el)return;
+  if((a==='closeBg'||a==='doneBg')&&e.target!==el)return;
   switch(a){
     case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
       const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); commit();
-      if(isDone(S,{id},k)){popId=id; if(S.routines.filter(r=>isDue(r,viewDate)).every(r=>isDone(S,r,k)))blowDandelion()} // the last one for today
-      render(); break; }
+      if(isDone(S,{id},k)) popId=id;
+      render();
+      { const due=S.routines.filter(r=>isDue(r,viewDate)); if(isDone(S,{id},k)&&due.every(r=>isDone(S,r,k))) showDone(due.length); } // that was the last one for today
+      break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); render(); break;
     case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); render(); break;
     case 'goToday': viewDate=TODAY(); render(); break;
@@ -316,6 +331,7 @@ document.addEventListener('click',e=>{
     case 'new': openEditor(null); break;
     case 'edit': openEditor(el.dataset.id); break;
     case 'close': case 'closeBg': edit=null; renderSheet(); break;
+    case 'done': case 'doneBg': closeDone(); break;
     case 'emo': syncName(); edit.emoji=el.dataset.v; renderSheet(); break;
     case 'col': syncName(); edit.color=el.dataset.v; renderSheet(); break;
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
@@ -346,7 +362,7 @@ document.addEventListener('click',e=>{
       eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&edit){edit=null;renderSheet()}});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit){edit=null;renderSheet()}});
 
 /* ---------- backup and restore ---------- */
 /* the share sheet on iPhone (Save to Files or iCloud Drive), a download elsewhere. Only a finished share or download counts as a backup. */
