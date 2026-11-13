@@ -2,7 +2,7 @@
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion} from './scene.js';
-import {emblem} from './art.js';
+import {emblem,badgeMarks} from './art.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
 const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#FF2D55'];
@@ -78,7 +78,7 @@ function ring(done,total){
    the banner's seven dashes lit up to the rank, and the rank's badge on the right (it opens Ranks) */
 function rankFrame(i,inner){
   return `<div class="titles rf rk${i} rf${i}"><div class="rf-text">${inner}<span class="rf-pips" aria-hidden="true">${RANKS.map((_,k)=>`<i${k<=i?' class="on"':''}></i>`).join('')}</span></div>
-    <button class="rf-badge" data-act="openRanks" aria-label="Your rank this month: ${RANKS[i].name}. Show all ranks">${art('badge',i)}</button></div>`;
+    <button class="rf-badge" data-act="openRanks" aria-label="Rank: ${RANKS[i].name}. Show all ranks">${art('badge',i)}</button></div>`;
 }
 
 function renderToday(){
@@ -86,11 +86,11 @@ function renderToday(){
   const due=S.routines.filter(r=>isDue(r,d));
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
-  const rk=isToday&&S.routines.length?monthResult(S,monthStart(t),t):null; // this month's rank, shown on today only
+  const rk=S.routines.length?monthResult(S,monthStart(d),t):null; // the rank of the shown day's month, on every day, so the header never changes shape
   const date=`${isToday||yest?DAYS_FULL[dow(d)]+' ':''}${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear()!==t.getFullYear()?' '+d.getFullYear():''}`;
   let html=`<header class="head">${rk?.rank!=null?rankFrame(rk.rank,`<div class="eyebrow">${date}</div><h1>${title}</h1>`):`<div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>`}${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
-    <div class="daynav"><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
-    ${isToday?'':'<button class="gpill glass" data-act="goToday">Back to today</button>'}</div>`;
+    <div class="daynav"><span></span><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
+    ${isToday?'<span></span>':'<button class="gpill glass" data-act="goToday" aria-label="Back to today">Today</button>'}</div>`;
   if(isToday&&reminderDue()) html+=`<div class="group reminder"><div class="row"><div class="body"><div class="name">Time for a backup</div>
     <div class="hint">Last backup: ${ago(meta.lastBackupAt)}. Save one to Files or iCloud Drive.</div></div></div>
     <div class="row actions"><button class="pill" data-act="saveBackup">Save backup</button><button class="pill quiet" data-act="later">Later</button></div></div>`;
@@ -145,7 +145,7 @@ async function loadArt(){
   document.fonts?.load("500 16px 'Figtree'").catch(()=>{});
   await Promise.all(RANKS.flatMap((r,i)=>['banner','badge'].map(async kind=>{
     try{
-      const res=await fetch(new URL(`../ranks/${kind}-${r.id}.svg`,import.meta.url)), raw=res.ok?await res.text():'', svg=kind==='banner'?emblem(raw):raw;
+      const res=await fetch(new URL(`../ranks/${kind}-${r.id}.svg`,import.meta.url)), raw=res.ok?await res.text():'', svg=kind==='banner'?emblem(raw):badgeMarks(raw);
       const vb=svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
       if(vb) ART[`${kind}-${i}`]={svg,ratio:`${vb[1]}/${vb[2]}`};
     }catch(e){}
@@ -322,10 +322,10 @@ document.addEventListener('click',e=>{
       render();
       { const due=S.routines.filter(r=>isDue(r,viewDate)); if(isDone(S,{id},k)&&due.every(r=>isDone(S,r,k))) showDone(due.length); } // that was the last one for today
       break; }
-    case 'prevDay': viewDate=addDays(viewDate,-1); render(); break;
-    case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); render(); break;
-    case 'goToday': viewDate=TODAY(); render(); break;
-    case 'openDay': viewDate=parse(el.dataset.k); view='today'; render(); window.scrollTo(0,0); break;
+    case 'prevDay': viewDate=addDays(viewDate,-1); ringFrac=null; render(); break;
+    case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); ringFrac=null; render(); break;
+    case 'goToday': viewDate=TODAY(); ringFrac=null; render(); break;
+    case 'openDay': viewDate=parse(el.dataset.k); view='today'; ringFrac=null; render(); window.scrollTo(0,0); break;
     case 'mode': statMode=el.dataset.m; render(); break;
     case 'openRanks': view='ranks'; render(); window.scrollTo(0,0); break;    case 'openMonth': monthRef=parse(el.dataset.k); statMode='month'; view='stats'; render(); window.scrollTo(0,0); break;
     case 'prevW': weekRef=addDays(weekRef,-7); render(); break;
