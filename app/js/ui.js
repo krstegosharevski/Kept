@@ -329,6 +329,42 @@ function askWildcard(){
   $done.querySelector('.donecard').focus({preventScroll:true});
 }
 
+/* ---------- Rank up: a celebration when this month's rank climbs past the best it has been this month ---------- */
+/* The rank dips every morning (today's routines count until they are ticked), so the best rank of the month is remembered
+   (meta.rankPeak) and each rank is celebrated once a month, on the way up. Comfort Zone is not celebrated. */
+const rankNow=()=>{const t=TODAY();return monthResult(S,monthStart(t),t).rank??-1};
+/* a new month, a first run, a restore: start from the rank as it is, without a celebration */
+function syncPeak(){const m=key(TODAY()).slice(0,7); if(meta.rankPeak?.m!==m) setMeta({rankPeak:{m,rank:rankNow()}})}
+/* {from, to} when the rank just passed this month's best (and records it), else null */
+function rankUp(){
+  syncPeak(); const to=rankNow(), from=meta.rankPeak.rank;
+  if(to<=from) return null;
+  setMeta({rankPeak:{m:meta.rankPeak.m,rank:to}});
+  return to>=1?{from,to}:null;
+}
+let ruAt=0; // when the celebration opened: taps in its first moments are ignored, so a double tap can't dismiss it unseen
+/* the old badge charges up and bursts, the screen flashes, the new badge slams in with shockwaves, sparks and turning rays,
+   then the name and the button. Under Reduce Motion it simply shows the new rank. */
+function showRankUp({from,to},allDone){
+  const t=TODAY(), r=RANKS[to], pct=pct1(monthResult(S,monthStart(t),t).pct), rnd=(a,b)=>a+Math.random()*(b-a);
+  const sparks=[...Array(36)].map((_,i)=>{const a=rnd(0,6.283),d=rnd(110,300);
+    return `<i${i%4===0?' class="d"':''} style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d).toFixed(0)}px;--s:${rnd(3,9).toFixed(1)}px;--t:${rnd(.7,1.5).toFixed(2)}s;--dl:${rnd(0,.18).toFixed(2)}s${i%3===0?';--c:#fff':''}"></i>`}).join('');
+  const embers=[...Array(16)].map(()=>`<i style="--l:${rnd(2,98).toFixed(0)}%;--s:${rnd(2,5).toFixed(1)}px;--t:${rnd(4,8).toFixed(1)}s;--dl:${rnd(1.2,6).toFixed(1)}s;--dx:${rnd(-40,40).toFixed(0)}px"></i>`).join('');
+  $done.innerHTML=`<div class="rankup rk${to} ru${to}" data-act="rankBg" role="dialog" aria-modal="true" aria-labelledby="ruName" tabindex="-1">
+    <i class="ru-flash"></i><span class="ru-embers" aria-hidden="true">${embers}</span>
+    <div class="ru-stage">
+      <div class="ru-emblem"><i class="ru-rays"></i><i class="ru-halo"></i><i class="ru-ring"></i><i class="ru-ring two"></i>
+        ${from>=0?`<span class="ru-old">${art('badge',from)}</span>`:''}<span class="ru-new">${art('badge',to)}</span><span class="ru-sparks" aria-hidden="true">${sparks}</span></div>
+      <div class="ru-kicker"><i></i>Rank up<i></i></div>
+      ${r.title?`<div class="ru-title">${r.title}</div>`:''}<h2 class="ru-name" id="ruName">${r.name}</h2>
+      <p class="ru-sub">${from>=0?`${RANKS[from].name} → ${r.name} · `:''}<span class="num">${pct}%</span> this month${allDone?'<br>And all done for today.':''}</p>
+      <button class="primary ru-btn" data-act="rankDone">Continue</button>
+    </div></div>`;
+  ruAt=Date.now();
+  $done.firstChild.focus({preventScroll:true});
+  try{setTimeout(()=>navigator.vibrate?.([60,40,140]),900)}catch(e){}
+}
+
 /* ---------- "All done" pop-up, when the last routine for today is checked off ---------- */
 /* the dandelion blows inside the card, then how many routines were kept; Done closes it, and so do a tap outside and Escape */
 const $done=document.getElementById('doneRoot');
@@ -349,13 +385,14 @@ document.addEventListener('click',e=>{
   const tab=e.target.closest('[data-tab]'); if(tab){view=tab.dataset.tab;confirmClear=false;if(view==='today')viewDate=TODAY();render();window.scrollTo(0,0);return}
   const el=e.target.closest('[data-act]'); if(!el)return;
   const a=el.dataset.act;
-  if((a==='closeBg'||a==='doneBg')&&e.target!==el)return;
+  if((a==='closeBg'||a==='doneBg'||a==='rankBg')&&e.target!==el)return;
   switch(a){
     case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
       const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); commit();
       if(isDone(S,{id},k)) popId=id;
       render();
-      { const due=S.routines.filter(r=>isDue(r,viewDate)); if(isDone(S,{id},k)&&due.every(r=>isDone(S,r,k))) showDone(due.length); } // that was the last one for today
+      if(isDone(S,{id},k)){ const due=S.routines.filter(r=>isDue(r,viewDate)), allDone=due.every(r=>isDone(S,r,k)), up=rankUp();
+        if(up) showRankUp(up,allDone); else if(allDone) showDone(due.length); } // a new rank comes first; else, if that was the last one for today, "All done"
       break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); ringFrac=null; render(); break;
     case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); ringFrac=null; render(); break;
@@ -371,12 +408,14 @@ document.addEventListener('click',e=>{
     case 'edit': openEditor(el.dataset.id); break;
     case 'close': case 'closeBg': edit=null; renderSheet(); break;
     case 'done': case 'doneBg': closeDone(); break;
+    case 'rankDone': case 'rankBg': if(Date.now()-ruAt>1600) closeDone(); break;
     case 'wildAsk': askWildcard(); break;
     case 'wildUse': { const ok=useWildcard(S,TODAY()); closeDone(); if(ok){commit();toast('Weekend unlocked')} else toast("A Wildcard can't be used now"); render(); break; }
     case 'makeup': { const id=el.dataset.id,k=el.dataset.k,t=TODAY();
       if(!makeUp(S,id,k,t)){toast('This weekend is not unlocked');render();break}
       commit(); if(isMadeUp(S,id,k)) popId=id+'@'+k; render();
-      if(weekMissed(S,t).every(x=>x.done)) toast('Week made up'); break; }
+      if(weekMissed(S,t).every(x=>x.done)) toast('Week made up');
+      if(isMadeUp(S,id,k)){ const up=rankUp(); if(up) showRankUp(up,false); } break; }
     case 'emo': syncName(); edit.emoji=el.dataset.v; renderSheet(); break;
     case 'col': syncName(); edit.color=el.dataset.v; renderSheet(); break;
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
@@ -401,10 +440,10 @@ document.addEventListener('click',e=>{
     case 'themeAuto': setMeta({theme:null}); applyTheme(); render(); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
-    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
+    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); setMeta({rankPeak:null}); syncPeak(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
     case 'cancelRestore': pendingRestore=null; render(); break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
-      eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
+      eraseAll(); S=empty(); meta=loadMeta(); syncPeak(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit){edit=null;renderSheet()}});
@@ -431,8 +470,9 @@ document.addEventListener('change',async e=>{
 addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>2),{passive:true});
 /* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
 let lastDay=key(TODAY());
-document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;syncPeak();render()}});
 applyTheme();
+syncPeak();
 systemDark.addEventListener('change',()=>{applyTheme();if(view==='settings')render()}); // the device switched while Kept follows it
 render();
 loadArt();

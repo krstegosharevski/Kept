@@ -16,10 +16,12 @@ export function load(){
 export function save(data){try{localStorage.setItem(KEY,JSON.stringify(data));return true}catch(e){return false}}
 
 /* settings kept outside the data: when the last backup was made, the day the reminder was put off,
-   and the appearance chosen in Settings ('light' or 'dark'; null follows the iPhone). index.html reads the appearance too. */
+   the appearance chosen in Settings ('light' or 'dark'; null follows the device; index.html reads it too),
+   and rankPeak {m:'YYYY-MM', rank}: the best rank reached this month, so each rank is celebrated once. */
 export function loadMeta(){
-  try{const m=JSON.parse(localStorage.getItem(META)||'{}');return {lastBackupAt:m.lastBackupAt??null,reminderDismissedOn:m.reminderDismissedOn??null,theme:m.theme==='light'||m.theme==='dark'?m.theme:null}}
-  catch(e){return {lastBackupAt:null,reminderDismissedOn:null,theme:null}}
+  try{const m=JSON.parse(localStorage.getItem(META)||'{}');return {lastBackupAt:m.lastBackupAt??null,reminderDismissedOn:m.reminderDismissedOn??null,theme:m.theme==='light'||m.theme==='dark'?m.theme:null,
+    rankPeak:m.rankPeak&&typeof m.rankPeak.m==='string'&&Number.isInteger(m.rankPeak.rank)?{m:m.rankPeak.m,rank:m.rankPeak.rank}:null}}
+  catch(e){return {lastBackupAt:null,reminderDismissedOn:null,theme:null,rankPeak:null}}
 }
 export function saveMeta(meta){try{localStorage.setItem(META,JSON.stringify(meta));return true}catch(e){return false}}
 export function eraseAll(){try{localStorage.removeItem(KEY);localStorage.removeItem(META);return true}catch(e){return false}}

@@ -269,7 +269,7 @@ button.hero:active{transform:scale(.98)}
     linear-gradient(135deg,color-mix(in srgb,color-mix(in srgb,var(--a) 60%,var(--b)) var(--op,84%),transparent),color-mix(in srgb,var(--b) var(--op,84%),transparent));
   -webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 42%,transparent),inset 0 1px 0 rgba(255,255,255,.22),0 14px 28px -16px var(--glow,var(--a))}
-.rf0{--acc:#C7CBD2} .rf1{--acc:#EDB887} .rf2{--acc:#E4EBF3} .rf3{--acc:#FFE08A} .rf4{--acc:#A6F0E8} .rf5{--acc:#7FF0B2} .rf6{--acc:#FF4D5E;--op:94%}
+.rf0,.ru0{--acc:#C7CBD2} .rf1,.ru1{--acc:#EDB887} .rf2,.ru2{--acc:#E4EBF3} .rf3,.ru3{--acc:#FFE08A} .rf4,.ru4{--acc:#A6F0E8} .rf5,.ru5{--acc:#7FF0B2} .rf6,.ru6{--acc:#FF4D5E;--op:94%}
 .rf .eyebrow{color:var(--acc);letter-spacing:.07em}
 .rf h1{color:#fff}
 .rf{display:flex;align-items:center;gap:10px}
@@ -287,6 +287,66 @@ button.hero:active{transform:scale(.98)}
 /* from Platinum up, a sheen crosses the card now and then (Reduce Motion turns it off) */
 .rf4::after,.rf5::after,.rf6::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-100%);
   background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.18) 50%,transparent 65%);animation:shine 6s ease-in-out 1s infinite}
+/* ---------- Rank up: a full-screen celebration (showRankUp in ui.js) ----------
+   Timeline: the old badge charges up (0 to .9s), a flash, the new badge slams in with two shockwaves and a burst of sparks (.9s),
+   rays turn behind it, then "Rank up", the name, the line below and the button rise in. Everything that ends invisible starts
+   invisible, so under Reduce Motion (no animations) the screen simply shows the new rank. */
+.rankup{position:fixed;inset:0;z-index:35;display:grid;place-items:center;overflow:hidden;color:#fff;text-align:center;
+  background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc) 38%,#000) 0,#050507 64%);animation:fade .35s ease-out}
+.rankup:focus{outline:none}
+.ru-stage{position:relative;width:100%;max-width:420px;padding:0 24px;display:flex;flex-direction:column;align-items:center;animation:ru-shake .45s .9s linear}
+.ru-emblem{position:relative;width:240px;height:240px;display:grid;grid-template:240px/240px;place-items:center;margin-bottom:14px}
+.ru-emblem>*{grid-area:1/1}
+/* the rays, the glow and the shockwaves are bigger than the emblem: centred on it, outside the layout */
+.ru-rays,.ru-halo,.ru-ring{position:absolute;left:50%;top:50%}
+.ru-rays{width:1100px;height:1100px;margin:-550px 0 0 -550px;border-radius:50%;pointer-events:none;opacity:.6;
+  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--acc) 40%,transparent) 0 5deg,transparent 5deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0,transparent 62%);mask-image:radial-gradient(circle,#000 0,transparent 62%);
+  animation:ru-in 1.2s .9s ease-out backwards,ru-spin 44s linear infinite}
+.ru-halo{width:210px;height:210px;margin:-105px 0 0 -105px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc) 75%,transparent),transparent 70%);filter:blur(12px);
+  animation:ru-in .5s .9s backwards,ru-halo 2.6s 1.4s ease-in-out infinite}
+.ru-ring{width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:3px solid var(--acc);opacity:0;animation:ru-ring .9s .9s cubic-bezier(.1,.7,.2,1) forwards}
+.ru-ring.two{border-color:#fff;animation-delay:1.06s}
+.ru-old{width:150px;opacity:0;animation:ru-old .92s ease-in forwards}
+.ru-new{width:230px;animation:ru-slam .7s .9s cubic-bezier(.2,1.5,.4,1) backwards,ru-float 4s 1.7s ease-in-out infinite}
+.ru-new .art{filter:drop-shadow(0 0 16px color-mix(in srgb,var(--acc) 80%,transparent))}
+.ru-new .comet{animation:comet 4s linear infinite}
+.ru-new .gem{transform-box:fill-box;transform-origin:center;animation:gem 2.8s ease-in-out infinite}
+.ru-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;animation:ru-flash .6s .86s ease-out}
+.ru-sparks{position:relative;width:0;height:0}
+.ru-sparks i{position:absolute;left:0;top:0;width:var(--s);height:var(--s);margin:calc(var(--s) / -2);border-radius:50%;background:var(--c,var(--acc));
+  box-shadow:0 0 8px var(--acc);opacity:0;animation:ru-spark var(--t) calc(.9s + var(--dl)) cubic-bezier(.1,.7,.3,1) forwards}
+.ru-sparks i.d{border-radius:2px;rotate:45deg}
+.ru-embers i{position:absolute;bottom:-10px;left:var(--l);width:var(--s);height:var(--s);border-radius:50%;background:var(--acc);box-shadow:0 0 6px var(--acc);
+  opacity:0;animation:ru-ember var(--t) var(--dl) linear infinite}
+.ru-kicker{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;letter-spacing:.42em;text-transform:uppercase;color:var(--acc);
+  animation:ru-rise .5s 1.3s cubic-bezier(.2,.9,.3,1) backwards}
+.ru-kicker i{width:36px;height:2px;border-radius:1px;background:linear-gradient(90deg,transparent,var(--acc))}
+.ru-kicker i:first-child{margin-right:-.42em}
+.ru-kicker i:last-child{transform:scaleX(-1)}
+.ru-title{margin-top:10px;font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--acc);animation:ru-rise .5s 1.4s backwards}
+.ru-name{margin:6px 0 0;font-family:'Bricolage Grotesque',var(--font-round);font-weight:800;font-size:48px;line-height:1.05;letter-spacing:-.02em;
+  background:linear-gradient(100deg,#fff 35%,var(--acc) 50%,#fff 65%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:ru-name .6s 1.45s cubic-bezier(.2,1.4,.4,1) backwards,ru-sheen 3.2s 2.1s ease-in-out infinite}
+.ru-sub{margin:10px 0 0;font-size:15px;line-height:1.45;letter-spacing:-.016em;color:rgba(255,255,255,.74);animation:ru-rise .5s 1.75s backwards}
+.ru-btn{width:auto;min-width:210px;margin-top:28px;background:var(--acc);color:#111;animation:ru-rise .5s 2.1s backwards}
+@keyframes ru-in{from{opacity:0}}
+@keyframes ru-spin{to{transform:rotate(360deg)}}
+@keyframes ru-halo{50%{transform:scale(1.2);opacity:.65}}
+@keyframes ru-ring{from{transform:scale(.5);opacity:1}to{transform:scale(3.6);opacity:0}}
+@keyframes ru-old{0%{opacity:0;transform:scale(.7)}18%{opacity:1;transform:scale(1)}40%{transform:translate(-3px,1px) rotate(-2deg)}50%{transform:translate(3px,-1px) rotate(2deg)}
+  60%{transform:translate(-4px,0) rotate(-3deg)}70%{transform:translate(4px,1px) rotate(3deg);filter:brightness(1.3)}80%{transform:translate(-5px,-1px) rotate(-4deg);filter:brightness(1.8)}
+  92%{opacity:1;transform:scale(1.15);filter:brightness(4) saturate(0)}100%{opacity:0;transform:scale(1.7);filter:brightness(6) saturate(0)}}
+@keyframes ru-slam{0%{opacity:0;transform:scale(2.8) rotate(-12deg);filter:brightness(5)}55%{opacity:1;filter:brightness(1.8)}100%{transform:none;filter:none}}
+@keyframes ru-float{50%{transform:translateY(-7px)}}
+@keyframes ru-flash{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+@keyframes ru-spark{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--x),var(--y)) scale(.2)}}
+@keyframes ru-ember{0%{opacity:0;transform:translate(0,0)}10%{opacity:.85}100%{opacity:0;transform:translate(var(--dx),-92vh)}}
+@keyframes ru-rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes ru-name{from{opacity:0;transform:scale(1.6)}}
+@keyframes ru-sheen{0%{background-position:100% 0}60%,100%{background-position:0 0}}
+@keyframes ru-shake{10%{transform:translate(-6px,3px)}30%{transform:translate(5px,-4px)}50%{transform:translate(-4px,2px)}70%{transform:translate(3px,-2px)}90%{transform:translate(-1px,1px)}}
+
 /* Wildcard (weekends): a gold card with the button, the open list, and marks for made-up days in Stats */
 .wcard{margin-top:20px;padding:18px;border-radius:var(--radius);background:linear-gradient(135deg,color-mix(in srgb,#FFD54A 20%,var(--surface)),var(--surface) 70%);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,#FFD54A 50%,transparent)}
