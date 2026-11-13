@@ -9,7 +9,8 @@ where node >nul 2>nul || (echo Node.js is missing. Install the LTS version from 
 echo Running the tests first...
 call node --test || (echo. & echo Tests failed, so nothing was published. & pause & exit /b 1)
 echo.
-call npx --yes vercel deploy app --prod
+rem the project folder is uploaded; .vercelignore keeps everything but app/ out, and the Vercel project serves app/ (its Root Directory)
+call npx --yes vercel deploy --prod
 echo.
 if errorlevel 1 (echo Publishing failed. Read the messages above.) else (echo Done. Open the address above in Safari on your iPhone.)
 pause

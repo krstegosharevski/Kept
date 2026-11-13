@@ -74,22 +74,26 @@ function ring(done,total){
   <text class="t" x="34" y="39" text-anchor="middle" font-size="15">${done}/${total}</text></svg>`;
 }
 
+/* the Today title on a glass card in the style of this month's rank banner: the rank's colours, a soft glow,
+   the banner's seven dashes lit up to the rank, and the rank's badge on the right (it opens Ranks) */
+function rankFrame(i,inner){
+  return `<div class="titles rf rk${i} rf${i}"><div class="rf-text">${inner}<span class="rf-pips" aria-hidden="true">${RANKS.map((_,k)=>`<i${k<=i?' class="on"':''}></i>`).join('')}</span></div>
+    <button class="rf-badge" data-act="openRanks" aria-label="Your rank this month: ${RANKS[i].name}. Show all ranks">${art('badge',i)}</button></div>`;
+}
+
 function renderToday(){
   const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=isRest(d),yest=+d===+addDays(t,-1);
   const due=S.routines.filter(r=>isDue(r,d));
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
+  const rk=isToday&&S.routines.length?monthResult(S,monthStart(t),t):null; // this month's rank, shown on today only
   const date=`${isToday||yest?DAYS_FULL[dow(d)]+' ':''}${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear()!==t.getFullYear()?' '+d.getFullYear():''}`;
-  let html=`<header class="head"><div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
+  let html=`<header class="head">${rk?.rank!=null?rankFrame(rk.rank,`<div class="eyebrow">${date}</div><h1>${title}</h1>`):`<div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>`}${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
     <div class="daynav"><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
     ${isToday?'':'<button class="gpill glass" data-act="goToday">Back to today</button>'}</div>`;
   if(isToday&&reminderDue()) html+=`<div class="group reminder"><div class="row"><div class="body"><div class="name">Time for a backup</div>
     <div class="hint">Last backup: ${ago(meta.lastBackupAt)}. Save one to Files or iCloud Drive.</div></div></div>
     <div class="row actions"><button class="pill" data-act="saveBackup">Save backup</button><button class="pill quiet" data-act="later">Later</button></div></div>`;
-  /* this month's rank badge, on today only; it opens Ranks */
-  const rk=isToday&&S.routines.length?monthResult(S,monthStart(t),t):null;
-  if(rk?.rank!=null) html+=`<div class="group rankrow"><button class="row" data-act="openRanks" aria-label="Your rank this month: ${RANKS[rk.rank].name}, ${pct1(rk.pct)}%. Show all ranks">
-    <span class="slot">${art('badge',rk.rank)}</span><div class="body"><div class="name">${RANKS[rk.rank].name}</div><div class="hint">Your rank this month · <span class="num">${pct1(rk.pct)}%</span></div></div>${DISC}</button></div>`;
   if(rest){
     html+=`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
   } else if(!S.routines.length){
@@ -115,9 +119,9 @@ function renderToday(){
 function renderRoutines(){
   const active=S.routines.filter(r=>!r.stopped), stopped=S.routines.filter(r=>r.stopped);
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends off</div><h1>Routines</h1></div></header>`;
+  html+=`<div class="group tiles"><button class="row link newroutine" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
   if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row" style="--c:${r.color}" data-act="edit" data-id="${r.id}">
     <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
-  html+=`<div class="group tiles"><button class="row link" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
   if(stopped.length) html+=`<div class="gh">Stopped</div><div class="group tiles">${stopped.map(r=>`<div class="row stopped" style="--c:${r.color}">
     <button class="rowbtn" data-act="edit" data-id="${r.id}"><div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">Stopped ${short(r.stopped)}</div></div></button>
     <button class="pill" data-act="resume" data-id="${r.id}">Resume</button></div>`).join('')}</div>

@@ -1,0 +1,4 @@
+# Upload only the app folder (the project's Root Directory on Vercel). Everything else stays on this computer:
+# the npm download cache, the plan, tests, tools and the ranks demo.
+/*
+!/app

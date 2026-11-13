@@ -150,6 +150,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 
 ### Routines
 
+- **New routine** sits at the top of the screen, above the routines, a little bigger than a routine row.
 - **Active list:** active routines (tap to edit) and a "+ New routine" button.
 - **Stopped section:** lists stopped routines. Resuming one appends a new schedule from today and clears `stopped`.
 - **Editor (bottom sheet):**
@@ -214,7 +215,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - At the top: "Your rank this month" and its banner with a soft glow in the rank's color, then the % and how much more the next rank needs (not on Focused).
   - All ranks: the 7 banners from Comfort Zone up, full width at their own height (higher ranks are taller). Ranks above this month's are gray and faded, on a solid backing so the lake doesn't show through.
   - Past months: one row per finished month, newest first, from the month the first routine was created, with its badge, rank and %. Tapping one opens that month in Stats.
-- **Today:** on today only, a row with this month's rank badge, name and %; tapping it opens Ranks.
+- **Rank card:** on today, the date and title sit on a glass card in the style of this month's rank banner: the rank's colours, slightly see-through with the page blurred behind, a soft light on the right, a fine edge in the rank's accent colour, the banner's seven dashes lit up to the rank, and the rank's badge on the right, which opens Ranks. From Iron Will up, a sheen crosses it now and then.
 - **Animation:** only the banner of the rank you hold moves (top of Ranks, and the month's banner in Stats): the picture stays still while two comets streak around the ring, appearing and fading away, the gems on the ring twinkle, the glow behind it pulses, and a sheen crosses the banner now and then. The loader marks up each banner for this: it wraps the medallion (everything between its glow and its first line of text) in `<g class="emblem">`, tags the gems on the ring, and lays the comets on the ring. Reduce Motion turns it off.
 - **Artwork** (`app/ranks/`, from the owner's rank pack): the SVGs are put into the page inline, not with `<img>`, so their text uses the two fonts in `app/fonts/`. Each copy gets its own ids, so one artwork can appear twice on a page. Until they load, a block in the rank's colors holds each one's place. The service worker caches them all for offline use.
 
@@ -298,7 +299,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 
 ## 8. Scripts (Windows .cmd, so PowerShell's execution policy cannot block them)
 
-> Update 2026-10-28: the host is **Vercel**. `deploy.cmd` runs `node --test`, then `npx --yes vercel deploy app --prod` (log in once through the browser; no token is stored by the script). `app/vercel.json` sets the no-cache and manifest headers. Both scripts keep npm's cache in `.npm-cache` on E:, because C: is nearly full.
+> Update 2026-10-28: the host is **Vercel**. `deploy.cmd` runs `node --test`, then `npx --yes vercel deploy --prod` from the project folder (the Vercel project's Root Directory is `app`, and `.vercelignore` uploads only `app/`) (log in once through the browser; no token is stored by the script). `app/vercel.json` sets the no-cache and manifest headers. Both scripts keep npm's cache in `.npm-cache` on E:, because C: is nearly full.
 
 - **`preview.cmd`:** opens http://localhost:3000 and runs `npx --yes serve app -l 3000`.
 - **`deploy.cmd`:**
