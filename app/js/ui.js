@@ -1,5 +1,5 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths} from './logic.js';
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
@@ -13,7 +13,7 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const VERSION='1.0.0';
-const empty=()=>({schema:1,routines:[],checks:{}});
+const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{}});
 let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
@@ -59,6 +59,7 @@ const CHEV_L=chev('M14.5 5 7.5 12l7 7'), CHEV_R=chev('m9.5 5 7 7-7 7');
 const DISC='<svg class="disc" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 6 6-6 6"/></svg>';
 const XMARK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 const TICK='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const WILD=(sz=34)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="currentColor" opacity=".16"/><rect x="5" y="2.5" width="14" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.2l1.35 2.75 3.03.44-2.19 2.14.52 3.02L12 14.12l-2.71 1.43.52-3.02-2.19-2.14 3.03-.44z" fill="currentColor"/></svg>`;
 const PLUS='<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 7v10M7 12h10" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>';
 
 /* ---------- render ---------- */
@@ -95,7 +96,10 @@ function renderToday(){
     <div class="hint">Last backup: ${ago(meta.lastBackupAt)}. Save one to Files or iCloud Drive.</div></div></div>
     <div class="row actions"><button class="pill" data-act="saveBackup">Save backup</button><button class="pill quiet" data-act="later">Later</button></div></div>`;
   if(rest){
-    html+=`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
+    html+=isToday&&wildcardOpen(S,t)
+      ?`<div class="restcard">${MOON}<h3>Rest day</h3><p>You used a Wildcard: this weekend you can finish what you missed this week. It counts for the day you missed it.</p></div>`
+      :`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
+    if(isToday) html+=wildcardSection(t); // the Wildcard, if something was missed this week
   } else if(!S.routines.length){
     html+=`<div class="empty"><div class="dslot"></div><h3>No routines yet</h3><p>Add your first one, like “Eat healthy”, and tick it off each day.</p><button class="primary" data-act="new">Add a routine</button></div>`;
   } else if(!due.length){
@@ -103,7 +107,7 @@ function renderToday(){
   } else {
     if(past) html+=`<div class="lockline">${LOCK}Past day, view only. You can only check off today.</div>`;
     html+='<div class="group tiles">'+due.map(r=>{const dn=isDone(S,r,k),weekly=schedOn(r,d).type==='weekly';
-      const hint=past?(dn?'Completed':(weekly?'Not done':'Missed')):schedText(r,d);
+      const hint=past?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
       const ctl=past?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
       return `<div class="row item${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${r.color}">
@@ -176,7 +180,7 @@ function renderStats(){
       return `<div class="bar${fut?' future':h?'':' zero'}${td}"><span class="p">${fut||v==null?'':h+'%'}</span><div class="cw"><div class="col" style="height:${h}%"></div></div><span class="d">${DAYS1[i]}</span></div>`}).join('')}</div></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat" style="--c:${r.color}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
-      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(dd>t||!isDue(r,dd))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?'on':''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
+      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(dd>t||!isDue(r,dd))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
     const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0);
     const st=monthResult(S,a,t);
@@ -185,14 +189,14 @@ function renderStats(){
     for(let d=a;d<=b;d=addDays(d,1)){const td=+d===+t?' today':'';
       if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
       const fut=d>t,lv=fut?0:level(dayRatio(S,d));
-      cells+=`<button class="day l${lv}${fut?' future':''}${td}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
+      cells+=`<button class="day l${lv}${fut?' future':''}${td}${(S.madeUp||{})[key(d)]?' mu':''}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
     /* the month's rank next to its %: final (locked) once the month is over, live until then */
     const rk=st.rank==null?'':`<div class="ycap${st.final?' final':''}">${st.final?LOCK+'Final rank':'Rank so far'}</div>
       <button class="hero" data-rk="${st.rank}" data-act="openRanks" aria-label="${st.final?'Final rank':'Rank so far'}: ${RANKS[st.rank].name}. Show all ranks">${art('banner',st.rank)}</button>`;
     html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
-    <div class="legend">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More<i class="day rest gapl"></i>Rest</div>
+    <div class="legend">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More<i class="day rest gapl"></i>Rest<i class="mul gapl"></i>Made up</div>
     <p class="foot">Tap a day to see what you did. Black days are rest days.</p></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat" style="--c:${r.color}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${Math.round(pct*100)}%</div>
@@ -294,6 +298,37 @@ function renderSheet(){
 function syncName(){const i=document.getElementById('rname');if(i&&edit)edit.name=i.value}
 
 /* ---------- toast ---------- */
+/* ---------- Wildcard: on Saturday or Sunday, finish what was missed this week ---------- */
+/* closed: a card with the button (only if something was missed and a Wildcard is left). Open: the missed routines by day, each with a check button.
+   A make-up counts for the day it was missed (logic.js makeUp). */
+function wildcardSection(t){
+  const miss=weekMissed(S,t), todo=miss.filter(x=>!x.done).length, left=wildcardsLeft(S,t);
+  if(wildcardOpen(S,t)){
+    const byDay={}; miss.forEach(x=>(byDay[x.k]??=[]).push(x));
+    let h=`<div class="gh wch">${WILD(16)}Wildcard · this week</div>`;
+    if(!miss.length) h+='<p class="gf first">Nothing to make up.</p>';
+    h+=Object.entries(byDay).map(([k,items])=>{const day=DAYS_FULL[dow(parse(k))];return `<div class="gh">${day}</div><div class="group tiles">${items.map(({r,done})=>
+      `<div class="row item${done?' done':''}${popId===r.id+'@'+k?' pop':''}" style="--c:${r.color}"><div class="tile">${r.emoji}</div>
+      <div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${done?'Made up':'Missed on '+day}</div></div>
+      <button class="check" data-act="makeup" data-id="${r.id}" data-k="${k}" aria-pressed="${done}" aria-label="Make up ${esc(r.name)} for ${day}"><span class="ci">${CHECK}</span></button></div>`).join('')}</div>`}).join('');
+    if(miss.length&&!todo) h+='<p class="note">Week made up. Enjoy the rest of your weekend.</p>';
+    return h;
+  }
+  if(!todo) return '';
+  if(!left) return '<p class="gf wcnone">You missed some routines this week, but there are no Wildcards left this month. They come back on the 1st.</p>';
+  return `<div class="wcard"><div class="wtop">${WILD(36)}<div><div class="wtitle">Wildcard</div>
+    <div class="hint">You missed <span class="num">${todo}</span> routine${todo===1?'':'s'} this week. Use a Wildcard to finish ${todo===1?'it':'them'} this weekend. ${todo===1?'It counts':'They count'} for the day you missed ${todo===1?'it':'them'}.</div></div></div>
+    <button class="primary" data-act="wildAsk">Use a Wildcard</button><p class="wleft"><span class="num">${left}</span> of <span class="num">${WILDCARDS_PER_MONTH}</span> left this month</p></div>`;
+}
+function askWildcard(){
+  const t=TODAY(), todo=weekMissed(S,t).filter(x=>!x.done).length, left=wildcardsLeft(S,t);
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard" role="dialog" aria-modal="true" aria-labelledby="wcTitle" tabindex="-1">
+    <div class="wicon">${WILD(56)}</div><h2 id="wcTitle">Use a Wildcard?</h2>
+    <p>This unlocks the weekend so you can finish the <span class="num">${todo}</span> routine${todo===1?'':'s'} you missed this week. You have <span class="num">${left}</span> of <span class="num">${WILDCARDS_PER_MONTH}</span> left this month.</p>
+    <button class="primary" data-act="wildUse">Use Wildcard</button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
+  $done.querySelector('.donecard').focus({preventScroll:true});
+}
+
 /* ---------- "All done" pop-up, when the last routine for today is checked off ---------- */
 /* the dandelion blows inside the card, then how many routines were kept; Done closes it, and so do a tap outside and Escape */
 const $done=document.getElementById('doneRoot');
@@ -336,6 +371,12 @@ document.addEventListener('click',e=>{
     case 'edit': openEditor(el.dataset.id); break;
     case 'close': case 'closeBg': edit=null; renderSheet(); break;
     case 'done': case 'doneBg': closeDone(); break;
+    case 'wildAsk': askWildcard(); break;
+    case 'wildUse': { const ok=useWildcard(S,TODAY()); closeDone(); if(ok){commit();toast('Weekend unlocked')} else toast("A Wildcard can't be used now"); render(); break; }
+    case 'makeup': { const id=el.dataset.id,k=el.dataset.k,t=TODAY();
+      if(!makeUp(S,id,k,t)){toast('This weekend is not unlocked');render();break}
+      commit(); if(isMadeUp(S,id,k)) popId=id+'@'+k; render();
+      if(weekMissed(S,t).every(x=>x.done)) toast('Week made up'); break; }
     case 'emo': syncName(); edit.emoji=el.dataset.v; renderSheet(); break;
     case 'col': syncName(); edit.color=el.dataset.v; renderSheet(); break;
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;

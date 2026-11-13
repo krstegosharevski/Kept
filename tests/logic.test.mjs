@@ -2,7 +2,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
-import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths} from '../app/js/logic.js';
+import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -149,4 +149,55 @@ test('every rank has its artwork, and the service worker keeps it for offline us
     for(const kind of ['banner','badge']) assert.ok(existsSync(new URL(`../app/ranks/${kind}-${r.id}.svg`,import.meta.url)),`${kind}-${r.id}.svg is missing`);
     assert.ok(sw.includes(`'${r.id}'`),`sw.js does not cache the ${r.id} artwork`);
   }
+});
+
+/* Wildcards. Week used: Mon 2026-11-09 … Fri 11-13, Sat 11-14, Sun 11-15 */
+const wkData=()=>({routines:[routine({type:'daily'},{id:'a'}),routine({type:'daily'},{id:'b'}),routine({type:'daily'},{id:'c'})],
+  checks:{'2026-11-09':['a','b','c'],'2026-11-10':['a','b','c'],'2026-11-11':['a','b'],'2026-11-12':['a','b','c'],'2026-11-13':['a','b','c']},wildcards:{},madeUp:{}});
+
+test('Wildcard: a Wednesday at 2 of 3 becomes 3 of 3 on Saturday, and counts everywhere', ()=>{
+  const data=wkData(), sat=D('2026-11-14');
+  assert.deepEqual(weekMissed(data,sat).map(x=>[x.r.id,x.k,x.done]),[['c','2026-11-11',false]]);
+  assert.equal(Math.round(dayRatio(data,D('2026-11-11'))*100),67);
+  assert.equal(makeUp(data,'c','2026-11-11',sat),false); // not open until the Wildcard is used
+  assert.equal(useWildcard(data,sat),true);
+  assert.equal(wildcardOpen(data,sat),true); assert.equal(wildcardOpen(data,D('2026-11-15')),true); // the whole weekend
+  assert.equal(makeUp(data,'c','2026-11-11',sat),true);
+  assert.equal(dayRatio(data,D('2026-11-11')),1);
+  assert.equal(isMadeUp(data,'c','2026-11-11'),true);
+  assert.equal(rangeStats(data,D('2026-11-09'),D('2026-11-13')).pct,1);
+  assert.equal(streaks(data,data.routines[2],D('2026-11-14')).cur,5); // the streak is repaired
+  assert.equal(makeUp(data,'c','2026-11-11',sat),true); // tapping again undoes it
+  assert.equal(isDone(data,{id:'c'},'2026-11-11'),false);
+  assert.equal(makeUp(data,'a','2026-11-11',sat),false); // a check-in made on time can't be undone this way
+});
+
+test('Wildcard: only on a weekend, only with something missed, two per month', ()=>{
+  const data=wkData();
+  assert.equal(useWildcard(data,D('2026-11-13')),false); // a Friday
+  const full=wkData(); full.checks['2026-11-11']=['a','b','c'];
+  assert.equal(useWildcard(full,D('2026-11-14')),false); // nothing missed
+  assert.equal(WILDCARDS_PER_MONTH,2);
+  data.wildcards={'2026-11-02':'2026-11-07','2026-10-26':'2026-11-01'}; // two already used in November
+  assert.equal(wildcardsLeft(data,D('2026-11-14')),0);
+  assert.equal(useWildcard(data,D('2026-11-14')),false);
+  assert.equal(wildcardsLeft(data,D('2026-12-05')),2); // back on the 1st
+});
+
+test('Wildcard: weekly routines owe one check-in per missing one, on the earliest empty weekday', ()=>{
+  const r=routine({type:'weekly',target:3},{id:'w'});
+  const data={routines:[r],checks:{'2026-11-10':['w']},wildcards:{},madeUp:{}}, sat=D('2026-11-14');
+  assert.deepEqual(weekMissed(data,sat).map(x=>x.k),['2026-11-09','2026-11-11']);
+  useWildcard(data,sat); makeUp(data,'w','2026-11-09',sat);
+  assert.equal(weekMissed(data,sat).filter(x=>!x.done).length,1);
+  assert.equal(doneCount(data,r,D('2026-11-09'),D('2026-11-15')),2);
+});
+
+test('Wildcard data survives normalize, and bad entries are dropped', ()=>{
+  const d=normalize({routines:[routine({type:'daily'})],checks:{'2026-11-11':['a']},
+    wildcards:{'2026-11-09':'2026-11-14','2026-11-10':'2026-11-14','2026-11-02':'2026-11-04'},madeUp:{'2026-11-11':['a','gone'],'2026-11-12':['a']}});
+  assert.deepEqual(d.wildcards,{'2026-11-09':'2026-11-14'});
+  assert.deepEqual(d.madeUp,{'2026-11-11':['a']});
+  const old=normalize({routines:[routine({type:'daily'})],checks:{}});
+  assert.deepEqual([old.wildcards,old.madeUp],[{},{}]); // older data and backups still load
 });

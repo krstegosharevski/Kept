@@ -287,6 +287,23 @@ button.hero:active{transform:scale(.98)}
 /* from Platinum up, a sheen crosses the card now and then (Reduce Motion turns it off) */
 .rf4::after,.rf5::after,.rf6::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-100%);
   background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.18) 50%,transparent 65%);animation:shine 6s ease-in-out 1s infinite}
+/* Wildcard (weekends): a gold card with the button, the open list, and marks for made-up days in Stats */
+.wcard{margin-top:20px;padding:18px;border-radius:var(--radius);background:linear-gradient(135deg,color-mix(in srgb,#FFD54A 20%,var(--surface)),var(--surface) 70%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,#FFD54A 50%,transparent)}
+.wtop{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.wtop svg,.wch svg,.wicon svg{flex:none;color:#D9A400}
+.wtitle{font-size:20px;font-weight:700;letter-spacing:-.012em;margin-bottom:2px}
+.wcard .hint{font-size:15px;letter-spacing:-.016em;color:var(--muted)}
+.wleft{margin:10px 0 0;text-align:center;font-size:13px;color:var(--muted)}
+.wcnone{margin-top:14px}
+.wch{display:flex;align-items:center;gap:6px;color:#C99300;font-weight:600}
+.wicon svg{display:block;margin:16px auto 8px}
+.donecard .wcancel{margin-top:8px;border-radius:999px;font-weight:600}
+.dots i.on.mu{box-shadow:inset 0 0 0 2.5px var(--surface),0 0 0 1.5px #D9A400}
+.day{position:relative}
+.day.mu::after,.legend .mul{content:"";width:7px;height:7px;transform:rotate(45deg);border-radius:1.5px;background:#FFD54A;box-shadow:0 0 0 1.5px var(--surface)}
+.day.mu::after{position:absolute;top:3px;right:3px}
+.legend .mul{display:inline-block;margin-right:3px}
 /* Routines: New routine sits on top, a little bigger than a routine row */
 .newroutine{min-height:64px;font-size:19px;font-weight:600;letter-spacing:-.02em}
 .newroutine .addicon svg{width:34px;height:34px}

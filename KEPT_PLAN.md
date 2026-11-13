@@ -126,6 +126,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 
 ### Today
 
+- **Wildcard (weekends):** on Saturday or Sunday, if something was missed Monday to Friday of this week and a Wildcard is left, a gold card offers **Use a Wildcard**. Nothing opens until the user taps it and confirms in a pop-up. Then the whole weekend lists the missed routines by day; ticking one writes the check-in on the **missed weekday** (so a Wednesday at 70% becomes 100%) and marks it in `madeUp`, which lifts that day, the week, the month, the rank and repairs streaks. Tapping again undoes a make-up (never an on-time check-in). Weekly routines owe one check-in per one short of the target, on the earliest empty weekday. **Two Wildcards per calendar month** (by the day used), **only for the current week**. Data: `wildcards` {Monday: day used} and `madeUp` {weekday: [ids]}, kept by normalize and in backups. Past weekdays say "Made up with a Wildcard"; Stats marks made-up dots with a gold ring and calendar days with a gold diamond ("Made up" in the legend).
 - **Header:**
   - a label: Today, Yesterday, or the weekday name,
   - the date,
@@ -320,6 +321,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 
 - Date keys are local and never shift. Test with a late-evening time.
 - Saturday and Sunday are never due for any schedule type, and normalize removes weekend check-ins.
+- Wildcards: a Wednesday at 2 of 3 becomes 3 of 3 after a Saturday make-up, counts in the week and month, and repairs the streak; only on a weekend, only with something missed, two per month (back on the 1st); weekly routines owe the shortfall on the earliest empty weekdays; normalize keeps good Wildcard data and drops bad entries.
 - Done counts ignore days that are not due.
 - Weekly expected for a full week equals the target; partial weeks prorate by weekdays.
 - A streak continues across a weekend. Today not done yet doesn't break it. A missed weekday does break it.
@@ -367,6 +369,6 @@ Alternative without Azure: Netlify Drop. Drag the `app` folder onto app.netlify.
 ## 14. Done when
 
 - Kept is installed on the owner's iPhone, opens full screen without Safari bars, and works in airplane mode.
-- Only today can be checked off, past days are read-only, and weekends are black rest days everywhere.
+- Only today can be checked off, past days are read-only, and weekends are black rest days everywhere, except a weekend unlocked with a Wildcard, which can finish that week's missed routines.
 - The stats match the definitions in section 5, and all tests pass.
 - A backup saves to Files or iCloud Drive and restores correctly.

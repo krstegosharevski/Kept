@@ -51,7 +51,18 @@ export function normalize(d){
     const kept=[...new Set(list.map(String))].filter(id=>ids.has(id)); // nor for routines that no longer exist
     if(kept.length) checks[k]=kept;
   }
-  return {schema:1,routines,checks};
+  /* Wildcards: { Monday key: the Saturday or Sunday it was used }. Make-ups: { weekday key: [ids] }, only where the check-in exists. */
+  const wildcards={}, madeUp={};
+  for(const[w,on]of Object.entries(d.wildcards&&typeof d.wildcards==='object'?d.wildcards:{})){
+    if(!isKey(w)||!isKey(on)||dow(parse(w))!==0) continue;
+    const gap=(parse(on)-parse(w))/864e5; if(Math.round(gap)===5||Math.round(gap)===6) wildcards[w]=on;
+  }
+  for(const[k,list]of Object.entries(d.madeUp&&typeof d.madeUp==='object'?d.madeUp:{})){
+    if(!isKey(k)||!checks[k]||!Array.isArray(list)) continue;
+    const kept=[...new Set(list.map(String))].filter(id=>checks[k].includes(id));
+    if(kept.length) madeUp[k]=kept;
+  }
+  return {schema:1,routines,checks,wildcards,madeUp};
 }
 
 /* ---------- schedules ---------- */
@@ -168,4 +179,50 @@ export function rankMonths(data,t){
   const c=data.routines.map(r=>r.created).sort()[0], out=[];
   if(c) for(let d=monthStart(parse(c));d<=t;d=new Date(d.getFullYear(),d.getMonth()+1,1)) out.push(d);
   return out;
+}
+
+/* ---------- Wildcards ---------- */
+/* On Saturday or Sunday the user can spend a Wildcard to open that weekend and finish what was missed Monday to Friday.
+   A make-up is written as a check-in on the missed weekday, so that day, the week, the month, the rank and the streaks all count it.
+   Two per calendar month, counted by the day each was used; only for the current week. */
+export const WILDCARDS_PER_MONTH=2;
+const wc=data=>data.wildcards||(data.wildcards={}), mu=data=>data.madeUp||(data.madeUp={});
+export function wildcardsLeft(data,today){
+  const m=key(today).slice(0,7);
+  return Math.max(0,WILDCARDS_PER_MONTH-Object.values(data.wildcards||{}).filter(on=>on.slice(0,7)===m).length);
+}
+export const wildcardOpen=(data,today)=>isRest(today)&&!!(data.wildcards||{})[key(weekStart(today))];
+export const isMadeUp=(data,id,k)=>((data.madeUp||{})[k]||[]).includes(id);
+/* what was missed this week, Monday to Friday, as [{r, k}] (k = the weekday it belongs to).
+   Daily and "some days" routines: each due day not done. Weekly routines: one entry per check-in short of the target,
+   each on the earliest weekday without one. Made-up entries are included (done:true) so they can be shown and undone. */
+export function weekMissed(data,today){
+  const mon=weekStart(today), out=[];
+  for(const r of data.routines){
+    if(!existsIn(r,mon,addDays(mon,4))) continue;
+    const days=[0,1,2,3,4].map(i=>addDays(mon,i)).filter(d=>d<=today&&isTracked(r,d));
+    const weekly=days.length&&schedOn(r,days[days.length-1]).type==='weekly';
+    if(weekly){
+      const s=schedOn(r,days[days.length-1]), made=days.filter(d=>isMadeUp(data,r.id,key(d)));
+      let short=s.target-(weekDone(data,r,mon)-made.length);
+      for(const d of made){out.push({r,k:key(d),done:true});short--}
+      for(const d of days){ if(short<=0) break; if(!isDone(data,r,key(d))&&isDue(r,d)){out.push({r,k:key(d),done:false});short--} }
+    } else for(const d of days){ const k=key(d);
+      if(isDue(r,d)&&(!isDone(data,r,k)||isMadeUp(data,r.id,k))) out.push({r,k,done:isDone(data,r,k)}); }
+  }
+  return out.sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:0);
+}
+/* spends a Wildcard on this weekend; false when it isn't allowed */
+export function useWildcard(data,today){
+  if(!isRest(today)||wildcardOpen(data,today)||!wildcardsLeft(data,today)||!weekMissed(data,today).some(x=>!x.done)) return false;
+  wc(data)[key(weekStart(today))]=key(today); return true;
+}
+/* ticks off (or, if made up already, unticks) a missed routine for weekday k; only while this weekend is open */
+export function makeUp(data,id,k,today){
+  if(!wildcardOpen(data,today)) return false;
+  const item=weekMissed(data,today).find(x=>x.r.id===id&&x.k===k); if(!item) return false;
+  const m=mu(data);
+  if(item.done){ toggle(data,id,k); m[k]=(m[k]||[]).filter(x=>x!==id); if(!m[k].length) delete m[k]; }
+  else { toggle(data,id,k); (m[k]||(m[k]=[])).push(id); }
+  return true;
 }
