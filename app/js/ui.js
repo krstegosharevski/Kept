@@ -329,41 +329,66 @@ function askWildcard(){
   $done.querySelector('.donecard').focus({preventScroll:true});
 }
 
-/* ---------- Rank up: a celebration when this month's rank climbs past the best it has been this month ---------- */
-/* The rank dips every morning (today's routines count until they are ticked), so the best rank of the month is remembered
-   (meta.rankPeak) and each rank is celebrated once a month, on the way up. Comfort Zone is not celebrated. */
+/* ---------- Rank change: a full-screen animation whenever a tap moves this month's rank up or down ---------- */
+/* The rank before and after each tick (or untick) are compared, so only a tap can set it off: opening the app, a new month,
+   or the morning dip (today's routines count until they are ticked) never show it. */
 const rankNow=()=>{const t=TODAY();return monthResult(S,monthStart(t),t).rank??-1};
-/* a new month, a first run, a restore: start from the rank as it is, without a celebration */
-function syncPeak(){const m=key(TODAY()).slice(0,7); if(meta.rankPeak?.m!==m) setMeta({rankPeak:{m,rank:rankNow()}})}
-/* {from, to} when the rank just passed this month's best (and records it), else null */
-function rankUp(){
-  syncPeak(); const to=rankNow(), from=meta.rankPeak.rank;
-  if(to<=from) return null;
-  setMeta({rankPeak:{m:meta.rankPeak.m,rank:to}});
-  return to>=1?{from,to}:null;
-}
-let ruAt=0; // when the celebration opened: taps in its first moments are ignored, so a double tap can't dismiss it unseen
-/* the old badge charges up and bursts, the screen flashes, the new badge slams in with shockwaves, sparks and turning rays,
-   then the name and the button. Under Reduce Motion it simply shows the new rank. */
-function showRankUp({from,to},allDone){
-  const t=TODAY(), r=RANKS[to], pct=pct1(monthResult(S,monthStart(t),t).pct), rnd=(a,b)=>a+Math.random()*(b-a);
-  const sparks=[...Array(36)].map((_,i)=>{const a=rnd(0,6.283),d=rnd(110,300);
-    return `<i${i%4===0?' class="d"':''} style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d).toFixed(0)}px;--s:${rnd(3,9).toFixed(1)}px;--t:${rnd(.7,1.5).toFixed(2)}s;--dl:${rnd(0,.18).toFixed(2)}s${i%3===0?';--c:#fff':''}"></i>`}).join('');
-  const embers=[...Array(16)].map(()=>`<i style="--l:${rnd(2,98).toFixed(0)}%;--s:${rnd(2,5).toFixed(1)}px;--t:${rnd(4,8).toFixed(1)}s;--dl:${rnd(1.2,6).toFixed(1)}s;--dx:${rnd(-40,40).toFixed(0)}px"></i>`).join('');
-  $done.innerHTML=`<div class="rankup rk${to} ru${to}" data-act="rankBg" role="dialog" aria-modal="true" aria-labelledby="ruName" tabindex="-1">
-    <i class="ru-flash"></i><span class="ru-embers" aria-hidden="true">${embers}</span>
+/* {from, to} when the rank moved, else null */
+const rankMove=(from,to)=>from!==to&&to>=0&&!(from<0&&to===0)?{from,to}:null;
+let ruAt=0; // when the screen opened: taps in its first moments are ignored, so a double tap can't dismiss it unseen
+/* Up: the old badge charges up and bursts, the screen flashes, the new badge slams in with shockwaves, sparks and turning rays.
+   Down: the old badge cracks, loses its colour and falls, shards drop, the lower badge lands heavily.
+   Then the name and the button. Under Reduce Motion it simply shows the new rank. */
+function showRank({from,to},allDone){
+  const down=from>=0&&to<from, t=TODAY(), r=RANKS[to], pct=pct1(monthResult(S,monthStart(t),t).pct), rnd=(a,b)=>a+Math.random()*(b-a);
+  const sparks=[...Array(down?22:[24,24,26,30,40,40,56][to])].map((_,i)=>{const a=down?rnd(.35,2.8):rnd(0,6.283),d=down?rnd(120,320):rnd(110,to>=4?380:300);
+    return `<i${i%4===0||down?' class="d"':''} style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d).toFixed(0)}px;--s:${rnd(3,9).toFixed(1)}px;--t:${rnd(.7,1.5).toFixed(2)}s;--dl:${rnd(0,.18).toFixed(2)}s${i%3===0&&!down?';--c:#fff':''}"></i>`}).join('');
+  const embers=down?'':[...Array([0,0,0,10,18,18,30][to])].map((_,i)=>`<i style="--l:${rnd(2,98).toFixed(0)}%;--s:${rnd(2,to===6?6:5).toFixed(1)}px;--t:${rnd(4,8).toFixed(1)}s;--dl:${rnd(1.2,6).toFixed(1)}s;--dx:${rnd(-40,40).toFixed(0)}px${to===6&&i%2?';--c:#FFC24A':''}"></i>`).join('');
+  const fx=down?{}:rankFx(to,rnd);
+  $done.innerHTML=`<div class="rankup${down?' down':' up'} rk${to} ru${to}" data-act="rankBg" role="dialog" aria-modal="true" aria-labelledby="ruName" tabindex="-1">
+    <i class="ru-flash"></i><span class="ru-embers" aria-hidden="true">${embers}</span><span class="ru-fx" aria-hidden="true">${fx.screen||''}</span>
     <div class="ru-stage">
-      <div class="ru-emblem"><i class="ru-rays"></i><i class="ru-halo"></i><i class="ru-ring"></i><i class="ru-ring two"></i>
-        ${from>=0?`<span class="ru-old">${art('badge',from)}</span>`:''}<span class="ru-new">${art('badge',to)}</span><span class="ru-sparks" aria-hidden="true">${sparks}</span></div>
-      <div class="ru-kicker"><i></i>Rank up<i></i></div>
+      <div class="ru-emblem" aria-hidden="true"><i class="ru-rays"></i><i class="ru-halo"></i><i class="ru-ring"></i>${down?'':'<i class="ru-ring two"></i>'}${!down&&to>=4?'<i class="ru-ring three"></i>':''}${fx.back||''}
+        ${from>=0?`<span class="ru-old">${art('badge',from)}</span>`:''}<span class="ru-new">${art('badge',to)}</span><span class="ru-sparks">${sparks}</span>${fx.front||''}</div>
+      <div class="ru-kicker"><i></i>${down?'Rank down':'Rank up'}<i></i></div>
       ${r.title?`<div class="ru-title">${r.title}</div>`:''}<h2 class="ru-name" id="ruName">${r.name}</h2>
-      <p class="ru-sub">${from>=0?`${RANKS[from].name} → ${r.name} · `:''}<span class="num">${pct}%</span> this month${allDone?'<br>And all done for today.':''}</p>
+      <p class="ru-sub">${from>=0?`${RANKS[from].name} → ${r.name} · `:''}<span class="num">${pct}%</span> this month${down?'<br>Tick off your routines to climb back.':allDone?'<br>And all done for today.':''}</p>
       <button class="primary ru-btn" data-act="rankDone">Continue</button>
     </div></div>`;
   ruAt=Date.now();
   $done.firstChild.focus({preventScroll:true});
-  try{setTimeout(()=>navigator.vibrate?.([60,40,140]),900)}catch(e){}
+  try{setTimeout(()=>navigator.vibrate?.(down?[180]:[[60,40,140],[60,40,140],[60,40,140],[60,40,140],[50,30,50,30,220],[160],[80,40,80,40,320]][to]),900)}catch(e){}
 }
+/* each rank's own show on the way up, the higher the bigger. back: behind the badge, front: over it, screen: across the whole screen.
+   Starter: dandelion seeds blow off the badge and drift by. Student: pages fly out, letters rise. Builder: a blueprint grid scans in, frame corners snap on.
+   Iron Will: three forge strikes, a fountain of sparks, a steel glint. Stoic: aurora, a mandala draws itself, ripples like still water.
+   The Chosen: light gathers into the badge, a red flash, a pillar of light comes down, lightning, gold rays, an orbit of diamonds. */
+const SEED=`<svg viewBox="-10 -10 20 30"><path d="M0 0V19" stroke="currentColor" stroke-width="1"/><path d="${[...Array(9)].map((_,i)=>{const a=(-160+i*17.5)*Math.PI/180;return `M0 0L${(Math.cos(a)*8).toFixed(1)} ${(Math.sin(a)*8).toFixed(1)}`}).join('')}" stroke="currentColor" stroke-width=".7"/></svg>`;
+const BOLT='<svg viewBox="0 0 46 96"><path d="M30 0L6 52h16L12 96 42 36H25L36 0z" fill="currentColor"/></svg>';
+const MANDALA=`<svg viewBox="-100 -100 200 200"><circle r="96" pathLength="1"/><circle r="78" pathLength="1"/><path d="M0-78L67.5 39H-67.5Z" pathLength="1"/><path d="M0 78L67.5-39H-67.5Z" pathLength="1"/>
+  <path d="${[...Array(24)].map((_,i)=>{const a=i*Math.PI/12,c=Math.cos(a),s=Math.sin(a);return `M${(c*83).toFixed(1)} ${(s*83).toFixed(1)}L${(c*91).toFixed(1)} ${(s*91).toFixed(1)}`}).join('')}" pathLength="1"/></svg>`;
+function rankFx(to,rnd){
+  const n=(k,f)=>[...Array(k)].map((_,i)=>f(i)).join(''), px=v=>v.toFixed(0)+'px';
+  if(to===1) return {
+    back:n(22,()=>`<i class="fx-seed" style="--x:${px(rnd(-60,280))};--y:${px(rnd(-330,-50))};--r:${rnd(-220,220).toFixed(0)}deg;--t:${rnd(2.4,4.4).toFixed(1)}s;--dl:${rnd(.92,1.3).toFixed(2)}s">${SEED}</i>`),
+    screen:n(9,()=>`<i class="fx-drift" style="--top:${rnd(4,70).toFixed(0)}%;--dy:${px(rnd(-140,60))};--t:${rnd(7,12).toFixed(1)}s;--dl:${rnd(1.6,8).toFixed(1)}s">${SEED}</i>`)};
+  if(to===2){ const G='AΣπΩ∞√λ∂ƒ★∑abc';
+    return {back:n(10,()=>{const a=rnd(0,6.283),d=rnd(150,270);return `<i class="fx-page" style="--x:${px(Math.cos(a)*d)};--y:${px(Math.sin(a)*d)};--r:${rnd(-70,70).toFixed(0)}deg;--dl:${rnd(.9,1.05).toFixed(2)}s"></i>`}),
+      screen:n(18,()=>`<i class="fx-glyph" style="--l:${rnd(4,96).toFixed(0)}%;--s:${px(rnd(14,28))};--t:${rnd(5,9).toFixed(1)}s;--dl:${rnd(1.2,7).toFixed(1)}s">${G[Math.floor(rnd(0,G.length))]}</i>`)}; }
+  if(to===3) return {screen:'<i class="fx-grid"></i><i class="fx-scan"></i>',back:n(4,i=>`<i class="fx-corner c${i}"></i>`)};
+  if(to===4) return {
+    back:n(3,i=>`<i class="fx-strike" style="--dl:${[.28,.52,.76][i]}s"></i>`)+n(40,()=>`<i class="fx-molten" style="--x:${px(rnd(-190,190))};--h:${px(rnd(-340,-140))};--s:${rnd(2,5).toFixed(1)}px;--t:${rnd(1.2,2.1).toFixed(2)}s;--dl:${rnd(.92,4).toFixed(2)}s"></i>`),
+    screen:'<i class="fx-glint"></i>'};
+  if(to===5) return {screen:n(3,i=>`<i class="fx-aurora a${i}"></i>`),back:`<span class="fx-mandala">${MANDALA}</span>`+n(4,i=>`<i class="fx-ripple" style="--dl:${(.95+i*.9).toFixed(2)}s"></i>`)};
+  if(to===6) return {
+    screen:'<i class="fx-redflash"></i>',
+    back:n(36,()=>{const a=rnd(0,6.283),d=rnd(260,520);return `<i class="fx-conv" style="--x:${px(Math.cos(a)*d)};--y:${px(Math.sin(a)*d)};--s:${rnd(2,5).toFixed(1)}px;--dl:${rnd(0,.2).toFixed(2)}s"></i>`})
+      +'<i class="fx-pillar"></i><i class="fx-rays2"></i>'+`<span class="fx-orbit">${n(8,i=>`<i style="--a:${i*45}deg;--d:${(i*.2).toFixed(1)}s"></i>`)}</span>`,
+    front:n(3,i=>`<i class="fx-bolt b${i}">${BOLT}</i>`)};
+  return {};
+}
+/* on a local preview only: lets the demo panel play any rank's screen */
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.keptRankDemo=(from,to)=>showRank({from,to},false);
 
 /* ---------- "All done" pop-up, when the last routine for today is checked off ---------- */
 /* the dandelion blows inside the card, then how many routines were kept; Done closes it, and so do a tap outside and Escape */
@@ -388,11 +413,12 @@ document.addEventListener('click',e=>{
   if((a==='closeBg'||a==='doneBg'||a==='rankBg')&&e.target!==el)return;
   switch(a){
     case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
-      const id=el.dataset.id,k=key(viewDate); toggle(S,id,k); commit();
-      if(isDone(S,{id},k)) popId=id;
+      const id=el.dataset.id,k=key(viewDate),before=rankNow(); toggle(S,id,k); commit();
+      const ticked=isDone(S,{id},k), move=rankMove(before,rankNow());
+      if(ticked) popId=id;
       render();
-      if(isDone(S,{id},k)){ const due=S.routines.filter(r=>isDue(r,viewDate)), allDone=due.every(r=>isDone(S,r,k)), up=rankUp();
-        if(up) showRankUp(up,allDone); else if(allDone) showDone(due.length); } // a new rank comes first; else, if that was the last one for today, "All done"
+      const due=S.routines.filter(r=>isDue(r,viewDate)), allDone=ticked&&due.every(r=>isDone(S,r,k));
+      if(move) showRank(move,allDone); else if(allDone) showDone(due.length); // a rank change comes first; else, if that was the last one for today, "All done"
       break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); ringFrac=null; render(); break;
     case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); ringFrac=null; render(); break;
@@ -411,11 +437,11 @@ document.addEventListener('click',e=>{
     case 'rankDone': case 'rankBg': if(Date.now()-ruAt>1600) closeDone(); break;
     case 'wildAsk': askWildcard(); break;
     case 'wildUse': { const ok=useWildcard(S,TODAY()); closeDone(); if(ok){commit();toast('Weekend unlocked')} else toast("A Wildcard can't be used now"); render(); break; }
-    case 'makeup': { const id=el.dataset.id,k=el.dataset.k,t=TODAY();
+    case 'makeup': { const id=el.dataset.id,k=el.dataset.k,t=TODAY(),before=rankNow();
       if(!makeUp(S,id,k,t)){toast('This weekend is not unlocked');render();break}
       commit(); if(isMadeUp(S,id,k)) popId=id+'@'+k; render();
       if(weekMissed(S,t).every(x=>x.done)) toast('Week made up');
-      if(isMadeUp(S,id,k)){ const up=rankUp(); if(up) showRankUp(up,false); } break; }
+      const move=rankMove(before,rankNow()); if(move) showRank(move,false); break; }
     case 'emo': syncName(); edit.emoji=el.dataset.v; renderSheet(); break;
     case 'col': syncName(); edit.color=el.dataset.v; renderSheet(); break;
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
@@ -440,10 +466,10 @@ document.addEventListener('click',e=>{
     case 'themeAuto': setMeta({theme:null}); applyTheme(); render(); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
-    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); setMeta({rankPeak:null}); syncPeak(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
+    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
     case 'cancelRestore': pendingRestore=null; render(); break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
-      eraseAll(); S=empty(); meta=loadMeta(); syncPeak(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
+      eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit){edit=null;renderSheet()}});
@@ -470,9 +496,8 @@ document.addEventListener('change',async e=>{
 addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>2),{passive:true});
 /* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
 let lastDay=key(TODAY());
-document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;syncPeak();render()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 applyTheme();
-syncPeak();
 systemDark.addEventListener('change',()=>{applyTheme();if(view==='settings')render()}); // the device switched while Kept follows it
 render();
 loadArt();
