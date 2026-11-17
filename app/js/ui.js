@@ -117,7 +117,6 @@ function renderToday(){
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
-  if(isToday&&!rest&&!away&&S.routines.length) html+=vacationCard(t); // weekdays: plan a vacation (weekends have the Wildcard)
   $app.innerHTML=html; popId=null;
   const slot=$app.querySelector('.dslot');
   if(slot){quietDandelion??=slowDandelion(); if(!quietDandelion.dataset.done) slot.append(quietDandelion)}
@@ -210,6 +209,7 @@ function renderStats(){
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>
       <div class="meta"><span class="num">${d}</span> of <span class="num">${e}</span> · streak <span class="num">${s.cur}${s.unit}</span> · best <span class="num">${s.best}${s.unit}</span></div></div>`}).join('')}</div>`;
   }
+  html+=vacationCard(t); // at the bottom of Stats, in both Week and Month: days left this half-year, the next trip, and the button
   $app.innerHTML=html;
 }
 
