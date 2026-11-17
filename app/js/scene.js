@@ -142,8 +142,34 @@ function drawPelican(ctx,x,y,scale,facing,tilt){
   ctx.restore();
 }
 
-/* the lake along the bottom of the screen: 30fps, paused while the app is in the background, one still frame under reduced motion */
-export function startWater(canvas){
+/* a pelican in flight: head pulled back onto the shoulders, the long bill resting on the chest, long broad wings.
+   The same shapes serve the Vacation card, badge and flight (inline SVG, animated by CSS) and the lake on vacation days (canvas). Facing right, 120 × 64. */
+const FLY={
+  body:'M8 37L19 36Q26 28 48 26.5Q66 25.5 77 28.5Q84 31 84 36Q83 40 76 41.5Q60 45 42 44.5Q27 44 19 40L7 42Z',
+  head:'M72 30Q74 22 82 21.5Q89 21.5 90 27Q90 31 86 33L76 34Z',
+  bill:'M86 25.5L117 36.5Q118.5 39.5 115 40.5Q101 42 86.5 34.5Z',
+  wing:'M70 30C66 17 50 6 14 1C21 5 24 8 25 10.5C18 9 13 9.5 9 11C23 14 33 20 41 29Z', // raised; flapping flips it below the body around y 31
+};
+export function flyingPelican(cls=''){
+  return `<svg class="pelican${cls?' '+cls:''}" viewBox="0 0 120 64" aria-hidden="true"><g class="pl-body">
+    <g class="pl-wing far"><path transform="translate(9 -2)" d="${FLY.wing}"/></g>
+    <path d="${FLY.body}"/><path d="${FLY.head}"/><path d="${FLY.bill}"/><circle class="pl-eye" cx="84.5" cy="25.5" r="1.1"/>
+    <g class="pl-wing"><path d="${FLY.wing}"/></g></g></svg>`;
+}
+let flyPaths=null;
+/* flap runs 0 → 1 for one wing beat */
+function drawFlyingPelican(ctx,x,y,scale,facing,flap){
+  flyPaths??=Object.fromEntries(Object.entries(FLY).map(([k,d])=>[k,new Path2D(d)]));
+  const lift=Math.cos(flap*Math.PI*2)*.9+.1; // 1 = wings up, -.8 = wings down
+  ctx.save(); ctx.translate(x,y); ctx.scale(facing*scale*.42,scale*.42); ctx.translate(-60,-32);
+  ctx.fill(flyPaths.body); ctx.fill(flyPaths.head); ctx.fill(flyPaths.bill);
+  ctx.translate(0,31); ctx.scale(1,lift); ctx.translate(0,-31); ctx.fill(flyPaths.wing);
+  ctx.restore();
+}
+
+/* the lake along the bottom of the screen: 30fps, paused while the app is in the background, one still frame under reduced motion.
+   opts.pelicanSky(): true on a vacation day, when the bird that crosses the sky now and then is a pelican */
+export function startWater(canvas,opts={}){
   const ctx=canvas.getContext('2d'); if(!ctx) return;
   const still=reduced();
   let width=0,height=0,wide=false,palette=readPalette(canvas);
@@ -194,8 +220,9 @@ export function startWater(canvas){
       if(age>=1) bird=null;
       else{
         const travel=bird.direction===1?age:1-age;
-        ctx.strokeStyle=`rgba(${palette.inkRgb}, ${BIRD_OPACITY*INTENSITY})`; ctx.lineWidth=1.2; ctx.lineCap='round';
-        drawBird(ctx,-40+travel*(width+80),bird.y-Math.sin(age*Math.PI)*10,bird.scale,age*26);
+        const bx=-40+travel*(width+80), by=bird.y-Math.sin(age*Math.PI)*10;
+        if(bird.pelican){ ctx.fillStyle=`rgba(${palette.inkRgb}, ${BIRD_OPACITY*INTENSITY})`; drawFlyingPelican(ctx,bx,by,bird.scale,bird.direction,age*14); }
+        else{ ctx.strokeStyle=`rgba(${palette.inkRgb}, ${BIRD_OPACITY*INTENSITY})`; ctx.lineWidth=1.2; ctx.lineCap='round'; drawBird(ctx,bx,by,bird.scale,age*26); }
       }
     }
     ctx.fillStyle=`rgba(${palette.inkRgb}, ${FISH_OPACITY*INTENSITY})`;
@@ -212,7 +239,7 @@ export function startWater(canvas){
       nextRippleAt=elapsed+rand(...RIPPLE_GAP);
     }
     if(elapsed>=nextBirdAt){
-      bird={born:elapsed,y:height*rand(.12,.3),direction:Math.random()<.5?1:-1,scale:rand(.8,1.25)};
+      bird={born:elapsed,y:height*rand(.12,.3),direction:Math.random()<.5?1:-1,scale:rand(.8,1.25),pelican:!!opts.pelicanSky?.()};
       nextBirdAt=elapsed+rand(...BIRD_GAP);
     }
     if(elapsed>=nextFishAt){ // bands 1–3; a fish out of the faintest band would be an odd sight

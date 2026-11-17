@@ -55,6 +55,7 @@ Initialize a git repository and commit after each milestone.
    - Nothing is due on them, and nothing can be checked.
    - They are left out of every percentage and never break a streak.
    - They are shown in **black** everywhere: the Today screen, the week chart, the month calendar, the routine dots and the schedule day picker.
+   - **Vacation days** (see Today) turn chosen weekdays into rest days too. They are shown in **sky blue** (#5AC8FA / #64D2FF).
 3. **The past stays as it was.**
    - Changing a routine's schedule affects only today and later days.
    - Stopping a routine keeps its history (see 4.2).
@@ -95,6 +96,7 @@ localStorage key `kept-data-v1`:
 - **`stopped`:** a date string or null. A stopped routine is not due on or after that date, and its history is kept.
   - Resuming appends `{from: stopped, type:"off"}` and then the old schedule `{from: today, ...}`, and clears `stopped`. The `off` entry keeps the stopped stretch not due, so the past stays as it was.
 - **`checks`:** maps a date key to the array of routine ids completed that day.
+- **`vacations`:** maps a vacation day (a weekday) to the day it was booked, e.g. `{"2026-12-23": "2026-11-17"}`. Kept by normalize (weekdays only, never a day with check-ins, at most 10 per half-year) and in backups.
 - **Meta key `kept-meta-v1`:** a separate key holding `{ "lastBackupAt": ISO string | null, "reminderDismissedOn": "YYYY-MM-DD" | null }`.
 
 ### 4.2 Rules
@@ -128,6 +130,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 
 - **Rank change:** whenever ticking or unticking a routine (or a Wildcard make-up) moves this month's rank up or down, a full-screen animation plays (instead of the "All done" card). Up: the old badge charges up and bursts, a flash, the new badge slams in with shockwaves, sparks and turning rays, then "Rank up", the name, "Builder → Iron Will · 81.2% this month" and Continue. Down: darker; the old badge cracks, turns grey and falls, shards drop, the lower badge lands, then "Rank down" and "Tick off your routines to climb back." Each rank adds its own show on the way up, bigger the higher it goes: Starter, dandelion seeds blow off the badge; Student, pages fly out and letters rise; Builder, a blueprint grid scans in and frame corners snap on; Iron Will, three forge strikes, a fountain of sparks and a steel glint; Stoic, an aurora, a mandala that draws itself and ripples like still water; The Chosen, light gathering into the badge, a red flash, a pillar of light, lightning, gold rays and an orbit of diamonds. Only a tap sets it off (the rank before and after the tap are compared), so opening the app, the morning dip, a new month, a restore or an erase never show it. The effects never catch taps, so Continue always works. Reduce Motion shows the new rank without the effects.
 - **Wildcard (weekends):** on Saturday or Sunday, if something was missed Monday to Friday of this week and a Wildcard is left, a gold card offers **Use a Wildcard**. Nothing opens until the user taps it and confirms in a pop-up. Then the whole weekend lists the missed routines by day; ticking one writes the check-in on the **missed weekday** (so a Wednesday at 70% becomes 100%) and marks it in `madeUp`, which lifts that day, the week, the month, the rank and repairs streaks. Tapping again undoes a make-up (never an on-time check-in). Weekly routines owe one check-in per one short of the target, on the earliest empty weekday. **Two Wildcards per calendar month** (by the day used), **only for the current week**. Data: `wildcards` {Monday: day used} and `madeUp` {weekday: [ids]}, kept by normalize and in backups. Past weekdays say "Made up with a Wildcard"; Stats marks made-up dots with a gold ring and calendar days with a gold diamond ("Made up" in the legend).
+- **Vacation (weekdays):** below the routines, a sky-blue card with a flying pelican gliding across it: "7 of 10 days left until 31 Dec", the next booked stretch, and **Plan a vacation**. It opens a sheet with a month calendar (this month to the end of the next half-year): tap free weekdays to pick them, tap a blue day to cancel it, then confirm in a pop-up. After booking, the pelican flies across the screen with the first booked date hanging from its bill (Reduce Motion: no flight). A vacation day counts like a weekend: nothing is due, it is left out of every %, it never breaks a streak, and weekly targets are prorated by working days (`max(1, round(target × working days / 5))`; a week fully away is skipped by the weekly streak). **10 per half-year** (January–June and July–December, counted by the half the day falls in; unused days expire). **Only today (while nothing is ticked yet) and future weekdays** can be booked; today's and future ones can be cancelled, past ones are locked. On a vacation day Today shows a pelican badge instead of the ring, a sky-blue "Vacation day" card, and on today "Cancel today's vacation"; the lake's passing bird becomes a pelican. Booking never plays the rank animation.
 - **Header:**
   - a label: Today, Yesterday, or the weekday name,
   - the date,
@@ -172,7 +175,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 - **Week:**
   - ‹ › week navigation, with no future weeks.
   - A big % for the week.
-  - 7 bars, Monday to Sunday, each showing that day's completion %. Saturday and Sunday are full-height black columns with "REST" written vertically.
+  - 7 bars, Monday to Sunday, each showing that day's completion %. Saturday and Sunday are full-height black columns with "REST" written vertically; vacation days are sky-blue columns with "AWAY".
   - Per routine: done/expected and 7 dots (filled = done, empty = due but not done, dashed = not due, black = rest day).
 - **Month:**
   - ‹ › month navigation.
@@ -329,6 +332,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
 - A schedule change from today leaves past expected counts unchanged.
 - A stopped routine is not due after its stop date, and its history is kept.
 - Demo-shaped data (a single `sched`) migrates to `schedules`.
+- Vacation days: the half-years (30 Jun / 1 Jul, 31 Dec), 10 per half and back on 1 January, a start in October gets 10; booking refuses weekends, past days, today with a check-in, the 11th day and days after the next half; cancelling refunds future days and refuses past ones; a vacation day isn't due, lifts the %, keeps streaks, is never "missed"; weekly targets prorate and a full week away is skipped; normalize drops bad entries.
 - Ranks: the edges of every rank, a month's rank from its %, no rank when nothing was expected, and the list of months to rank. Every rank has its banner and badge, and sw.js caches them.
 
 Manual checks:
@@ -370,6 +374,6 @@ Alternative without Azure: Netlify Drop. Drag the `app` folder onto app.netlify.
 ## 14. Done when
 
 - Kept is installed on the owner's iPhone, opens full screen without Safari bars, and works in airplane mode.
-- Only today can be checked off, past days are read-only, and weekends are black rest days everywhere, except a weekend unlocked with a Wildcard, which can finish that week's missed routines.
+- Only today can be checked off, past days are read-only, and weekends are black rest days everywhere, except a weekend unlocked with a Wildcard, which can finish that week's missed routines. Booked vacation days are sky-blue rest days, 10 per half-year.
 - The stats match the definitions in section 5, and all tests pass.
 - A backup saves to Files or iCloud Drive and restores correctly.

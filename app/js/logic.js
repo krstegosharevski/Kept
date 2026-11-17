@@ -62,7 +62,15 @@ export function normalize(d){
     const kept=[...new Set(list.map(String))].filter(id=>checks[k].includes(id));
     if(kept.length) madeUp[k]=kept;
   }
-  return {schema:1,routines,checks,wildcards,madeUp};
+  /* Vacation days: { weekday key: the day it was booked }. Weekdays only, never a day with check-ins, at most 10 per half-year (the earliest days are kept). */
+  const vacations={}, perHalf={};
+  for(const k of Object.keys(d.vacations&&typeof d.vacations==='object'?d.vacations:{}).sort()){
+    const on=d.vacations[k];
+    if(!isKey(k)||key(parse(k))!==k||!isKey(on)||isRest(parse(k))||checks[k]) continue;
+    const h=halfOf(k); perHalf[h]=(perHalf[h]||0)+1;
+    if(perHalf[h]<=VACATION_DAYS) vacations[k]=on;
+  }
+  return {schema:1,routines,checks,wildcards,madeUp,vacations};
 }
 
 /* ---------- schedules ---------- */
@@ -74,8 +82,9 @@ export function schedOn(r,d){
 }
 /* between the day it was created and the day it was stopped */
 export const isTracked=(r,d)=>{const k=key(d);return k>=r.created&&!(r.stopped&&k>=r.stopped)};
-export function isDue(r,d){
-  if(isRest(d)||!isTracked(r,d)) return false;
+/* pass the data so vacation days count as days off too; without it only weekends do */
+export function isDue(r,d,data){
+  if(isOff(data,d)||!isTracked(r,d)) return false;
   const s=schedOn(r,d);
   if(s.type==='days') return s.days.includes(dow(d));
   return s.type!=='off'; // daily, and weekly routines are due on every weekday
@@ -111,29 +120,30 @@ export function toggle(data,id,k){
 
 /* ---------- stats ---------- */
 /* check-ins on due days only */
-export function doneCount(data,r,a,b){let n=0;for(let d=a;d<=b;d=addDays(d,1))if(isDue(r,d)&&isDone(data,r,key(d)))n++;return n}
-/* daily and days routines: the due days. Weekly routines: max(1, round(target × weekdays / 5)) for each stretch with the same weekly schedule */
-export function expected(r,a,b){
+export function doneCount(data,r,a,b){let n=0;for(let d=a;d<=b;d=addDays(d,1))if(isDue(r,d,data)&&isDone(data,r,key(d)))n++;return n}
+/* daily and days routines: the due days. Weekly routines: max(1, round(target × working days / 5)) for each stretch with the same weekly schedule.
+   Working days are weekdays that are not vacation days. */
+export function expected(r,a,b,data){
   let n=0,seg=null,wd=0;
   const flush=()=>{if(wd)n+=Math.max(1,Math.round(seg.target*wd/5));seg=null;wd=0};
   for(let d=a;d<=b;d=addDays(d,1)){
     if(!isTracked(r,d)) continue;
     const s=schedOn(r,d);
-    if(s.type==='weekly'){if(s!==seg){if(seg)flush();seg=s} if(!isRest(d))wd++}
-    else{if(seg)flush(); if(isDue(r,d))n++}
+    if(s.type==='weekly'){if(s!==seg){if(seg)flush();seg=s} if(!isOff(data,d))wd++}
+    else{if(seg)flush(); if(isDue(r,d,data))n++}
   }
   if(seg)flush();
   return n;
 }
 /* range % = Σ min(done, expected) / Σ expected, over the routines that existed in the range */
 export function rangeStats(data,a,b){
-  let got=0,exp=0; const per=data.routines.filter(r=>existsIn(r,a,b)).map(r=>{const e=expected(r,a,b),d=doneCount(data,r,a,b);got+=Math.min(d,e);exp+=e;return{r,e,d,pct:e?Math.min(1,d/e):0}});
+  let got=0,exp=0; const per=data.routines.filter(r=>existsIn(r,a,b)).map(r=>{const e=expected(r,a,b,data),d=doneCount(data,r,a,b);got+=Math.min(d,e);exp+=e;return{r,e,d,pct:e?Math.min(1,d/e):0}});
   return {pct:exp?got/exp:0,per,exp};
 }
-const dueDaily=(r,d)=>isDue(r,d)&&schedOn(r,d).type!=='weekly';
+const dueDaily=(r,d,data)=>isDue(r,d,data)&&schedOn(r,d).type!=='weekly';
 /* share of non-weekly routines done on day d; null when none are due */
 export function dayRatio(data,d){
-  const due=data.routines.filter(r=>dueDaily(r,d));
+  const due=data.routines.filter(r=>dueDaily(r,d,data));
   if(!due.length) return null;
   const k=key(d); return due.filter(r=>isDone(data,r,k)).length/due.length;
 }
@@ -145,16 +155,18 @@ export function streaks(data,r,t){
   const weekly=schedOn(r,maxD(c,end)).type==='weekly';
   if(end<c) return {cur:0,best:0,unit:weekly?'wk':'d'};
   if(weekly){
-    const met=w=>{const s=schedOn(r,minD(addDays(w,4),end));return s.type==='weekly'&&doneCount(data,r,w,addDays(w,6))>=s.target};
+    /* each week's target is prorated by its vacation days; a week that is all vacation (target 0) is skipped: it neither counts nor breaks the streak */
+    const need=w=>{const s=schedOn(r,minD(addDays(w,4),end));return s.type==='weekly'?weekTarget(data,s.target,w):-1};
+    const met=w=>{const n=need(w);return n>0&&doneCount(data,r,w,addDays(w,6))>=n}, skip=w=>need(w)===0;
     const last=weekStart(end);
     let cur=0,w=last; if(!met(w)) w=addDays(w,-7); // the current week counts only once its target is met
-    while(w>=weekStart(c)&&met(w)){cur++;w=addDays(w,-7)}
-    let best=0,run=0; for(let w2=weekStart(c);w2<=last;w2=addDays(w2,7)){ if(met(w2)){run++;best=Math.max(best,run)} else if(+w2!==+last) run=0 }
+    for(;w>=weekStart(c);w=addDays(w,-7)){ if(skip(w)) continue; if(!met(w)) break; cur++; }
+    let best=0,run=0; for(let w2=weekStart(c);w2<=last;w2=addDays(w2,7)){ if(skip(w2)) continue; if(met(w2)){run++;best=Math.max(best,run)} else if(+w2!==+last) run=0 }
     return {cur,best,unit:'wk'};
   }
   /* rest days and days that are not due are skipped; today not done yet does not break it */
-  let cur=0; for(let d=end;d>=c;d=addDays(d,-1)){ if(!dueDaily(r,d))continue; if(isDone(data,r,key(d)))cur++; else if(+d===+t)continue; else break; }
-  let best=0,run=0; for(let d=c;d<=end;d=addDays(d,1)){ if(!dueDaily(r,d))continue; if(isDone(data,r,key(d))){run++;best=Math.max(best,run)} else if(+d!==+t) run=0 }
+  let cur=0; for(let d=end;d>=c;d=addDays(d,-1)){ if(!dueDaily(r,d,data))continue; if(isDone(data,r,key(d)))cur++; else if(+d===+t)continue; else break; }
+  let best=0,run=0; for(let d=c;d<=end;d=addDays(d,1)){ if(!dueDaily(r,d,data))continue; if(isDone(data,r,key(d))){run++;best=Math.max(best,run)} else if(+d!==+t) run=0 }
   return {cur,best,unit:'d'};
 }
 
@@ -204,11 +216,11 @@ export function weekMissed(data,today){
     const weekly=days.length&&schedOn(r,days[days.length-1]).type==='weekly';
     if(weekly){
       const s=schedOn(r,days[days.length-1]), made=days.filter(d=>isMadeUp(data,r.id,key(d)));
-      let short=s.target-(weekDone(data,r,mon)-made.length);
+      let short=weekTarget(data,s.target,mon)-(weekDone(data,r,mon)-made.length);
       for(const d of made){out.push({r,k:key(d),done:true});short--}
-      for(const d of days){ if(short<=0) break; if(!isDone(data,r,key(d))&&isDue(r,d)){out.push({r,k:key(d),done:false});short--} }
+      for(const d of days){ if(short<=0) break; if(!isDone(data,r,key(d))&&isDue(r,d,data)){out.push({r,k:key(d),done:false});short--} }
     } else for(const d of days){ const k=key(d);
-      if(isDue(r,d)&&(!isDone(data,r,k)||isMadeUp(data,r.id,k))) out.push({r,k,done:isDone(data,r,k)}); }
+      if(isDue(r,d,data)&&(!isDone(data,r,k)||isMadeUp(data,r.id,k))) out.push({r,k,done:isDone(data,r,k)}); }
   }
   return out.sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:0);
 }
@@ -226,3 +238,48 @@ export function makeUp(data,id,k,today){
   else { toggle(data,id,k); (m[k]||(m[k]=[])).push(id); }
   return true;
 }
+
+/* ---------- Vacation days ---------- */
+/* A vacation day is a weekday that counts like a weekend: nothing is due, it is left out of every %, and it never breaks a streak.
+   10 per half-year (January–June and July–December), counted by the half the day falls in. Unused days expire with the half.
+   Only today (while nothing is checked off yet) and future weekdays up to the end of the next half can be booked; past ones are locked. */
+export const VACATION_DAYS=10;
+export const isVacation=(data,d)=>!!(data&&data.vacations&&data.vacations[key(d)]);
+export const isOff=(data,d)=>isRest(d)||isVacation(data,d);
+/* '2026b' for July–December 2026 */
+function halfOf(k){return k.slice(0,4)+(+k.slice(5,7)<=6?'a':'b')}
+/* the half-year around day d: 1 January – 30 June, or 1 July – 31 December */
+export function half(d){const y=d.getFullYear(),h=d.getMonth()<6?0:6;return {start:new Date(y,h,1),end:new Date(y,h+6,0)}}
+/* the last day that can be booked: the end of the half after today's */
+export const bookUntil=today=>half(addDays(half(today).end,1)).end;
+export function vacationsLeft(data,d){
+  const h=halfOf(key(d));
+  return Math.max(0,VACATION_DAYS-Object.keys(data.vacations||{}).filter(k=>halfOf(k)===h).length);
+}
+/* the weekly target for the week of Monday w, prorated by its vacation days: max(1, round(target × working days / 5)), or 0 when the whole week is vacation */
+export function weekTarget(data,target,w){
+  const wd=[0,1,2,3,4].filter(i=>!isVacation(data,addDays(w,i))).length;
+  return wd?Math.max(1,Math.round(target*wd/5)):0;
+}
+/* '' when day k can be booked, else why not: 'weekend', 'past', 'far', 'booked', 'checked' (today, with something already ticked) or 'full' */
+export function canBook(data,k,today){
+  const d=parse(k), t=key(today);
+  if(isRest(d)) return 'weekend';
+  if(k<t) return 'past';
+  if(d>bookUntil(today)) return 'far';
+  if(isVacation(data,d)) return 'booked';
+  if(k===t&&(data.checks[k]||[]).length) return 'checked';
+  if(!vacationsLeft(data,d)) return 'full';
+  return '';
+}
+export function bookVacation(data,k,today){
+  if(canBook(data,k,today)) return false;
+  (data.vacations||(data.vacations={}))[k]=key(today); return true;
+}
+/* today's and future vacation days can be cancelled, and go back to the allowance */
+export function cancelVacation(data,k,today){
+  if(k<key(today)||!(data.vacations||{})[k]) return false;
+  delete data.vacations[k]; return true;
+}
+/* the first day after d that is neither a weekend nor a vacation day */
+export function nextWorkday(data,d){let x=addDays(d,1);while(isOff(data,x))x=addDays(x,1);return x}

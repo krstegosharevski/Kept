@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
+import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -200,4 +201,80 @@ test('Wildcard data survives normalize, and bad entries are dropped', ()=>{
   assert.deepEqual(d.madeUp,{'2026-11-11':['a']});
   const old=normalize({routines:[routine({type:'daily'})],checks:{}});
   assert.deepEqual([old.wildcards,old.madeUp],[{},{}]); // older data and backups still load
+});
+
+/* Vacation days. Tue 2026-11-17 is "today" unless a test says otherwise. */
+test('Vacation: 10 days per half-year, January–June and July–December, counted by the day taken', ()=>{
+  assert.equal(VACATION_DAYS,10);
+  assert.equal(key(half(D('2026-06-30')).end),'2026-06-30'); assert.equal(key(half(D('2026-07-01')).start),'2026-07-01');
+  assert.deepEqual([key(half(D('2026-12-31')).start),key(half(D('2026-12-31')).end)],['2026-07-01','2026-12-31']);
+  const data={routines:[routine({type:'daily'})],checks:{},vacations:{}}, t=D('2026-11-17');
+  assert.equal(vacationsLeft(data,D('2026-10-28')),10); // started in October: 10 for October–December, not 20
+  for(const k of ['2026-11-18','2026-12-21','2026-12-22','2026-12-23','2026-12-24','2026-12-25','2026-12-28','2026-12-29','2026-12-30','2026-12-31'])
+    assert.equal(bookVacation(data,k,t),true,k);
+  assert.equal(vacationsLeft(data,t),0);
+  assert.equal(canBook(data,'2026-11-19',t),'full'); // the 11th day
+  assert.equal(vacationsLeft(data,D('2027-01-01')),10); // 10 new days on 1 January
+  assert.equal(bookVacation(data,'2027-01-04',t),true); // booked in November, counts against January–June
+  assert.deepEqual([vacationsLeft(data,D('2027-03-01')),vacationsLeft(data,t)],[9,0]);
+});
+
+test('Vacation: only today and future weekdays, up to the end of the next half; past ones are locked', ()=>{
+  const t=D('2026-11-17'), data={routines:[routine({type:'daily'})],checks:{'2026-11-17':['a']},vacations:{}};
+  assert.equal(canBook(data,'2026-11-21',t),'weekend');
+  assert.equal(canBook(data,'2026-11-16',t),'past');
+  assert.equal(canBook(data,'2026-11-17',t),'checked'); // something is already ticked off today
+  delete data.checks['2026-11-17'];
+  assert.equal(canBook(data,'2026-11-17',t),'');
+  assert.equal(key(bookUntil(t)),'2027-06-30');
+  assert.deepEqual([canBook(data,'2027-06-30',t),canBook(data,'2027-07-01',t)],['','far']);
+  assert.equal(bookVacation(data,'2026-11-20',t),true);
+  assert.equal(canBook(data,'2026-11-20',t),'booked');
+  assert.equal(cancelVacation(data,'2026-11-20',t),true); // back to the allowance
+  assert.equal(vacationsLeft(data,t),10);
+  bookVacation(data,'2026-11-18',t);
+  assert.equal(cancelVacation(data,'2026-11-18',D('2026-11-19')),false); // in the past now
+  assert.equal(isVacation(data,D('2026-11-18')),true);
+});
+
+test('Vacation: a vacation day is not due, lifts the %, keeps the streak, and is never "missed"', ()=>{
+  const r=routine({type:'daily'}), mon=D('2026-11-09'), fri=D('2026-11-13');
+  const data={routines:[r],checks:{'2026-11-09':['a'],'2026-11-10':['a'],'2026-11-12':['a'],'2026-11-13':['a']},wildcards:{},madeUp:{},vacations:{}};
+  assert.equal(rangeStats(data,mon,fri).pct,.8);
+  assert.equal(streaks(data,r,fri).cur,2);
+  data.vacations={'2026-11-11':'2026-11-02'};
+  assert.equal(isDue(r,D('2026-11-11'),data),false);
+  assert.equal(isDue(r,D('2026-11-11')),true); // without the data only weekends are off
+  assert.equal(isOff(data,D('2026-11-11')),true);
+  assert.equal(rangeStats(data,mon,fri).pct,1);
+  assert.equal(dayRatio(data,D('2026-11-11')),null);
+  assert.equal(streaks(data,r,fri).cur,4);
+  assert.deepEqual(weekMissed(data,D('2026-11-14')),[]);
+  assert.equal(key(nextWorkday(data,D('2026-11-10'))),'2026-11-12');
+  assert.equal(key(nextWorkday(data,fri)),'2026-11-16');
+});
+
+test('Vacation: weekly routines are prorated, and a whole week away is skipped by the streak', ()=>{
+  const r=routine({type:'weekly',target:5},{id:'w',created:'2026-10-26',schedules:[{from:'2026-10-26',type:'weekly',target:5}]});
+  const checks={}, vacations={};
+  for(const k of ['2026-10-26','2026-10-27','2026-10-28','2026-10-29','2026-10-30','2026-11-11','2026-11-12','2026-11-13']) checks[k]=['w'];
+  for(const k of ['2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-09','2026-11-10']) vacations[k]='2026-10-20';
+  const data={routines:[r],checks,wildcards:{},madeUp:{},vacations};
+  assert.equal(weekTarget(data,5,D('2026-11-09')),3); // 2 days away: 3 of 5
+  assert.equal(expected(r,D('2026-11-09'),D('2026-11-15'),data),3);
+  assert.equal(expected(r,D('2026-11-02'),D('2026-11-08'),data),0); // the whole week away
+  assert.equal(rangeStats(data,D('2026-11-09'),D('2026-11-15')).pct,1);
+  assert.deepEqual(streaks(data,r,D('2026-11-15')),{cur:2,best:2,unit:'wk'});
+});
+
+test('Vacation data survives normalize, and bad entries are dropped', ()=>{
+  const v={'2026-11-21':'2026-11-17','2026-11-18':'2026-11-17','2026-11-19':'soon','2026-02-30':'2026-01-01','2026-11-20':'2026-11-17'};
+  const jan=['2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08','2027-01-11','2027-01-12','2027-01-13','2027-01-14','2027-01-15','2027-01-18'];
+  for(const k of jan) v[k]='2026-11-17';
+  const d=normalize({routines:[routine({type:'daily'})],checks:{'2026-11-20':['a']},vacations:v});
+  assert.deepEqual(Object.keys(d.vacations).filter(k=>k<'2027'),['2026-11-18']); // a weekend, a bad booking date, an impossible date and a day with check-ins are dropped
+  assert.deepEqual(d.checks['2026-11-20'],['a']); // the check-ins win
+  assert.equal(Object.keys(d.vacations).filter(k=>k>'2027').length,10); // 11 in one half: the latest goes
+  assert.equal(d.vacations['2027-01-18'],undefined);
+  assert.deepEqual(normalize({routines:[],checks:{}}).vacations,{}); // older data and backups still load
 });

@@ -1,7 +1,8 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from './logic.js';
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
+  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
-import {startWater,doneDandelion,slowDandelion} from './scene.js';
+import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
 
 /* Apple system colors: green, blue, purple, teal, orange, pink */
@@ -13,7 +14,7 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const VERSION='1.0.0';
-const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{}});
+const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{}});
 let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
@@ -47,7 +48,7 @@ function schedText(r,d){
   const s=schedOn(r,d||TODAY());
   if(s.type==='daily'||s.type==='off') return 'Mon – Fri';
   if(s.type==='days') return s.days.length>=5?'Mon – Fri':s.days.slice().sort().map(i=>DAYS[i]).join(' · ');
-  return d?`${weekDone(S,r,d)} of ${s.target} this week`:`${s.target}× per week`;
+  return d?`${weekDone(S,r,d)} of ${weekTarget(S,s.target,weekStart(d))} this week`:`${s.target}× per week`; // fewer in a week with vacation days
 }
 
 /* ---------- icons, drawn in the style of Apple's SF Symbols ---------- */
@@ -83,13 +84,13 @@ function rankFrame(i,inner){
 }
 
 function renderToday(){
-  const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=isRest(d),yest=+d===+addDays(t,-1);
-  const due=S.routines.filter(r=>isDue(r,d));
+  const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=isRest(d),away=!rest&&isVacation(S,d),yest=+d===+addDays(t,-1);
+  const due=S.routines.filter(r=>isDue(r,d,S));
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
   const rk=S.routines.length?monthResult(S,monthStart(d),t):null; // the rank of the shown day's month, on every day, so the header never changes shape
   const date=`${isToday||yest?DAYS_FULL[dow(d)]+' ':''}${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear()!==t.getFullYear()?' '+d.getFullYear():''}`;
-  let html=`<header class="head">${rk?.rank!=null?rankFrame(rk.rank,`<div class="eyebrow">${date}</div><h1>${title}</h1>`):`<div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>`}${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:ring(done,due.length)}</header>
+  let html=`<header class="head">${rk?.rank!=null?rankFrame(rk.rank,`<div class="eyebrow">${date}</div><h1>${title}</h1>`):`<div class="titles"><div class="eyebrow">${date}</div><h1>${title}</h1></div>`}${rest?`<div class="restbadge" aria-hidden="true">${MOON}</div>`:away?`<div class="restbadge vacbadge" aria-hidden="true">${flyingPelican()}</div>`:ring(done,due.length)}</header>
     <div class="daynav"><span></span><div class="ggroup glass"><button class="gbtn" data-act="prevDay" aria-label="Previous day">${CHEV_L}</button><button class="gbtn" data-act="nextDay" aria-label="Next day" ${isToday?'disabled':''}>${CHEV_R}</button></div>
     ${isToday?'<span></span>':'<button class="gpill glass" data-act="goToday" aria-label="Back to today">Today</button>'}</div>`;
   if(isToday&&reminderDue()) html+=`<div class="group reminder"><div class="row"><div class="body"><div class="name">Time for a backup</div>
@@ -100,6 +101,8 @@ function renderToday(){
       ?`<div class="restcard">${MOON}<h3>Rest day</h3><p>You used a Wildcard: this weekend you can finish what you missed this week. It counts for the day you missed it.</p></div>`
       :`<div class="restcard">${MOON}<h3>Rest day</h3><p>Saturdays and Sundays are for resting, so there is nothing to check off.${isToday?' Your routines start again on Monday.':''}</p></div>`;
     if(isToday) html+=wildcardSection(t); // the Wildcard, if something was missed this week
+  } else if(away){
+    html+=vacationDay(d,isToday);
   } else if(!S.routines.length){
     html+=`<div class="empty"><div class="dslot"></div><h3>No routines yet</h3><p>Add your first one, like “Eat healthy”, and tick it off each day.</p><button class="primary" data-act="new">Add a routine</button></div>`;
   } else if(!due.length){
@@ -114,6 +117,7 @@ function renderToday(){
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
+  if(isToday&&!rest&&!away&&S.routines.length) html+=vacationCard(t); // weekdays: plan a vacation (weekends have the Wildcard)
   $app.innerHTML=html; popId=null;
   const slot=$app.querySelector('.dslot');
   if(slot){quietDandelion??=slowDandelion(); if(!quietDandelion.dataset.done) slot.append(quietDandelion)}
@@ -176,11 +180,12 @@ function renderStats(){
     +`<div class="card">${kpi(Math.round(st.pct*100),'Completed')}
     <div class="bars">${[...Array(7)].map((_,i)=>{const d=addDays(a,i),td=+d===+t?' today':'';
       if(isRest(d)) return `<div class="bar rest${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Rest</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
+      if(isVacation(S,d)) return `<div class="bar vac${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Away</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
       const fut=d>t,v=fut?null:dayRatio(S,d),h=v==null?0:Math.round(v*100);
       return `<div class="bar${fut?' future':h?'':' zero'}${td}"><span class="p">${fut||v==null?'':h+'%'}</span><div class="cw"><div class="col" style="height:${h}%"></div></div><span class="d">${DAYS1[i]}</span></div>`}).join('')}</div></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat" style="--c:${r.color}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
-      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(dd>t||!isDue(r,dd))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
+      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(isVacation(S,dd))return '<i class="vac"></i>';if(dd>t||!isDue(r,dd,S))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
     const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0);
     const st=monthResult(S,a,t);
@@ -188,7 +193,9 @@ function renderStats(){
     let cells=DAYS1.map(x=>`<span class="h">${x}</span>`).join('')+'<span class="day blank"></span>'.repeat(dow(a));
     for(let d=a;d<=b;d=addDays(d,1)){const td=+d===+t?' today':'';
       if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
-      const fut=d>t,lv=fut?0:level(dayRatio(S,d));
+      const fut=d>t;
+      if(isVacation(S,d)){cells+=`<span class="day vac${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, vacation day">${d.getDate()}</span>`;continue}
+      const lv=fut?0:level(dayRatio(S,d));
       cells+=`<button class="day l${lv}${fut?' future':''}${td}${(S.madeUp||{})[key(d)]?' mu':''}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
     /* the month's rank next to its %: final (locked) once the month is over, live until then */
     const rk=st.rank==null?'':`<div class="ycap${st.final?' final':''}">${st.final?LOCK+'Final rank':'Rank so far'}</div>
@@ -196,8 +203,8 @@ function renderStats(){
     html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
-    <div class="legend">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More<i class="day rest gapl"></i>Rest<i class="mul gapl"></i>Made up</div>
-    <p class="foot">Tap a day to see what you did. Black days are rest days.</p></div>
+    <div class="legend"><span class="lg">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div>
+    <p class="foot">Tap a day to see what you did. Black days are rest days, blue days vacation.</p></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat" style="--c:${r.color}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${Math.round(pct*100)}%</div>
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>
@@ -267,7 +274,7 @@ function openEditor(id){
 }
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
 function renderSheet(){
-  if(!edit){$sheet.innerHTML='';return}
+  if(!edit){if(vac)renderVacSheet();else $sheet.innerHTML='';return}
   const s=edit.sched, top=$sheet.querySelector('.sheet')?.scrollTop||0;
   $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${edit.id?'Edit routine':'New routine'}">
     <div class="grabber" aria-hidden="true"></div>
@@ -327,6 +334,129 @@ function askWildcard(){
     <p>This unlocks the weekend so you can finish the <span class="num">${todo}</span> routine${todo===1?'':'s'} you missed this week. You have <span class="num">${left}</span> of <span class="num">${WILDCARDS_PER_MONTH}</span> left this month.</p>
     <button class="primary" data-act="wildUse">Use Wildcard</button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
   $done.querySelector('.donecard').focus({preventScroll:true});
+}
+
+/* ---------- Vacation: weekdays taken off, 10 per half-year (logic.js) ---------- */
+const MON3=m=>MONTHS[m].slice(0,3);
+const dm=d=>`${d.getDate()} ${MON3(d.getMonth())}`;
+const halfEnd=d=>dm(half(d).end); // "30 Jun" or "31 Dec"
+const newDaysOn=d=>`1 ${MONTHS[half(d).end.getMonth()+1]??'January'}`; // when the next 10 days come
+/* days grouped into stretches; a weekend inside a stretch doesn't split it (Fri 25 – Mon 28 Dec is one stretch) */
+function stretches(keys){
+  const out=[];
+  for(const k of [...keys].sort()){
+    const d=parse(k), last=out[out.length-1];
+    let n=last&&addDays(last.b,1); while(n&&isRest(n)) n=addDays(n,1);
+    if(last&&+n===+d) last.b=d; else out.push({a:d,b:d});
+  }
+  return out;
+}
+const stretchText=({a,b},wd)=>{const f=d=>(wd?DAYS[dow(d)]+' ':'')+dm(d);
+  return +a===+b?f(a):!wd&&a.getMonth()===b.getMonth()?`${a.getDate()}–${dm(b)}`:`${f(a)} – ${f(b)}`};
+const andList=p=>p.length<2?p.join(''):p.slice(0,-1).join(', ')+' and '+p[p.length-1];
+const daysText=keys=>andList(stretches(keys).map(s=>stretchText(s)));
+/* the sky strip with the pelican gliding across it, on the card and on a vacation day */
+const sky=()=>`<div class="vsky" aria-hidden="true"><span class="vfly">${flyingPelican()}</span>
+  <svg class="vwave" viewBox="0 0 200 10" preserveAspectRatio="none"><path d="M0 6Q12.5 1 25 6T50 6T75 6T100 6T125 6T150 6T175 6T200 6"/></svg></div>`;
+
+/* on weekdays, below the routines: days left this half, the next trip, and the button */
+function vacationCard(t){
+  const left=vacationsLeft(S,t), next=stretches(Object.keys(S.vacations||{}).filter(k=>k>key(t)))[0];
+  return `<div class="vcard">${sky()}<div class="vtitle">Vacation</div>
+    <div class="hint">${left?`<span class="num">${left}</span> of <span class="num">${VACATION_DAYS}</span> days left until ${halfEnd(t)}.`:`No vacation days left. ${VACATION_DAYS} new days on ${newDaysOn(t)}.`}${next?` Next: ${stretchText(next,true)}.`:''}</div>
+    <button class="primary vbtn" data-act="vacOpen">Plan a vacation</button></div>`;
+}
+function vacationDay(d,isToday){
+  const nw=nextWorkday(S,d), back=+nw===+addDays(d,1)?'tomorrow':`on ${DAYS_FULL[dow(nw)]} ${nw.getDate()} ${MONTHS[nw.getMonth()]}`;
+  return `<div class="restcard vaccard">${sky()}<h3>Vacation day</h3>
+    <p>${isToday?`Enjoy the break: there is nothing to check off. Your routines start again ${back}.`:'Nothing was due on this day.'}</p>
+    ${isToday?`<button class="pill vcancel" data-act="vacCancelToday">Cancel today's vacation</button>`:''}</div>`;
+}
+
+/* the booking sheet: a month calendar from this month to the end of the next half-year. Tap free weekdays to pick them,
+   tap a booked (blue) day to cancel it; nothing changes until Save and the confirm. */
+let vac=null; // {m: the month shown, add: days picked, del: booked days to cancel, shake: a day tapped with none left}
+function openVacation(){vac={m:monthStart(TODAY()),add:new Set(),del:new Set(),shake:null};sheetOpening=true;renderSheet()}
+const sameHalf=(k,d)=>+half(parse(k)).start===+half(d).start;
+/* what would be left in d's half after the picks and cancels */
+const leftAfter=d=>vacationsLeft(S,d)-[...vac.add].filter(k=>sameHalf(k,d)).length+[...vac.del].filter(k=>sameHalf(k,d)).length;
+function renderVacSheet(){
+  const t=TODAY(), a=vac.m, b=new Date(a.getFullYear(),a.getMonth()+1,0), until=bookUntil(t), top=$sheet.querySelector('.sheet')?.scrollTop||0;
+  let cells=DAYS1.map(x=>`<span class="h">${x}</span>`).join('')+'<span class="day blank"></span>'.repeat(dow(a));
+  for(let d=a;d<=b;d=addDays(d,1)){
+    const k=key(d), td=+d===+t?' today':'', lbl=`${d.getDate()} ${MONTHS[d.getMonth()]}`, n=d.getDate(), booked=isVacation(S,d);
+    if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${lbl}, rest day">${n}</span>`;continue}
+    if(d<t||d>until){cells+=`<span class="day future${booked?' vac':''}${td}" role="img" aria-label="${lbl}${booked?', vacation day':''}">${n}</span>`;continue}
+    if(booked){const x=vac.del.has(k);
+      cells+=`<button class="day vac${x?' vdel':''}${td}" data-act="vacPick" data-k="${k}" aria-pressed="${x}" aria-label="${lbl}, vacation day${x?', will be cancelled':''}">${n}</button>`;continue}
+    if(canBook(S,k,t)==='checked'){cells+=`<span class="day future${td}" role="img" aria-label="${lbl}, already checked off">${n}</span>`;continue}
+    const sel=vac.add.has(k);
+    cells+=`<button class="day vopen${sel?' vsel':''}${vac.shake===k?' shake':''}${td}" data-act="vacPick" data-k="${k}" aria-pressed="${sel}" aria-label="${lbl}">${n}</button>`;
+  }
+  vac.shake=null;
+  /* what is left in this half, and in any other half with changes */
+  const halves=new Map([[+half(t).start,t]]); for(const k of [...vac.add,...vac.del]) halves.set(+half(parse(k)).start,parse(k));
+  const counts=[...halves.values()].sort((x,y)=>x-y).map(d=>`<span class="num">${leftAfter(d)}</span> of <span class="num">${VACATION_DAYS}</span> left until ${halfEnd(d)}`).join(' · ');
+  const na=vac.add.size, nd=vac.del.size, any=na||nd;
+  const btn=na&&nd?'Save changes':na?`Take ${na} vacation day${na===1?'':'s'}`:nd?`Cancel ${nd} vacation day${nd===1?'':'s'}`:'Pick your days';
+  const picked=[na?`<span class="num">${na}</span> picked`:'',nd?`<span class="num">${nd}</span> to cancel`:''].filter(Boolean).join(' · ');
+  $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet vsheet" role="dialog" aria-modal="true" aria-label="Plan a vacation">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheethead"><button class="gbtn glass" data-act="close" aria-label="Close">${XMARK}</button><h2>Vacation</h2><button class="gbtn prominent" data-act="vacSave" aria-label="Save" ${any?'':'disabled'}>${TICK}</button></div>
+    <p class="gf first">Pick the weekdays you'll be away. They count like weekends: nothing is due, and your %, rank and streaks are safe.</p>
+    <div class="rangehead"><button class="gbtn glass" data-act="vacPrevM" aria-label="Previous month" ${+a===+monthStart(t)?'disabled':''}>${CHEV_L}</button>
+      <div class="lbl">${monthName(a)}</div><button class="gbtn glass" data-act="vacNextM" aria-label="Next month" ${+a===+monthStart(until)?'disabled':''}>${CHEV_R}</button></div>
+    <div class="card"><div class="heat">${cells}</div>
+      <div class="legend"><span class="lg"><i class="day vsel"></i>Picked</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="day rest"></i>Rest</span></div></div>
+    <p class="vcount">${picked?picked+' · ':''}${counts}</p>
+    <button class="primary" data-act="vacSave" ${any?'':'disabled'}>${btn}</button>
+    <p class="gf">You get ${VACATION_DAYS} vacation days from January to June and ${VACATION_DAYS} from July to December. Days you don't use don't carry over. Tap a blue day to cancel it.</p>
+  </div></div>`;
+  $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
+}
+function pickVacation(k){
+  const d=parse(k);
+  if(isVacation(S,d)) vac.del.has(k)?vac.del.delete(k):vac.del.add(k);
+  else if(vac.add.has(k)) vac.add.delete(k);
+  else if(leftAfter(d)<=0){vac.shake=k;toast(`No days left until ${newDaysOn(d)}`)}
+  else vac.add.add(k);
+  renderSheet();
+}
+function askVacation(){
+  const na=vac.add.size, nd=vac.del.size; if(!na&&!nd) return;
+  const title=na&&nd?'Save changes?':na?`Take ${na} vacation day${na===1?'':'s'}?`:`Cancel ${nd} vacation day${nd===1?'':'s'}?`;
+  const halves=new Map(); for(const k of [...vac.add,...vac.del]) halves.set(+half(parse(k)).start,parse(k));
+  const after=andList([...halves.values()].sort((x,y)=>x-y).map((d,i)=>`<span class="num">${leftAfter(d)}</span> of <span class="num">${VACATION_DAYS}</span> ${i?'':'left '}until ${halfEnd(d)}`));
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard" role="dialog" aria-modal="true" aria-labelledby="vcTitle" tabindex="-1">
+    <div class="vicon">${flyingPelican()}</div><h2 id="vcTitle">${title}</h2>
+    <p>${na?`${daysText(vac.add)}.`:''}${na&&nd?' ':''}${nd?`Cancel ${daysText(vac.del)}.`:''} You'll have ${after}.</p>
+    <button class="primary" data-act="vacConfirm">${na&&nd?'Save':na?'Take vacation':'Cancel vacation'}</button><button class="row link center wcancel" data-act="done">${nd&&!na?'Keep':'Not now'}</button></div></div>`;
+  $done.querySelector('.donecard').focus({preventScroll:true});
+}
+function saveVacation(){
+  const t=TODAY(), want=vac.add.size; let cancelled=0; const booked=[];
+  for(const k of vac.del) if(cancelVacation(S,k,t)) cancelled++; // cancels first, so their days can be booked again
+  for(const k of [...vac.add].sort()) if(bookVacation(S,k,t)) booked.push(k);
+  commit(); closeDone(); vac=null; renderSheet(); render();
+  if(booked.length) flyPelican(booked[0]);
+  toast(booked.length<want?"Some days couldn't be booked":booked.length?'Vacation booked':`Vacation day${cancelled===1?'':'s'} cancelled`);
+}
+/* after booking: the card's pelican takes off and flies across the screen with the first day hanging from its bill. It never catches taps. */
+function flyPelican(k){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const d=parse(k), el=document.createElement('div');
+  el.className='vflight'; el.setAttribute('aria-hidden','true');
+  el.innerHTML=`<div class="vf-path"><div class="vf-bird">${flyingPelican()}</div><span class="vf-tile"><i>${MON3(d.getMonth())}</i><b>${d.getDate()}</b></span></div>`;
+  const from=$app.querySelector('.vcard .vfly')?.getBoundingClientRect(), W=innerWidth, H=innerHeight;
+  const x0=from?.width?from.left:-150, y0=from?.width?from.top:H*.7;
+  document.body.append(el); document.body.classList.add('vflying');
+  const end=()=>{el.remove();document.body.classList.remove('vflying')};
+  el.firstChild.animate([
+    {transform:`translate(${x0}px,${y0}px) scale(.46) rotate(-4deg)`},
+    {transform:`translate(${x0+W*.2}px,${y0-H*.14}px) scale(.85) rotate(-12deg)`,offset:.3},
+    {transform:`translate(${W*.55}px,${H*.24}px) scale(1) rotate(3deg)`,offset:.68},
+    {transform:`translate(${W+40}px,${H*.08}px) scale(1) rotate(-8deg)`}],
+    {duration:2600,easing:'cubic-bezier(.45,0,.55,1)',fill:'forwards'}).finished.then(end,end);
 }
 
 /* ---------- Rank change: a full-screen animation whenever a tap moves this month's rank up or down ---------- */
@@ -412,12 +542,12 @@ document.addEventListener('click',e=>{
   const a=el.dataset.act;
   if((a==='closeBg'||a==='doneBg'||a==='rankBg')&&e.target!==el)return;
   switch(a){
-    case 'toggle': { if(+viewDate!==+TODAY()||isRest(viewDate)){toast('Only today can be checked off');render();break}
+    case 'toggle': { if(+viewDate!==+TODAY()||isOff(S,viewDate)){toast(isVacation(S,viewDate)?'This is a vacation day':'Only today can be checked off');render();break}
       const id=el.dataset.id,k=key(viewDate),before=rankNow(); toggle(S,id,k); commit();
       const ticked=isDone(S,{id},k), move=rankMove(before,rankNow());
       if(ticked) popId=id;
       render();
-      const due=S.routines.filter(r=>isDue(r,viewDate)), allDone=ticked&&due.every(r=>isDone(S,r,k));
+      const due=S.routines.filter(r=>isDue(r,viewDate,S)), allDone=ticked&&due.every(r=>isDone(S,r,k));
       if(move) showRank(move,allDone); else if(allDone) showDone(due.length); // a rank change comes first; else, if that was the last one for today, "All done"
       break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); ringFrac=null; render(); break;
@@ -432,10 +562,17 @@ document.addEventListener('click',e=>{
     case 'nextM': monthRef=new Date(monthRef.getFullYear(),monthRef.getMonth()+1,1); render(); break;
     case 'new': openEditor(null); break;
     case 'edit': openEditor(el.dataset.id); break;
-    case 'close': case 'closeBg': edit=null; renderSheet(); break;
+    case 'close': case 'closeBg': edit=null; vac=null; renderSheet(); break;
     case 'done': case 'doneBg': closeDone(); break;
     case 'rankDone': case 'rankBg': if(Date.now()-ruAt>1600) closeDone(); break;
     case 'wildAsk': askWildcard(); break;
+    case 'vacOpen': openVacation(); break;
+    case 'vacPick': pickVacation(el.dataset.k); break;
+    case 'vacPrevM': vac.m=new Date(vac.m.getFullYear(),vac.m.getMonth()-1,1); renderSheet(); break;
+    case 'vacNextM': vac.m=new Date(vac.m.getFullYear(),vac.m.getMonth()+1,1); renderSheet(); break;
+    case 'vacSave': askVacation(); break;
+    case 'vacConfirm': saveVacation(); break;
+    case 'vacCancelToday': { const t=TODAY(); if(cancelVacation(S,key(t),t)){commit();toast('Vacation day cancelled')} ringFrac=null; render(); break; }
     case 'wildUse': { const ok=useWildcard(S,TODAY()); closeDone(); if(ok){commit();toast('Weekend unlocked')} else toast("A Wildcard can't be used now"); render(); break; }
     case 'makeup': { const id=el.dataset.id,k=el.dataset.k,t=TODAY(),before=rankNow();
       if(!makeUp(S,id,k,t)){toast('This weekend is not unlocked');render();break}
@@ -472,7 +609,7 @@ document.addEventListener('click',e=>{
       eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit){edit=null;renderSheet()}});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit||vac){edit=null;vac=null;renderSheet()}});
 
 /* ---------- backup and restore ---------- */
 /* the share sheet on iPhone (Save to Files or iCloud Drive), a download elsewhere. Only a finished share or download counts as a backup. */
@@ -502,6 +639,6 @@ systemDark.addEventListener('change',()=>{applyTheme();if(view==='settings')rend
 render();
 loadArt();
 if(loaded.error) toast("Couldn't read your saved data. A copy was set aside.");
-startWater(document.getElementById('water'));
+startWater(document.getElementById('water'),{pelicanSky:()=>isVacation(S,TODAY())}); // on a vacation day a pelican crosses the sky
 /* offline support; the service worker also brings updates in the next time the app opens online */
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
