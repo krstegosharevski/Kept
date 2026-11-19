@@ -16,13 +16,14 @@ const FX_COLORS=new Set(['#39FF14','#1F51FF','#BC13FE','#00F5D4','#FF5F1F']);
 let fxOn=false;
 const fxRefresh=()=>{fxOn=neonUnlocked(S,TODAY())};
 const FX_PLAIN={'#39FF14':'#34C759','#1F51FF':'#007AFF','#BC13FE':'#AF52DE','#00F5D4':'#30B0C7','#FF5F1F':'#FF9500'};
-const shown=c=>{const u=String(c).toUpperCase();return FX_COLORS.has(u)&&!fxOn?FX_PLAIN[u]:c};
+/* an unlocked neon colour goes into the page as a theme token (--n-green …) with its check-mark colour (--ck),
+   so light mode can use its own deeper, calmer value (styles.css) and switching mode updates it at once */
+const NEON_VAR={'#39FF14':'green','#1F51FF':'blue','#BC13FE':'purple','#00F5D4':'teal','#FF5F1F':'orange'};
+const cssColor=c=>{const n=NEON_VAR[String(c).toUpperCase()];return n?`var(--n-${n});--ck:var(--n-${n}-ink)`:c};
+const shown=c=>{const u=String(c).toUpperCase();return FX_COLORS.has(u)?(fxOn?cssColor(u):FX_PLAIN[u]):c};
 const fx=c=>fxOn&&FX_COLORS.has(String(c).toUpperCase())?' fx':'';
 const fxLocked=c=>FX_COLORS.has(c)&&!fxOn;
 let colPop=null; // the colour just tapped in the picker: it pops once
-/* the done check mark is white, except on very light colours (the neon), where it turns black so it stays readable */
-const lum=hex=>{const v=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2]};
-const inkCls=c=>/^#[0-9A-F]{6}$/i.test(c)&&lum(c)>.6?' lc':'';
 const EMOJI=['🥗','🏋️','📖','💧','📞','🧘','🛏️','🚶','✍️','🎸','🧹','☀️','🍎','📵','🧠','🌱','🚀','💰','💊'];
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DAYS1=['M','T','W','T','F','S','S'];
@@ -48,6 +49,7 @@ const systemDark=matchMedia('(prefers-color-scheme: dark)');
 const isDark=()=>meta.theme?meta.theme==='dark':systemDark.matches;
 function applyTheme(){
   const r=document.documentElement; if(meta.theme) r.setAttribute('data-theme',meta.theme); else r.removeAttribute('data-theme');
+  r.classList.toggle('lightmode',!isDark()); // the neon colours' light-mode look (styles.css, "Hong Kong") hangs on this
   /* the status bar colour: both tags show the chosen colour, or each its own when following the device */
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.content=(meta.theme?meta.theme==='dark':m.media.includes('dark'))?'#000000':'#F2F2F7'});
   dispatchEvent(new Event('kept-theme')); // the lake repaints in the new colours
@@ -129,7 +131,7 @@ function renderToday(){
       const hint=past?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
       const ctl=past?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
-      return `<div class="row item${inkCls(shown(r.color))}${fx(r.color)}${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
+      return `<div class="row item${fx(r.color)}${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
@@ -218,8 +220,9 @@ function renderStats(){
     html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
-    <div class="legend"><span class="lg"><i class="day miss"></i>Missed</span><span class="lg">Less<i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div>
-    <p class="foot">Tap a day to see what you did. Red days were missed, black days are rest days, blue days vacation.</p></div>
+    <div class="legend rows"><div class="lgrow"><span class="lg"><i class="day miss"></i>Missed</span><span class="lg">Less<i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span></div>
+      <div class="lgrow"><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div></div>
+    <p class="foot">Tap a day to see what you did.</p></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat${fx(r.color)}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${Math.round(pct*100)}%</div>
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>
@@ -330,11 +333,18 @@ function saveRule(){
   commit(); toast(x?'Rule saved':'Rule added'); rule=null; renderSheet(); render();
 }
 
+/* every neon effect runs on one shared clock, so the shine happens on all of them at the same moment, however long ago each was
+   drawn (a re-render after a tick, the colour picker opening later). Each animation is lined up to the start of the page's timeline. */
+const FX_SYNC=/^fx(sign|glint|glow|pulse|shine|spin|flow|flowy)$/;
+function syncFx(){
+  try{ for(const a of document.getAnimations()) if(FX_SYNC.test(a.animationName)) a.startTime=-(a.effect?.getTiming?.().delay||0); }catch(e){}
+}
 function render(){
   fxRefresh();
   const tabOn=view==='rules'?'settings':view; // Rules is a page inside Settings
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tabOn?'page':'false'));
   ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings,rules:renderRules})[view]();
+  syncFx();
 }
 
 /* ---------- editor sheet ---------- */
@@ -348,7 +358,7 @@ function openEditor(id){
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
 function renderSheet(){
   fxRefresh();
-  if(!edit){if(vac)renderVacSheet();else if(rule)renderRuleSheet();else $sheet.innerHTML='';return}
+  if(!edit){if(vac)renderVacSheet();else if(rule)renderRuleSheet();else $sheet.innerHTML='';syncFx();return}
   const s=edit.sched, top=$sheet.querySelector('.sheet')?.scrollTop||0;
   $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${edit.id?'Edit routine':'New routine'}">
     <div class="grabber" aria-hidden="true"></div>
@@ -358,7 +368,7 @@ function renderSheet(){
     <div class="gh">Icon</div>
     <div class="group pad"><div class="picks">${EMOJI.map(e=>`<button class="emo" data-act="emo" data-v="${e}" aria-pressed="${edit.emoji===e}">${e}</button>`).join('')}</div></div>
     <div class="gh">Color</div>
-    <div class="group pad"><div class="picks colors">${COLORS.map(c=>{const lk=fxLocked(c);return `<button class="sw${fx(c)}${lk?' locked':''}${fx(c)&&c===colPop?' pop':''}" style="--c:${c}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="${COLOR_NAMES[c]}${lk?', locked until Iron Will':''}">${lk?LOCK:''}</button>`}).join('')}</div></div>
+    <div class="group pad"><div class="picks colors">${COLORS.map(c=>{const lk=fxLocked(c);return `<button class="sw${fx(c)}${lk?' locked':''}${fx(c)&&c===colPop?' pop':''}" style="--c:${cssColor(c)}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="${COLOR_NAMES[c]}${lk?', locked until Iron Will':''}">${lk?LOCK:fx(c)?'<i class="gl" aria-hidden="true"></i>':''}</button>`}).join('')}</div></div>
     <p class="gf">${fxOn?'The neon colours are unlocked: your rank this month is Iron Will or higher.':'The neon colours unlock at Iron Will. Reach it this month to use them.'}</p>
     ${edit.stopped?`<div class="gh">How often</div><p class="gf first">Stopped ${short(edit.stopped)}. Resume tracking to change how often.</p>`:`<div class="gh">How often</div>
     <div class="group pad"><div class="seg" role="group" aria-label="How often">
@@ -376,6 +386,7 @@ function renderSheet(){
     ${confirmDel?'<p class="gf">Tap again to delete it for good. This cannot be undone.</p>':''}`:''}
   </div></div>`;
   $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
+  syncFx();
 }
 function syncName(){const i=document.getElementById('rname');if(i&&edit)edit.name=i.value}
 
@@ -390,7 +401,7 @@ function wildcardSection(t){
     let h=`<div class="gh wch">${WILD(16)}Wildcard · this week</div>`;
     if(!miss.length) h+='<p class="gf first">Nothing to make up.</p>';
     h+=Object.entries(byDay).map(([k,items])=>{const day=DAYS_FULL[dow(parse(k))];return `<div class="gh">${day}</div><div class="group tiles">${items.map(({r,done})=>
-      `<div class="row item${inkCls(shown(r.color))}${fx(r.color)}${done?' done':''}${popId===r.id+'@'+k?' pop':''}" style="--c:${shown(r.color)}"><div class="tile">${r.emoji}</div>
+      `<div class="row item${fx(r.color)}${done?' done':''}${popId===r.id+'@'+k?' pop':''}" style="--c:${shown(r.color)}"><div class="tile">${r.emoji}</div>
       <div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${done?'Made up':'Missed on '+day}</div></div>
       <button class="check" data-act="makeup" data-id="${r.id}" data-k="${k}" aria-pressed="${done}" aria-label="Make up ${esc(r.name)} for ${day}"><span class="ci">${CHECK}</span></button></div>`).join('')}</div>`}).join('');
     if(miss.length&&!todo) h+='<p class="note">Week made up. Enjoy the rest of your weekend.</p>';
