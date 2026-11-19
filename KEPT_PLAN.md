@@ -227,6 +227,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 ### Settings
 
 - **Appearance:** a Dark mode switch. Until it is used, Kept follows the device's light or dark setting. Using it saves `theme` ('light' or 'dark') with the backup bookkeeping in localStorage, and "Use device setting" clears it. index.html applies the saved choice before the page draws, so it never flashes; the status bar colour and the lake follow it. Erase all data resets it.
+- **Rules:** a row beneath Dark mode opens the Rules page: a "‹ Settings" back button, a **New rule** button, and the rules grouped under their routine (tap one to edit or delete it). A rule is a text of up to 255 characters that belongs to one routine (picked in the sheet; active routines first). Data: `rules` [{id, routine, text, created}], kept by normalize (empty ones and ones for unknown routines are dropped) and in backups; deleting a routine deletes its rules. Rules are notes only: they do not change any stats.
 - **Save backup:**
   - Create the file `kept-backup-YYYY-MM-DD.json` containing `{app:"kept", schema:1, exportedAt, routines, checks}`.
   - If `navigator.canShare({files:[file]})` is true, call `navigator.share({files:[file]})`. On the iPhone this opens the share sheet, where the owner chooses Save to Files or iCloud Drive.

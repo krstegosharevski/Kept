@@ -1,6 +1,6 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
-  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday} from './logic.js';
+  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
@@ -14,7 +14,7 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const VERSION='1.0.0';
-const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{}});
+const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{},rules:[]});
 let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
@@ -243,6 +243,8 @@ function renderSettings(){
   <div class="group"><div class="row"><div class="body">Dark mode</div><button class="switch" role="switch" aria-checked="${isDark()}" aria-label="Dark mode" data-act="theme"><span></span></button></div>
     ${meta.theme?'<button class="row link" data-act="themeAuto">Use device setting</button>':''}</div>
   <p class="gf">${meta.theme?`Kept stays ${meta.theme} whatever your device is set to.`:'Kept follows your device\'s light or dark setting until you change it here.'}</p>
+  <div class="group"><button class="row" data-act="openRules"><div class="body">Rules</div>${(S.rules||[]).length?`<span class="hint num">${S.rules.length}</span>`:''}${DISC}</button></div>
+  <p class="gf">Your own rules for your routines, like what counts as done.</p>
   <div class="gh">Backup</div>
   <div class="group"><button class="row link" data-act="saveBackup">Save backup</button></div>
   <p class="gf">Last backup: ${ago(meta.lastBackupAt)}. On iPhone, choose Save to Files or iCloud Drive.</p>
@@ -259,9 +261,63 @@ function renderSettings(){
   <p class="credit">Powered by <b>Krtse XO</b></p>`;
 }
 
+/* ---------- Rules (Settings → Rules): your own rules, each for one routine, up to 255 characters ---------- */
+/* grouped by routine, in the order of the routines; tap one to edit it */
+function renderRules(){
+  const rules=S.rules||[], byRoutine=S.routines.map(r=>({r,list:rules.filter(x=>x.routine===r.id)})).filter(g=>g.list.length);
+  let html=`<div class="backrow"><button class="gpill glass back" data-act="rulesBack" aria-label="Back to Settings">${CHEV_L}<span>Settings</span></button></div>
+    <header class="head"><div class="titles"><h1>Rules</h1></div></header>`;
+  if(!S.routines.length){
+    $app.innerHTML=html+`<div class="empty"><h3>No routines yet</h3><p>Rules belong to a routine. Add a routine first, then write its rules here.</p><button class="primary" data-act="new">Add a routine</button></div>`;
+    return;
+  }
+  html+=`<div class="group tiles"><button class="row link newroutine" data-act="newRule"><span class="addicon">${PLUS}</span>New rule</button></div>`;
+  if(!rules.length) html+='<p class="gf">Write down how each routine counts, like “Eat healthy: no sugar after 6 pm”. Each rule belongs to one routine.</p>';
+  html+=byRoutine.map(({r,list})=>`<div class="gh rulegh"><span aria-hidden="true">${r.emoji}</span>${esc(r.name)}</div>
+    <div class="group tiles">${list.map(x=>`<button class="row rule" style="--c:${r.color}" data-act="editRule" data-id="${x.id}">
+      <span class="rbar" aria-hidden="true"></span><div class="body"><div class="name">${esc(x.text)}</div></div>${DISC}</button>`).join('')}</div>`).join('');
+  $app.innerHTML=html;
+}
+let rule=null, confirmRuleDel=false; // the rule being written in the sheet: {id (null when new), routine, text}
+function openRule(id){
+  const x=(S.rules||[]).find(y=>y.id===id), first=S.routines.find(r=>!r.stopped)||S.routines[0];
+  rule={id:x?.id??null,routine:x?.routine??first?.id,text:x?.text??''}; confirmRuleDel=false; sheetOpening=true; renderSheet();
+  if(!x) setTimeout(()=>document.getElementById('rtext')?.focus(),50);
+}
+function syncRule(){const t=document.getElementById('rtext');if(t&&rule)rule.text=t.value}
+function renderRuleSheet(){
+  const top=$sheet.querySelector('.sheet')?.scrollTop||0, n=rule.text.length;
+  /* active routines first, then stopped ones */
+  const list=[...S.routines.filter(r=>!r.stopped),...S.routines.filter(r=>r.stopped)];
+  $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${rule.id?'Edit rule':'New rule'}">
+    <div class="grabber" aria-hidden="true"></div>
+    <div class="sheethead"><button class="gbtn glass" data-act="close" aria-label="Cancel">${XMARK}</button><h2>${rule.id?'Edit rule':'New rule'}</h2><button class="gbtn prominent" data-act="saveRule" aria-label="Save">${TICK}</button></div>
+    <div class="gh">Routine</div>
+    <div class="group tiles" role="radiogroup" aria-label="Routine">${list.map(r=>`<button class="row pickr${r.stopped?' stopped':''}" style="--c:${r.color}" role="radio" aria-checked="${rule.routine===r.id}" data-act="ruleRoutine" data-id="${r.id}">
+      <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div>${r.stopped?'<div class="hint">Stopped</div>':''}</div><span class="pickmark" aria-hidden="true">${TICK}</span></button>`).join('')}</div>
+    <div class="gh"><label for="rtext">Rule</label></div>
+    <div class="group"><textarea class="rta" id="rtext" maxlength="${RULE_MAX}" rows="4" placeholder="e.g. No sugar after 6 pm. A cheat meal on Friday still counts.">${esc(rule.text)}</textarea></div>
+    <p class="gf rcount"><span class="num" id="rcount">${n}</span> / ${RULE_MAX}</p>
+    <button class="primary" data-act="saveRule">${rule.id?'Save changes':'Add rule'}</button>
+    ${rule.id?`<div class="group"><button class="row danger center" data-act="delRule">${confirmRuleDel?'Tap again to delete this rule':'Delete rule'}</button></div>`:''}
+  </div></div>`;
+  $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
+}
+function saveRule(){
+  syncRule(); const text=rule.text.trim().slice(0,RULE_MAX);
+  if(!S.routines.some(r=>r.id===rule.routine)){toast('Choose a routine');return}
+  if(!text){toast('Write the rule first');document.getElementById('rtext')?.focus();return}
+  S.rules??=[];
+  const x=S.rules.find(y=>y.id===rule.id);
+  if(x) Object.assign(x,{routine:rule.routine,text});
+  else S.rules.push({id:'u_'+Date.now().toString(36),routine:rule.routine,text,created:key(TODAY())});
+  commit(); toast(x?'Rule saved':'Rule added'); rule=null; renderSheet(); render();
+}
+
 function render(){
-  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===view?'page':'false'));
-  ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings})[view]();
+  const tabOn=view==='rules'?'settings':view; // Rules is a page inside Settings
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tabOn?'page':'false'));
+  ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings,rules:renderRules})[view]();
 }
 
 /* ---------- editor sheet ---------- */
@@ -274,7 +330,7 @@ function openEditor(id){
 }
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
 function renderSheet(){
-  if(!edit){if(vac)renderVacSheet();else $sheet.innerHTML='';return}
+  if(!edit){if(vac)renderVacSheet();else if(rule)renderRuleSheet();else $sheet.innerHTML='';return}
   const s=edit.sched, top=$sheet.querySelector('.sheet')?.scrollTop||0;
   $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${edit.id?'Edit routine':'New routine'}">
     <div class="grabber" aria-hidden="true"></div>
@@ -562,7 +618,15 @@ document.addEventListener('click',e=>{
     case 'nextM': monthRef=new Date(monthRef.getFullYear(),monthRef.getMonth()+1,1); render(); break;
     case 'new': openEditor(null); break;
     case 'edit': openEditor(el.dataset.id); break;
-    case 'close': case 'closeBg': edit=null; vac=null; renderSheet(); break;
+    case 'close': case 'closeBg': edit=null; vac=null; rule=null; renderSheet(); break;
+    case 'openRules': view='rules'; render(); window.scrollTo(0,0); break;
+    case 'rulesBack': view='settings'; render(); window.scrollTo(0,0); break;
+    case 'newRule': openRule(null); break;
+    case 'editRule': openRule(el.dataset.id); break;
+    case 'ruleRoutine': syncRule(); rule.routine=el.dataset.id; renderSheet(); break;
+    case 'saveRule': saveRule(); break;
+    case 'delRule': if(!confirmRuleDel){confirmRuleDel=true;syncRule();renderSheet();break}
+      S.rules=(S.rules||[]).filter(x=>x.id!==rule.id); commit(); rule=null; renderSheet(); render(); toast('Rule deleted'); break;
     case 'done': case 'doneBg': closeDone(); break;
     case 'rankDone': case 'rankBg': if(Date.now()-ruAt>1600) closeDone(); break;
     case 'wildAsk': askWildcard(); break;
@@ -596,7 +660,7 @@ document.addEventListener('click',e=>{
     case 'resume': { const r=S.routines.find(x=>x.id===el.dataset.id); resumeRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Tracking again from today'); break; }
     case 'delR':
       if(!confirmDel){confirmDel=true;syncName();renderSheet();break}
-      S.routines=S.routines.filter(r=>r.id!==edit.id);
+      S.routines=S.routines.filter(r=>r.id!==edit.id); S.rules=(S.rules||[]).filter(x=>x.routine!==edit.id); // its rules go with it
       for(const k in S.checks){S.checks[k]=S.checks[k].filter(id=>id!==edit.id);if(!S.checks[k].length)delete S.checks[k]}
       commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
     case 'theme': { const dark=!isDark(); el.setAttribute('aria-checked',dark); setMeta({theme:dark?'dark':'light'}); applyTheme(); setTimeout(render,220); break; } // let the switch slide first
@@ -609,7 +673,7 @@ document.addEventListener('click',e=>{
       eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit||vac){edit=null;vac=null;renderSheet()}});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit||vac||rule){edit=null;vac=null;rule=null;renderSheet()}});
 
 /* ---------- backup and restore ---------- */
 /* the share sheet on iPhone (Save to Files or iCloud Drive), a download elsewhere. Only a finished share or download counts as a backup. */
@@ -623,6 +687,8 @@ async function saveBackup(){
   }
   setMeta({lastBackupAt:new Date().toISOString()}); toast('Backup saved'); render();
 }
+/* the rule's character count, live as you type */
+document.addEventListener('input',e=>{if(e.target.id!=='rtext')return;const c=document.getElementById('rcount');if(c)c.textContent=e.target.value.length;if(rule)rule.text=e.target.value});
 document.addEventListener('change',async e=>{
   if(e.target.id!=='restoreFile'||!e.target.files[0]) return;
   const d=readBackup(await e.target.files[0].text());

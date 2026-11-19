@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
-import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday} from '../app/js/logic.js';
+import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -277,4 +277,19 @@ test('Vacation data survives normalize, and bad entries are dropped', ()=>{
   assert.equal(Object.keys(d.vacations).filter(k=>k>'2027').length,10); // 11 in one half: the latest goes
   assert.equal(d.vacations['2027-01-18'],undefined);
   assert.deepEqual(normalize({routines:[],checks:{}}).vacations,{}); // older data and backups still load
+});
+
+test('Rules survive normalize; empty, unknown-routine and duplicate ones are dropped, long ones cut to 255', ()=>{
+  const long='x'.repeat(300);
+  const d=normalize({routines:[routine({type:'daily'})],checks:{},rules:[
+    {id:'u1',routine:'a',text:'  Only home-cooked food  ',created:'2026-11-19'},
+    {id:'u2',routine:'gone',text:'For a routine that was deleted'},
+    {id:'u3',routine:'a',text:'   '},
+    {id:'u1',routine:'a',text:'Same id twice'},
+    {id:'u4',routine:'a',text:long},
+    null]});
+  assert.deepEqual(d.rules.map(r=>[r.id,r.text.length]),[['u1',21],['u4',RULE_MAX]]);
+  assert.equal(d.rules[0].text,'Only home-cooked food');
+  assert.equal(RULE_MAX,255);
+  assert.deepEqual(normalize({routines:[],checks:{}}).rules,[]); // older data and backups still load
 });

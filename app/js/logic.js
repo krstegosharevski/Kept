@@ -12,6 +12,7 @@ export const weekStart=d=>addDays(sod(d),-dow(d));
 export const TODAY=()=>sod(new Date());
 export const maxD=(a,b)=>a>b?a:b, minD=(a,b)=>a<b?a:b;
 const isKey=k=>typeof k==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(k);
+export const RULE_MAX=255; // the longest a rule can be, in characters
 
 /* ---------- data ---------- */
 /* the demo's routine colors, mapped to the Apple system colors the app uses now */
@@ -70,7 +71,15 @@ export function normalize(d){
     const h=halfOf(k); perHalf[h]=(perHalf[h]||0)+1;
     if(perHalf[h]<=VACATION_DAYS) vacations[k]=on;
   }
-  return {schema:1,routines,checks,wildcards,madeUp,vacations};
+  /* Rules: your own notes on how a routine counts, [{id, routine, text, created}]. Up to 255 characters, only for routines that exist. */
+  const rules=[], ruleIds=new Set();
+  for(const x of Array.isArray(d.rules)?d.rules:[]){
+    if(!x||typeof x!=='object'||x.id==null||ruleIds.has(String(x.id))) continue;
+    const text=String(x.text??'').trim().slice(0,RULE_MAX), routine=String(x.routine);
+    if(!text||!ids.has(routine)) continue;
+    ruleIds.add(String(x.id)); rules.push({id:String(x.id),routine,text,created:isKey(x.created)?x.created:key(TODAY())});
+  }
+  return {schema:1,routines,checks,wildcards,madeUp,vacations,rules};
 }
 
 /* ---------- schedules ---------- */
