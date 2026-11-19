@@ -181,9 +181,9 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - ‹ › month navigation.
   - The month's rank banner above the card, with a soft glow in the rank's color: "Rank so far" for the current month, "Final rank" with a lock for a finished one. Tapping it opens Ranks.
   - A big % for the month, to one decimal.
-  - A calendar heatmap: weeks start Monday, 5 green levels, weekends black, future days dimmed, today outlined.
+  - A calendar heatmap: weeks start Monday, the traffic-light colours (red for missed days, then orange, yellow, light green and green), weekends black, future days dimmed, today outlined.
   - Tapping a past weekday opens it on the Today tab, read-only.
-  - A legend from Less to More, plus Rest.
+  - A legend: Missed, Less to More, Rest, Vacation and Made up.
   - Per routine: a % bar and "x of y · streak N · best N".
 - **Definitions** (keep these exactly as in the demo):
   - **Range:** clipped to today and to each routine's created/stopped dates.
@@ -191,7 +191,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - **Done:** check-ins on due days only.
   - **Range %:** Σ min(done, expected) / Σ expected.
   - **Day % (bars and heatmap):** done / due, counting only non-weekly routines due that day. Empty if none are due.
-  - **Heat levels:** 0 = 0% or nothing due, 1 = under 34%, 2 = under 67%, 3 = under 100%, 4 = 100%.
+  - **Heat levels (the traffic light, 19 Nov 2026):** red = missed (a past weekday with something due and nothing done); 1 = under 34% (orange), 2 = under 67% (yellow), 3 = under 100% (light green), 4 = 100% (green); grey = nothing due, a future day, or today while nothing is ticked yet. Light #FF3B30 #FF9500 #FFCC00 #A3D94E #34C759, dark #FF453A #FF9F0A #FFD60A #9BD54E #30D158, black day numbers (logic.js `heatClass`).
   - **Streak (daily and days routines):**
     - Count consecutive completed due days, going back from today.
     - Today not being done yet does not break the streak.

@@ -157,6 +157,9 @@ export function dayRatio(data,d){
   const k=key(d); return due.filter(r=>isDone(data,r,k)).length/due.length;
 }
 export const level=v=>v==null||v===0?0:v<.34?1:v<.67?2:v<1?3:4;
+/* the month calendar's colour for a day (the traffic light): 'miss' (red) when something was due on a past day and nothing
+   was done, else 'l0' (grey: nothing due, or today while it is still open) to 'l4' (green: all done) */
+export const heatClass=(v,past)=>v===0&&past?'miss':'l'+level(v);
 export function weekDone(data,r,d){const a=weekStart(d);return doneCount(data,r,a,addDays(a,6))}
 /* current and best streak as of day t (or the day before a stop): due days for daily/days routines, weeks that met the target for weekly ones */
 export function streaks(data,r,t){

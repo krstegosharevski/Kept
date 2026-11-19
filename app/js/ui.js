@@ -1,5 +1,5 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
+import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
   VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
@@ -210,16 +210,16 @@ function renderStats(){
       if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
       const fut=d>t;
       if(isVacation(S,d)){cells+=`<span class="day vac${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, vacation day">${d.getDate()}</span>`;continue}
-      const lv=fut?0:level(dayRatio(S,d));
-      cells+=`<button class="day l${lv}${fut?' future':''}${td}${(S.madeUp||{})[key(d)]?' mu':''}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}">${d.getDate()}</button>`}
+      const hc=fut?'l0':heatClass(dayRatio(S,d),d<t); // the traffic light: red when missed, then orange, yellow, light green, green
+      cells+=`<button class="day ${hc}${fut?' future':''}${td}${(S.madeUp||{})[key(d)]?' mu':''}" ${fut?'disabled':`data-act="openDay" data-k="${key(d)}"`} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}${hc==='miss'?', missed':''}">${d.getDate()}</button>`}
     /* the month's rank next to its %: final (locked) once the month is over, live until then */
     const rk=st.rank==null?'':`<div class="ycap${st.final?' final':''}">${st.final?LOCK+'Final rank':'Rank so far'}</div>
       <button class="hero" data-rk="${st.rank}" data-act="openRanks" aria-label="${st.final?'Final rank':'Rank so far'}: ${RANKS[st.rank].name}. Show all ranks">${art('banner',st.rank)}</button>`;
     html+=rangeHead('M',monthName(a),isCur)+rk
     +`<div class="card">${kpi(pct1(st.pct),st.final?'Completed':'Completed this month')}
     <div class="heat">${cells}</div>
-    <div class="legend"><span class="lg">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div>
-    <p class="foot">Tap a day to see what you did. Black days are rest days, blue days vacation.</p></div>
+    <div class="legend"><span class="lg"><i class="day miss"></i>Missed</span><span class="lg">Less<i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div>
+    <p class="foot">Tap a day to see what you did. Red days were missed, black days are rest days, blue days vacation.</p></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat${fx(r.color)}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${Math.round(pct*100)}%</div>
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>

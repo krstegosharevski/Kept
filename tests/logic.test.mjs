@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
-import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,NEON_RANK,neonUnlocked} from '../app/js/logic.js';
+import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,NEON_RANK,neonUnlocked,heatClass} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -302,4 +302,12 @@ test('The neon colours unlock at Iron Will: 17 of 22 October weekdays (77.3%, Bu
   assert.equal(neonUnlocked(month(17),D('2026-10-31')),false);
   assert.equal(neonUnlocked(month(18),D('2026-10-31')),true);
   assert.equal(neonUnlocked({routines:[],checks:{}},D('2026-10-31')),false); // no rank yet
+});
+
+test('Month calendar colours: a past day with nothing done is red (miss); today stays grey until it is over', ()=>{
+  assert.equal(heatClass(0,true),'miss');
+  assert.equal(heatClass(0,false),'l0'); // today, nothing ticked yet
+  assert.equal(heatClass(null,true),'l0'); // nothing was due
+  assert.deepEqual([.2,.5,.9,1].map(v=>heatClass(v,true)),['l1','l2','l3','l4']);
+  assert.deepEqual([.2,.5,.9,1].map(v=>heatClass(v,false)),['l1','l2','l3','l4']);
 });

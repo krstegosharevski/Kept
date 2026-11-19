@@ -7,6 +7,7 @@
   --fill:rgba(118,118,128,.12); --fill-2:rgba(120,120,128,.2); --seg-on:#FFFFFF;
   --tint:#007AFF; --tint-soft:rgba(0,122,255,.12); --green:#34C759; --danger:#FF3B30;
   --rest:#000000; --rest-ink:rgba(235,235,245,.62); --rest-title:#FFFFFF; --rest-line:transparent;
+  --heat-miss:#FF3B30; --heat-1:#FF9500; --heat-2:#FFCC00; --heat-3:#A3D94E; --heat-4:#34C759; /* Stats → Month, the traffic light: missed, then 1–33%, 34–66%, 67–99%, 100% */
   --vacation:#5AC8FA; --vac-ink:#1B6B93; /* vacation days: Apple sky blue, the lake's colour; the pelican is drawn in vac-ink */
   --glass:rgba(255,255,255,.72); --glass-line:rgba(255,255,255,.75); --glass-shadow:0 6px 24px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
   --water-rgb:31, 94, 255; --water-alpha:.07; /* the lake's blue, from the owner's website */
@@ -23,6 +24,7 @@
   --tint:#0A84FF; --tint-soft:rgba(10,132,255,.2); --green:#30D158; --danger:#FF453A;
   --rest-line:rgba(255,255,255,.18); --water-alpha:.09;
   --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E;
+  --heat-miss:#FF453A; --heat-1:#FF9F0A; --heat-2:#FFD60A; --heat-3:#9BD54E; --heat-4:#30D158;
   --glass:rgba(37,37,40,.72); --glass-line:rgba(255,255,255,.12); --glass-shadow:0 6px 24px rgba(0,0,0,.5) }}
 :root[data-theme="dark"]{
   color-scheme:dark;
@@ -32,6 +34,7 @@
   --tint:#0A84FF; --tint-soft:rgba(10,132,255,.2); --green:#30D158; --danger:#FF453A;
   --rest-line:rgba(255,255,255,.18); --water-alpha:.09;
   --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E;
+  --heat-miss:#FF453A; --heat-1:#FF9F0A; --heat-2:#FFD60A; --heat-3:#9BD54E; --heat-4:#30D158;
   --glass:rgba(37,37,40,.72); --glass-line:rgba(255,255,255,.12); --glass-shadow:0 6px 24px rgba(0,0,0,.5) }
 /* hairlines are half a pixel on Retina screens and one pixel elsewhere */
 @media (max-resolution:1.5dppx){:root{--hair:1px}}
@@ -182,10 +185,13 @@ button.row:active{background-color:var(--fill-2)}
 .heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:16px -4px 0}
 .heat .h{font-size:12px;font-weight:600;letter-spacing:0;text-align:center;color:var(--muted);padding-bottom:2px}
 .day{aspect-ratio:1;width:100%;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:500;letter-spacing:0;font-variant-numeric:tabular-nums;background:var(--fill);color:var(--ink)}
-.day.l1{background:color-mix(in srgb,var(--green) 28%,var(--surface))}
-.day.l2{background:color-mix(in srgb,var(--green) 52%,var(--surface))}
-.day.l3{background:color-mix(in srgb,var(--green) 78%,var(--surface));color:#000}
-.day.l4{background:var(--green);color:#000;font-weight:600}
+/* the traffic light: red for a missed day (something was due, nothing done), then orange, yellow, light green and green;
+   grey (l0) is a day with nothing due, a future day, or today while nothing is ticked yet. Day numbers are black on every colour. */
+.day.miss{background:var(--heat-miss);color:#000;font-weight:600}
+.day.l1{background:var(--heat-1);color:#000}
+.day.l2{background:var(--heat-2);color:#000}
+.day.l3{background:var(--heat-3);color:#000}
+.day.l4{background:var(--heat-4);color:#000;font-weight:600}
 .day.rest{background:var(--rest);color:var(--rest-ink);border:1px solid var(--rest-line);cursor:default}
 .day.future{opacity:.4;cursor:default}
 .day.today{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
