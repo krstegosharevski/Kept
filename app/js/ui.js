@@ -19,7 +19,7 @@ const FX_PLAIN={'#39FF14':'#34C759','#1F51FF':'#007AFF','#BC13FE':'#AF52DE','#00
 /* an unlocked neon colour goes into the page as a theme token (--n-green …) with its check-mark colour (--ck),
    so light mode can use its own deeper, calmer value (styles.css) and switching mode updates it at once */
 const NEON_VAR={'#39FF14':'green','#1F51FF':'blue','#BC13FE':'purple','#00F5D4':'teal','#FF5F1F':'orange'};
-const cssColor=c=>{const n=NEON_VAR[String(c).toUpperCase()];return n?`var(--n-${n});--ck:var(--n-${n}-ink)`:c};
+const cssColor=c=>{const n=NEON_VAR[String(c).toUpperCase()];return n?`var(--n-${n});--ck:var(--n-${n}-ink);--cd:var(--n-${n}-dk);--ckd:var(--n-${n}-dk-ink)`:c}; // --cd/--ckd: the dark-mode colour, for light mode's done checks
 const shown=c=>{const u=String(c).toUpperCase();return FX_COLORS.has(u)?(fxOn?cssColor(u):FX_PLAIN[u]):c};
 const fx=c=>fxOn&&FX_COLORS.has(String(c).toUpperCase())?' fx':'';
 const fxLocked=c=>FX_COLORS.has(c)&&!fxOn;
@@ -335,7 +335,7 @@ function saveRule(){
 
 /* every neon effect runs on one shared clock, so the shine happens on all of them at the same moment, however long ago each was
    drawn (a re-render after a tick, the colour picker opening later). Each animation is lined up to the start of the page's timeline. */
-const FX_SYNC=/^fx(sign|glint|glow|pulse|shine|spin|flow|flowy)$/;
+const FX_SYNC=/^fx(sign|glint|ckglow|glow|pulse|shine|spin|flow|flowy)$/;
 function syncFx(){
   try{ for(const a of document.getAnimations()) if(FX_SYNC.test(a.animationName)) a.startTime=-(a.effect?.getTiming?.().delay||0); }catch(e){}
 }
