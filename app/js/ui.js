@@ -1,13 +1,29 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,level,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
-  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX} from './logic.js';
+  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
 
-/* Apple system colors: green, blue, purple, teal, orange, pink */
-const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#FF2D55'];
-const EMOJI=['🥗','🏋️','📖','💧','📞','🧘','🛏️','🚶','✍️','🎸','🧹','☀️','🍎','📵','🧠','🌱'];
+/* routine colours: Apple green, blue, purple, teal and orange (the red was taken out on 19 Nov 2026),
+   then two on trial, neon green and neon blue: wherever they show, they have a ring and they move (the "fx" class, styles.css) */
+const COLORS=['#34C759','#007AFF','#AF52DE','#30B0C7','#FF9500','#39FF14','#1F51FF','#BC13FE','#00F5D4','#FF5F1F']; // the picker shows them in two rows: each neon under its plain colour
+const COLOR_NAMES={'#34C759':'Green','#007AFF':'Blue','#AF52DE':'Purple','#30B0C7':'Teal','#FF9500':'Orange','#39FF14':'Neon green','#1F51FF':'Neon blue','#BC13FE':'Neon purple','#00F5D4':'Neon teal','#FF5F1F':'Neon orange'};
+const FX_COLORS=new Set(['#39FF14','#1F51FF','#BC13FE','#00F5D4','#FF5F1F']);
+/* the neon colours are unlocked while this month's rank so far is Iron Will or higher (logic.js neonUnlocked).
+   fxOn is worked out at the start of each render. While they are locked, routines in them show plain green or blue
+   (nothing in the data changes), and the picker shows them dimmed with a lock. */
+let fxOn=false;
+const fxRefresh=()=>{fxOn=neonUnlocked(S,TODAY())};
+const FX_PLAIN={'#39FF14':'#34C759','#1F51FF':'#007AFF','#BC13FE':'#AF52DE','#00F5D4':'#30B0C7','#FF5F1F':'#FF9500'};
+const shown=c=>{const u=String(c).toUpperCase();return FX_COLORS.has(u)&&!fxOn?FX_PLAIN[u]:c};
+const fx=c=>fxOn&&FX_COLORS.has(String(c).toUpperCase())?' fx':'';
+const fxLocked=c=>FX_COLORS.has(c)&&!fxOn;
+let colPop=null; // the colour just tapped in the picker: it pops once
+/* the done check mark is white, except on very light colours (the neon), where it turns black so it stays readable */
+const lum=hex=>{const v=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2]};
+const inkCls=c=>/^#[0-9A-F]{6}$/i.test(c)&&lum(c)>.6?' lc':'';
+const EMOJI=['🥗','🏋️','📖','💧','📞','🧘','🛏️','🚶','✍️','🎸','🧹','☀️','🍎','📵','🧠','🌱','🚀','💰','💊'];
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DAYS1=['M','T','W','T','F','S','S'];
 const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -113,7 +129,7 @@ function renderToday(){
       const hint=past?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
       const ctl=past?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
-      return `<div class="row item${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${r.color}">
+      return `<div class="row item${inkCls(shown(r.color))}${fx(r.color)}${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
@@ -127,9 +143,9 @@ function renderRoutines(){
   const active=S.routines.filter(r=>!r.stopped), stopped=S.routines.filter(r=>r.stopped);
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends off</div><h1>Routines</h1></div></header>`;
   html+=`<div class="group tiles"><button class="row link newroutine" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
-  if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row" style="--c:${r.color}" data-act="edit" data-id="${r.id}">
+  if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row${fx(r.color)}" style="--c:${shown(r.color)}" data-act="edit" data-id="${r.id}">
     <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
-  if(stopped.length) html+=`<div class="gh">Stopped</div><div class="group tiles">${stopped.map(r=>`<div class="row stopped" style="--c:${r.color}">
+  if(stopped.length) html+=`<div class="gh">Stopped</div><div class="group tiles">${stopped.map(r=>`<div class="row stopped${fx(r.color)}" style="--c:${shown(r.color)}">
     <button class="rowbtn" data-act="edit" data-id="${r.id}"><div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">Stopped ${short(r.stopped)}</div></div></button>
     <button class="pill" data-act="resume" data-id="${r.id}">Resume</button></div>`).join('')}</div>
     <p class="gf">Stopped routines keep their history. Resume one to track it again from today.</p>`;
@@ -182,7 +198,7 @@ function renderStats(){
       if(isVacation(S,d)) return `<div class="bar vac${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Away</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
       const fut=d>t,v=fut?null:dayRatio(S,d),h=v==null?0:Math.round(v*100);
       return `<div class="bar${fut?' future':h?'':' zero'}${td}"><span class="p">${fut||v==null?'':h+'%'}</span><div class="cw"><div class="col" style="height:${h}%"></div></div><span class="d">${DAYS1[i]}</span></div>`}).join('')}</div></div>
-    <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat" style="--c:${r.color}">
+    <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat${fx(r.color)}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
       <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(isVacation(S,dd))return '<i class="vac"></i>';if(dd>t||!isDue(r,dd,S))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
@@ -204,7 +220,7 @@ function renderStats(){
     <div class="heat">${cells}</div>
     <div class="legend"><span class="lg">Less<i class="day l0"></i><i class="day l1"></i><i class="day l2"></i><i class="day l3"></i><i class="day l4"></i>More</span><span class="lg"><i class="day rest"></i>Rest</span><span class="lg"><i class="day vac"></i>Vacation</span><span class="lg"><i class="mul"></i>Made up</span></div>
     <p class="foot">Tap a day to see what you did. Black days are rest days, blue days vacation.</p></div>
-    <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat" style="--c:${r.color}">
+    <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d,pct})=>{const s=streaks(S,r,t);return `<div class="rstat${fx(r.color)}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${Math.round(pct*100)}%</div>
       <div class="track"><span style="width:${Math.round(pct*100)}%"></span></div>
       <div class="meta"><span class="num">${d}</span> of <span class="num">${e}</span> · streak <span class="num">${s.cur}${s.unit}</span> · best <span class="num">${s.best}${s.unit}</span></div></div>`}).join('')}</div>`;
@@ -225,7 +241,7 @@ function renderRanks(){
       <p class="goal"><b class="num">${p}%</b> completed${next?` · <b class="num">${Math.round((rankFrom(now+1)-p)*10)/10}%</b> to ${next.name}`:''}</p>`;
   }
   html+=`${now==null?'':'<h2 class="sh">All ranks</h2>'}<div class="ladder">${RANKS.map((r,i)=>`<div class="rung${now==null||i>now?' unreached':''}">${art('banner',i)}</div>`).join('')}</div>`;
-  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends.</p>`;
+  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends. Iron Will and higher unlock five neon colours for your routines.</p>`;
   if(S.routines.length){
     const past=rankMonths(S,t).map(m=>monthResult(S,m,t)).filter(m=>m.final).reverse();
     html+='<h2 class="sh">Past months</h2>'+(past.length?`<div class="group months">${past.map(m=>`<button class="row" data-act="openMonth" data-k="${key(m.first)}">
@@ -274,7 +290,7 @@ function renderRules(){
   html+=`<div class="group tiles"><button class="row link newroutine" data-act="newRule"><span class="addicon">${PLUS}</span>New rule</button></div>`;
   if(!rules.length) html+='<p class="gf">Write down how each routine counts, like “Eat healthy: no sugar after 6 pm”. Each rule belongs to one routine.</p>';
   html+=byRoutine.map(({r,list})=>`<div class="gh rulegh"><span aria-hidden="true">${r.emoji}</span>${esc(r.name)}</div>
-    <div class="group tiles">${list.map(x=>`<button class="row rule" style="--c:${r.color}" data-act="editRule" data-id="${x.id}">
+    <div class="group tiles">${list.map(x=>`<button class="row rule${fx(r.color)}" style="--c:${shown(r.color)}" data-act="editRule" data-id="${x.id}">
       <span class="rbar" aria-hidden="true"></span><div class="body"><div class="name">${esc(x.text)}</div></div>${DISC}</button>`).join('')}</div>`).join('');
   $app.innerHTML=html;
 }
@@ -293,7 +309,7 @@ function renderRuleSheet(){
     <div class="grabber" aria-hidden="true"></div>
     <div class="sheethead"><button class="gbtn glass" data-act="close" aria-label="Cancel">${XMARK}</button><h2>${rule.id?'Edit rule':'New rule'}</h2><button class="gbtn prominent" data-act="saveRule" aria-label="Save">${TICK}</button></div>
     <div class="gh">Routine</div>
-    <div class="group tiles" role="radiogroup" aria-label="Routine">${list.map(r=>`<button class="row pickr${r.stopped?' stopped':''}" style="--c:${r.color}" role="radio" aria-checked="${rule.routine===r.id}" data-act="ruleRoutine" data-id="${r.id}">
+    <div class="group tiles" role="radiogroup" aria-label="Routine">${list.map(r=>`<button class="row pickr${r.stopped?' stopped':''}${fx(r.color)}" style="--c:${shown(r.color)}" role="radio" aria-checked="${rule.routine===r.id}" data-act="ruleRoutine" data-id="${r.id}">
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div>${r.stopped?'<div class="hint">Stopped</div>':''}</div><span class="pickmark" aria-hidden="true">${TICK}</span></button>`).join('')}</div>
     <div class="gh"><label for="rtext">Rule</label></div>
     <div class="group"><textarea class="rta" id="rtext" maxlength="${RULE_MAX}" rows="4" placeholder="e.g. No sugar after 6 pm. A cheat meal on Friday still counts.">${esc(rule.text)}</textarea></div>
@@ -315,6 +331,7 @@ function saveRule(){
 }
 
 function render(){
+  fxRefresh();
   const tabOn=view==='rules'?'settings':view; // Rules is a page inside Settings
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tabOn?'page':'false'));
   ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings,rules:renderRules})[view]();
@@ -330,6 +347,7 @@ function openEditor(id){
 }
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
 function renderSheet(){
+  fxRefresh();
   if(!edit){if(vac)renderVacSheet();else if(rule)renderRuleSheet();else $sheet.innerHTML='';return}
   const s=edit.sched, top=$sheet.querySelector('.sheet')?.scrollTop||0;
   $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${edit.id?'Edit routine':'New routine'}">
@@ -340,7 +358,8 @@ function renderSheet(){
     <div class="gh">Icon</div>
     <div class="group pad"><div class="picks">${EMOJI.map(e=>`<button class="emo" data-act="emo" data-v="${e}" aria-pressed="${edit.emoji===e}">${e}</button>`).join('')}</div></div>
     <div class="gh">Color</div>
-    <div class="group pad"><div class="picks colors">${COLORS.map(c=>`<button class="sw" style="--c:${c}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
+    <div class="group pad"><div class="picks colors">${COLORS.map(c=>{const lk=fxLocked(c);return `<button class="sw${fx(c)}${lk?' locked':''}${fx(c)&&c===colPop?' pop':''}" style="--c:${c}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="${COLOR_NAMES[c]}${lk?', locked until Iron Will':''}">${lk?LOCK:''}</button>`}).join('')}</div></div>
+    <p class="gf">${fxOn?'The neon colours are unlocked: your rank this month is Iron Will or higher.':'The neon colours unlock at Iron Will. Reach it this month to use them.'}</p>
     ${edit.stopped?`<div class="gh">How often</div><p class="gf first">Stopped ${short(edit.stopped)}. Resume tracking to change how often.</p>`:`<div class="gh">How often</div>
     <div class="group pad"><div class="seg" role="group" aria-label="How often">
       <button data-act="stype" data-v="daily" aria-pressed="${s.type==='daily'}">Mon – Fri</button>
@@ -371,7 +390,7 @@ function wildcardSection(t){
     let h=`<div class="gh wch">${WILD(16)}Wildcard · this week</div>`;
     if(!miss.length) h+='<p class="gf first">Nothing to make up.</p>';
     h+=Object.entries(byDay).map(([k,items])=>{const day=DAYS_FULL[dow(parse(k))];return `<div class="gh">${day}</div><div class="group tiles">${items.map(({r,done})=>
-      `<div class="row item${done?' done':''}${popId===r.id+'@'+k?' pop':''}" style="--c:${r.color}"><div class="tile">${r.emoji}</div>
+      `<div class="row item${inkCls(shown(r.color))}${fx(r.color)}${done?' done':''}${popId===r.id+'@'+k?' pop':''}" style="--c:${shown(r.color)}"><div class="tile">${r.emoji}</div>
       <div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${done?'Made up':'Missed on '+day}</div></div>
       <button class="check" data-act="makeup" data-id="${r.id}" data-k="${k}" aria-pressed="${done}" aria-label="Make up ${esc(r.name)} for ${day}"><span class="ci">${CHECK}</span></button></div>`).join('')}</div>`}).join('');
     if(miss.length&&!todo) h+='<p class="note">Week made up. Enjoy the rest of your weekend.</p>';
@@ -644,7 +663,8 @@ document.addEventListener('click',e=>{
       if(weekMissed(S,t).every(x=>x.done)) toast('Week made up');
       const move=rankMove(before,rankNow()); if(move) showRank(move,false); break; }
     case 'emo': syncName(); edit.emoji=el.dataset.v; renderSheet(); break;
-    case 'col': syncName(); edit.color=el.dataset.v; renderSheet(); break;
+    case 'col': { const c=el.dataset.v; if(fxLocked(c)){toast('Reach Iron Will this month to unlock this colour');break}
+      syncName(); edit.color=c; colPop=c; renderSheet(); colPop=null; break; }
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
     case 'day': { syncName(); const i=+el.dataset.v, d=edit.sched.days; if(i>=5) break; const p=d.indexOf(i); if(p>=0){if(d.length>1)d.splice(p,1)}else d.push(i); renderSheet(); break; }
     case 'tgt': syncName(); edit.sched.target=Math.min(5,Math.max(1,edit.sched.target+ +el.dataset.v)); renderSheet(); break;

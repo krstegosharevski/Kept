@@ -550,7 +550,7 @@ button.hero:active{transform:scale(.98)}
 .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
 .emo{height:44px;border:0;border-radius:12px;padding:0;background:transparent;font-size:26px;letter-spacing:0;display:grid;place-items:center}
 .emo[aria-pressed="true"]{background:var(--tint-soft);box-shadow:inset 0 0 0 2px var(--tint)}
-.picks.colors{display:flex;justify-content:space-between}
+.picks.colors{display:grid;grid-template-columns:repeat(5,1fr);justify-items:center;row-gap:10px} /* the 5 plain colours, then each neon under its plain one */
 .sw{width:44px;height:44px;border:0;border-radius:50%;padding:0;background:transparent;display:grid;place-items:center}
 .sw::before{content:"";width:30px;height:30px;border-radius:50%;background:var(--c)}
 .sw[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--c)}
@@ -640,3 +640,41 @@ button.hero:active{transform:scale(.98)}
 .pickr[aria-checked="true"] .name{font-weight:600}
 .group textarea.rta{font:17px/1.4 var(--font);letter-spacing:-.02em;min-height:120px;resize:none}
 .rcount{text-align:right}
+
+/* routine colours on trial (19 Nov 2026): neon green and neon blue. Wherever they show they have a ring and they move:
+   in the colour picker a light runs round the ring (and the swatch pops when picked); a routine's tile gets a glowing ring
+   and a shine that crosses it now and then; a done check glows; Stats dots pulse and bars shimmer; a rule's bar shimmers.
+   Reduce Motion keeps the rings, without the movement. */
+@keyframes fxspin{to{transform:rotate(1turn)}}
+@keyframes fxglow{0%,100%{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--c),0 0 5px 1px color-mix(in srgb,var(--c) 35%,transparent)}
+  50%{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--c),0 0 16px 4px color-mix(in srgb,var(--c) 70%,transparent)}}
+@keyframes fxpulse{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 12px 3px color-mix(in srgb,var(--c) 65%,transparent)}}
+@keyframes fxshine{0%,55%{transform:translateX(-160%) skewX(-18deg)}100%{transform:translateX(260%) skewX(-18deg)}}
+@keyframes fxflow{0%{background-position:100% 0}70%,100%{background-position:0 0}}
+@keyframes fxflowy{0%{background-position:0 100%}70%,100%{background-position:0 0}}
+@keyframes fxpop{0%{transform:scale(.55)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.sw.fx::before,.sw.fx::after{grid-area:1/1}
+.sw.fx::before{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--c);animation:fxglow 2.4s ease-in-out infinite}
+.sw.fx::after{content:"";width:38px;height:38px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(from 0deg,transparent 0 58%,color-mix(in srgb,var(--c) 35%,#fff) 82%,#fff 91%,transparent 92%);
+  -webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - 2.7px),#000 calc(100% - 2.4px));
+  mask:radial-gradient(circle closest-side,transparent calc(100% - 2.7px),#000 calc(100% - 2.4px));
+  animation:fxspin 1.8s linear infinite}
+.sw.fx.pop::before{animation:fxpop .5s cubic-bezier(.2,.9,.3,1.3),fxglow 2.4s ease-in-out .5s infinite}
+.sw.fx[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--ink)} /* picked: a white (dark mode) or black ring outside the glow */
+.fx .tile{position:relative;overflow:hidden;isolation:isolate;box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--c);animation:fxglow 2.4s ease-in-out infinite}
+.fx .tile::after{content:"";position:absolute;top:-25%;bottom:-25%;left:0;width:45%;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent);animation:fxshine 3.2s ease-in-out infinite}
+.stopped.fx .tile{animation:none}
+.stopped.fx .tile::after{display:none}
+.item.fx.done .check .ci,.item.fx.done .status{animation:fxpulse 2.4s ease-in-out infinite}
+.item.fx.done.pop .ci{animation:pop .4s cubic-bezier(.2,.9,.3,1.3),fxpulse 2.4s ease-in-out .4s infinite}
+.fx .dots i.on{animation:fxpulse 2.4s ease-in-out infinite}
+.fx .track span{background:linear-gradient(90deg,var(--c) 30%,color-mix(in srgb,var(--c) 35%,#fff) 50%,var(--c) 70%) var(--c);background-size:220% 100%;animation:fxflow 2.6s linear infinite}
+.fx .rbar{background:linear-gradient(180deg,var(--c) 30%,color-mix(in srgb,var(--c) 35%,#fff) 50%,var(--c) 70%) var(--c);background-size:100% 260%;animation:fxflowy 2.6s linear infinite}
+.item.lc .check svg,.item.lc .status svg{stroke:#000}
+/* below Iron Will the five neon colours are locked: dimmed, with a lock (routines in them show their plain colour meanwhile) */
+.sw.locked::before,.sw.locked svg{grid-area:1/1}
+.sw.locked::before{opacity:.35}
+.sw.locked svg{color:var(--ink)}
+.sw.locked[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--faint)}

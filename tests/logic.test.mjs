@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
-import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX} from '../app/js/logic.js';
+import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,NEON_RANK,neonUnlocked} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -292,4 +292,14 @@ test('Rules survive normalize; empty, unknown-routine and duplicate ones are dro
   assert.equal(d.rules[0].text,'Only home-cooked food');
   assert.equal(RULE_MAX,255);
   assert.deepEqual(normalize({routines:[],checks:{}}).rules,[]); // older data and backups still load
+});
+
+test('The neon colours unlock at Iron Will: 17 of 22 October weekdays (77.3%, Builder) is locked, 18 of 22 (81.8%) is not', ()=>{
+  assert.equal(RANKS[NEON_RANK].name,'Iron Will');
+  const days=[]; for(let d=1;d<=31;d++){const k=`2026-10-${String(d).padStart(2,'0')}`; if(!isRest(D(k))) days.push(k)}
+  assert.equal(days.length,22);
+  const month=n=>({routines:[routine({type:'daily'})],checks:Object.fromEntries(days.slice(0,n).map(k=>[k,['a']])),wildcards:{},madeUp:{}});
+  assert.equal(neonUnlocked(month(17),D('2026-10-31')),false);
+  assert.equal(neonUnlocked(month(18),D('2026-10-31')),true);
+  assert.equal(neonUnlocked({routines:[],checks:{}},D('2026-10-31')),false); // no rank yet
 });

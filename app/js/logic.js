@@ -195,6 +195,10 @@ export function monthResult(data,first,t){
   const st=end<first?{pct:0,per:[],exp:0}:rangeStats(data,first,end);
   return {...st,first,rank:st.exp?rankIndex(st.pct):null,final:last<t};
 }
+/* the two neon routine colours (neon green, neon blue) are unlocked while this month's rank so far, as the Today card shows it,
+   is Iron Will or higher */
+export const NEON_RANK=RANKS.findIndex(r=>r.id==='iron-will');
+export const neonUnlocked=(data,t)=>(monthResult(data,monthStart(t),t).rank??-1)>=NEON_RANK;
 /* the months to rank, oldest first: from the month the first routine was created to the month of day t */
 export function rankMonths(data,t){
   const c=data.routines.map(r=>r.created).sort()[0], out=[];

@@ -160,7 +160,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
 - **Stopped section:** lists stopped routines. Resuming one appends a new schedule from today and clears `stopped`.
 - **Editor (bottom sheet):**
   - Name: required, max 40 characters.
-  - Icon: the 16 emoji from the demo.
+  - Icon: the 16 emoji from the demo, plus 🚀 💰 💊 (19 Nov 2026).
   - Color: the 6 routine colors in section 6.
   - How often: a segmented control with "Mon – Fri", "Some days" and "× per week".
     - Some days: M T W T F chips, plus S S chips shown black and disabled.
@@ -262,7 +262,7 @@ The owner changed the look on 2026-10-28: Kept should look like an Apple app (th
   - Progress (ring, bars, heatmap): #34C759 / #30D158.
   - Background: #F2F2F7 / #000000. Lists and cards: #FFFFFF / #1C1C1E.
   - Rest days: #000000 in both, with a faint outline in dark mode so they stay visible.
-  - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500 #FF2D55.
+  - Routine colors: #34C759 #007AFF #AF52DE #30B0C7 #FF9500, plus five neon colours: neon green #39FF14, neon blue #1F51FF, neon purple #BC13FE, neon teal #00F5D4 and neon orange #FF5F1F, shown in a second row of the picker, each under its plain colour. They are unlocked only while this month's rank so far (as the Today card shows it) is Iron Will or higher (logic.js `neonUnlocked`): below that the picker shows them dimmed with a lock (a tap explains), routines already in them show their plain colour (green, blue, purple, teal or orange) without the ring (nothing in the data changes). Wherever these five show while unlocked, they have a ring and they move: in the colour picker a light runs round the ring and the swatch pops when picked; a routine's tile gets a glowing ring and a passing shine; a done check glows (black check mark on the neon green); Stats dots pulse and bars shimmer; a rule's bar shimmers. Reduce Motion keeps the rings without the movement. The red #FF2D55 was removed on 19 Nov 2026; a routine that already uses it keeps it until its colour is changed.
 - **Scenery** from the owner's Krtse XO website (`E:\krste-xo\krste-website-xo\src\components`), ported to plain JavaScript in `js/scene.js`:
   - Lake Prespa along the bottom of every screen, behind the content and the tab bar: moving wave bands, Golem Grad, three pelicans riding the waves, and now and then a bird, a jumping fish and ripples. 30fps, paused in the background, a single still frame under reduced motion.
   - **"All done" pop-up:** when the last routine due today is checked off, a card opens in the middle of the screen: the dandelion blows inside it (its seeds drift out over the screen and the bare stem stays), "All done for today", and how many routines were kept. Done closes it, as do a tap outside and Escape. Under reduced motion the dandelion stands still.
