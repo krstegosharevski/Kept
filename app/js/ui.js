@@ -4,6 +4,7 @@ import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSc
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
+import {visibleThemes,themeById,themeHref} from '../themes/themes.js';
 
 /* routine colours: Apple green, blue, purple, teal and orange (the red was taken out on 19 Nov 2026),
    then two on trial, neon green and neon blue: wherever they show, they have a ring and they move (the "fx" class, styles.css) */
@@ -47,11 +48,21 @@ const setMeta=m=>{meta={...meta,...m};saveMeta(meta)};
 /* appearance: Settings → Dark mode sets meta.theme to 'light' or 'dark'; null follows the device */
 const systemDark=matchMedia('(prefers-color-scheme: dark)');
 const isDark=()=>meta.theme?meta.theme==='dark':systemDark.matches;
+/* the theme from Settings → Theme (app/themes), only while it is still offered (visible); null is the standard look */
+const skinOn=()=>visibleThemes().some(t=>t.id===meta.skin)?meta.skin:null;
 function applyTheme(){
   const r=document.documentElement; if(meta.theme) r.setAttribute('data-theme',meta.theme); else r.removeAttribute('data-theme');
   r.classList.toggle('lightmode',!isDark()); // the neon colours' light-mode look (styles.css, "Hong Kong") hangs on this
-  /* the status bar colour: both tags show the chosen colour, or each its own when following the device */
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.content=(meta.theme?meta.theme==='dark':m.media.includes('dark'))?'#000000':'#F2F2F7'});
+  /* the theme: data-skin on <html> and its stylesheet after styles.css (index.html already added it before the first paint) */
+  const skin=skinOn(), th=skin&&themeById(skin); let link=document.getElementById('skinCss');
+  if(skin){
+    r.setAttribute('data-skin',skin);
+    if(!link){link=document.createElement('link');link.rel='stylesheet';link.id='skinCss';document.head.append(link)}
+    if(link.getAttribute('href')!==themeHref(skin)){link.addEventListener('load',()=>dispatchEvent(new Event('kept-theme')),{once:true});link.setAttribute('href',themeHref(skin))} // the lake repaints once it has loaded
+  } else { r.removeAttribute('data-skin'); link?.remove(); }
+  /* the status bar colour: both tags show the chosen colour, or each its own when following the device; a theme has its own */
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{const dark=meta.theme?meta.theme==='dark':m.media.includes('dark');
+    m.content=th?.color?(dark?th.color.dark:th.color.light):dark?'#000000':'#F2F2F7'});
   dispatchEvent(new Event('kept-theme')); // the lake repaints in the new colours
 }
 /* due when there is at least one check-in and no backup in the last 7 days, unless put off until tomorrow */
@@ -264,6 +275,7 @@ function renderSettings(){
   <p class="gf">${meta.theme?`Kept stays ${meta.theme} whatever your device is set to.`:'Kept follows your device\'s light or dark setting until you change it here.'}</p>
   <div class="group"><button class="row" data-act="openRules"><div class="body">Rules</div>${(S.rules||[]).length?`<span class="hint num">${S.rules.length}</span>`:''}${DISC}</button></div>
   <p class="gf">Your own rules for your routines, like what counts as done.</p>
+  ${themeSection()}
   <div class="gh">Backup</div>
   <div class="group"><button class="row link" data-act="saveBackup">Save backup</button></div>
   <p class="gf">Last backup: ${ago(meta.lastBackupAt)}. On iPhone, choose Save to Files or iCloud Drive.</p>
@@ -338,6 +350,16 @@ function saveRule(){
 const FX_SYNC=/^fx(sign|glint|ckglow|glow|pulse|shine|spin|flow|flowy)$/;
 function syncFx(){
   try{ for(const a of document.getAnimations()) if(FX_SYNC.test(a.animationName)) a.startTime=-(a.effect?.getTiming?.().delay||0); }catch(e){}
+}
+/* Settings → Theme: the standard look and every theme that is offered (visible in app/themes/themes.js) */
+function themeSection(){
+  const themes=visibleThemes(); if(!themes.length) return '';
+  const on=skinOn();
+  return `<div class="gh">Theme</div>
+  <div class="group" role="radiogroup" aria-label="Theme">${[{id:null,name:'Kept',hint:'The standard look.'},...themes].map(t=>
+    `<button class="row pickr" role="radio" aria-checked="${on===t.id}" data-act="skin" data-id="${t.id??''}"><div class="body"><div class="name">${esc(t.name)}</div>
+    <div class="hint">${esc(t.hint)}</div></div><span class="pickmark" aria-hidden="true">${TICK}</span></button>`).join('')}</div>
+  <p class="gf">A theme changes the colours and the scenery, in light and dark mode.</p>`;
 }
 function render(){
   fxRefresh();
@@ -696,6 +718,7 @@ document.addEventListener('click',e=>{
       commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
     case 'theme': { const dark=!isDark(); el.setAttribute('aria-checked',dark); setMeta({theme:dark?'dark':'light'}); applyTheme(); setTimeout(render,220); break; } // let the switch slide first
     case 'themeAuto': setMeta({theme:null}); applyTheme(); render(); break;
+    case 'skin': setMeta({skin:el.dataset.id||null}); applyTheme(); render(); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
     case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;

@@ -1,0 +1,96 @@
+/* Vice City: a limited-time Kept theme (20 Nov 2026). The owner's lake, Golem Grad and the pelicans at a Miami-style sunset:
+   an 80s striped sun setting behind the island and shining in the water, palm trees swaying on beaches in front of the lake, a sky from
+   deep night to hot pink and orange (light mode: a softer golden hour), and hot pink accents.
+   Every rule is scoped to [data-skin="vice-city"]; see app/themes/themes.js for how themes are added and retired. */
+
+/* ---------- colours, light mode: golden hour ---------- */
+:root[data-skin="vice-city"]{
+  --bg:#FFE9EF; --surface:#FFFFFF; --ink:#24102E;
+  --muted:rgba(80,30,80,.62); --faint:rgba(80,30,80,.32); --line:rgba(120,40,100,.22); --ring-off:rgba(120,40,100,.34);
+  --fill:rgba(224,24,122,.08); --fill-2:rgba(224,24,122,.14); --seg-on:#FFFFFF;
+  --tint:#E0187A; --tint-soft:rgba(224,24,122,.12); --green:#11B894;
+  --glass:rgba(255,244,248,.76); --glass-line:rgba(255,255,255,.8); --glass-shadow:0 6px 24px rgba(160,30,90,.16),0 1px 2px rgba(120,20,80,.08);
+  /* the lake: a rosy sunset sea, the island a solid plum silhouette in front of the sun, the pelicans in plum */
+  --water-rgb:236, 72, 140; --water-alpha:.1; --island-rgb:110, 40, 95; --island-alpha:.88;
+  /* the scenery */
+  --city-sky:linear-gradient(180deg,#FFF6F9 0%,#FFE6EF 34%,#FFCEDB 58%,#FFB5A0 80%,#FF9F7A 100%);
+  --city-stars:linear-gradient(transparent,transparent);
+  --city-sun:linear-gradient(180deg,#FFF3A6 0%,#FFB65E 45%,#FF5C8E 100%);
+  --city-glow:rgba(255,120,120,.42); --city-shine:rgba(255,140,90,.5);
+  --city-palm:#7A2E62; --city-edge:rgba(224,24,122,.16); --city-title:linear-gradient(90deg,#E0187A,#FF7A3D);
+  --city-beach-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 150' preserveAspectRatio='none'%3E%3Cpath d='M0 150V22C30 8 74 4 116 14C150 24 172 64 180 150Z'/%3E%3C/svg%3E");
+  --city-palm-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 200'%3E%3Cpath d='M57 200C59 160 62 112 64 64L70 64C68 112 66 160 67 200Z'/%3E%3Cpath d='M67 60C46 45 22 47 3 67C24 57 45 57 66 64Z'/%3E%3Cpath d='M67 59C51 35 31 25 10 29C31 35 49 45 65 63Z'/%3E%3Cpath d='M67 59C61 35 51 17 37 7C49 23 59 41 65 61Z'/%3E%3Cpath d='M67 59C75 35 87 19 103 13C89 27 77 43 69 61Z'/%3E%3Cpath d='M67 59C87 41 107 39 119 49C103 47 87 51 69 63Z'/%3E%3Cpath d='M67 60C89 57 109 71 117 93C103 77 87 69 67 65Z'/%3E%3Cpath d='M66 61C52 65 36 79 30 99C40 83 52 73 66 67Z'/%3E%3Ccircle cx='63' cy='66' r='3.2'/%3E%3Ccircle cx='70' cy='67' r='3.2'/%3E%3C/svg%3E");
+}
+/* ---------- colours, dark mode: neon night ---------- */
+@media (prefers-color-scheme: dark){:root[data-skin="vice-city"]:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#12061F; --surface:#22103A; --ink:#FFF3FA;
+  --muted:rgba(255,215,240,.64); --faint:rgba(255,215,240,.32); --line:rgba(255,110,200,.24); --ring-off:rgba(255,200,235,.36);
+  --fill:rgba(255,120,210,.14); --fill-2:rgba(255,120,210,.22); --seg-on:#4A1F63;
+  --tint:#FF4FB3; --tint-soft:rgba(255,79,179,.2); --green:#2EF2C2;
+  --glass:rgba(32,12,52,.76); --glass-line:rgba(255,120,210,.18); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(255,79,179,.12);
+  --water-rgb:255, 79, 179; --water-alpha:.12; --island-rgb:20, 6, 38; --island-alpha:.9;
+  --city-sky:linear-gradient(180deg,#090316 0%,#1B0733 28%,#3E0E58 50%,#8E1F6E 70%,#F2467E 86%,#FF9A57 100%);
+  --city-stars:radial-gradient(1.4px 1.4px at 12% 9%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 31% 17%,#fff 50%,transparent 60%),
+    radial-gradient(1.6px 1.6px at 58% 6%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 77% 14%,#fff 50%,transparent 60%),
+    radial-gradient(1.3px 1.3px at 90% 27%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 46% 25%,#fff 50%,transparent 60%),
+    radial-gradient(1.2px 1.2px at 6% 33%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 68% 36%,#fff 50%,transparent 60%);
+  --city-sun:linear-gradient(180deg,#FFE66D 0%,#FF9A3C 48%,#FF2E88 100%);
+  --city-glow:rgba(255,80,140,.6); --city-shine:rgba(255,150,80,.55);
+  --city-palm:#12051F; --city-edge:rgba(255,79,179,.24); --city-title:linear-gradient(90deg,#FF4FB3,#FF9A57);
+}}
+:root[data-skin="vice-city"][data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12061F; --surface:#22103A; --ink:#FFF3FA;
+  --muted:rgba(255,215,240,.64); --faint:rgba(255,215,240,.32); --line:rgba(255,110,200,.24); --ring-off:rgba(255,200,235,.36);
+  --fill:rgba(255,120,210,.14); --fill-2:rgba(255,120,210,.22); --seg-on:#4A1F63;
+  --tint:#FF4FB3; --tint-soft:rgba(255,79,179,.2); --green:#2EF2C2;
+  --glass:rgba(32,12,52,.76); --glass-line:rgba(255,120,210,.18); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(255,79,179,.12);
+  --water-rgb:255, 79, 179; --water-alpha:.12; --island-rgb:20, 6, 38; --island-alpha:.9;
+  --city-sky:linear-gradient(180deg,#090316 0%,#1B0733 28%,#3E0E58 50%,#8E1F6E 70%,#F2467E 86%,#FF9A57 100%);
+  --city-stars:radial-gradient(1.4px 1.4px at 12% 9%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 31% 17%,#fff 50%,transparent 60%),
+    radial-gradient(1.6px 1.6px at 58% 6%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 77% 14%,#fff 50%,transparent 60%),
+    radial-gradient(1.3px 1.3px at 90% 27%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 46% 25%,#fff 50%,transparent 60%),
+    radial-gradient(1.2px 1.2px at 6% 33%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 68% 36%,#fff 50%,transparent 60%);
+  --city-sun:linear-gradient(180deg,#FFE66D 0%,#FF9A3C 48%,#FF2E88 100%);
+  --city-glow:rgba(255,80,140,.6); --city-shine:rgba(255,150,80,.55);
+  --city-palm:#12051F; --city-edge:rgba(255,79,179,.24); --city-title:linear-gradient(90deg,#FF4FB3,#FF9A57);
+}
+/* sheets are a little lighter than the page in dark mode */
+@media (prefers-color-scheme: dark){:root[data-skin="vice-city"]:not([data-theme="light"]) .sheet{--bg:#1C0B30;--surface:#2A1444}}
+:root[data-skin="vice-city"][data-theme="dark"] .sheet{--bg:#1C0B30;--surface:#2A1444}
+
+/* ---------- the scenery: behind everything, the lake drawn over its lower part ---------- */
+[data-skin="vice-city"] #skin{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--city-stars),var(--city-sky)}
+/* the lake's waterline sits about 176px above the bottom of the screen: the sun sets there, behind Golem Grad */
+[data-skin="vice-city"] #skin .s1{position:absolute;left:50%;bottom:176px;width:150px;height:76px;margin-left:-75px;border-radius:75px 75px 0 0;
+  background:var(--city-sun);
+  -webkit-mask-image:linear-gradient(180deg,#000 0 50%,transparent 50% 56%,#000 56% 66%,transparent 66% 73%,#000 73% 82%,transparent 82% 90%,#000 90%);
+  mask-image:linear-gradient(180deg,#000 0 50%,transparent 50% 56%,#000 56% 66%,transparent 66% 73%,#000 73% 82%,transparent 82% 90%,#000 90%)}
+/* its glow, and its shine in the water below */
+[data-skin="vice-city"] #skin .s2{position:absolute;left:50%;bottom:56px;width:320px;height:240px;margin-left:-160px;
+  background:radial-gradient(closest-side,var(--city-glow),transparent 72%)}
+[data-skin="vice-city"] #skin .s2::after{content:"";position:absolute;left:50%;top:50%;width:120px;height:72px;margin-left:-60px;
+  background:repeating-linear-gradient(180deg,var(--city-shine) 0 3px,transparent 3px 9px);
+  -webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+/* in front of the lake (#skin-front, above the water, below the app): a beach mound in each bottom corner with a palm tree
+   standing on it and swaying a little; the beaches stay still */
+[data-skin="vice-city"] #skin-front{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+[data-skin="vice-city"] #skin-front i{position:absolute;bottom:0;background:var(--city-palm)}
+[data-skin="vice-city"] #skin-front .f1,[data-skin="vice-city"] #skin-front .f3{
+  -webkit-mask:var(--city-beach-svg) 0 0/100% 100% no-repeat;mask:var(--city-beach-svg) 0 0/100% 100% no-repeat}
+[data-skin="vice-city"] #skin-front .f1{left:0;width:180px;height:150px}
+[data-skin="vice-city"] #skin-front .f3{right:0;width:150px;height:128px;transform:scaleX(-1)}
+[data-skin="vice-city"] #skin-front .f2,[data-skin="vice-city"] #skin-front .f4{transform-origin:56% 100%;
+  -webkit-mask:var(--city-palm-svg) center bottom/contain no-repeat;mask:var(--city-palm-svg) center bottom/contain no-repeat}
+[data-skin="vice-city"] #skin-front .f2{left:0;bottom:138px;width:150px;height:250px;animation:city-sway 7s ease-in-out infinite alternate}
+[data-skin="vice-city"] #skin-front .f4{right:0;bottom:117px;width:128px;height:205px;animation:city-sway-r 8s ease-in-out infinite alternate}
+@keyframes city-sway{from{transform:rotate(-1.5deg)}to{transform:rotate(1.5deg)}}
+@keyframes city-sway-r{from{transform:scaleX(-1) rotate(-1.5deg)}to{transform:scaleX(-1) rotate(1.5deg)}}
+/* the pelicans, birds and fish of the lake are drawn in the colour of #water */
+[data-skin="vice-city"] #water{color:var(--city-palm)}
+
+/* ---------- small neon touches ---------- */
+[data-skin="vice-city"] .navbar span{background:var(--city-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="vice-city"] .head .titles:not(.rf) h1{background:var(--city-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="vice-city"] .group,[data-skin="vice-city"] .card{box-shadow:0 0 0 1px var(--city-edge)}

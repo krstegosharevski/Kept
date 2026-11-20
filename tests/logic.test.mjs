@@ -311,3 +311,19 @@ test('Month calendar colours: a past day with nothing done is red (miss); today 
   assert.deepEqual([.2,.5,.9,1].map(v=>heatClass(v,true)),['l1','l2','l3','l4']);
   assert.deepEqual([.2,.5,.9,1].map(v=>heatClass(v,false)),['l1','l2','l3','l4']);
 });
+
+test('Themes: each one listed has its stylesheet, is cached for offline use, and only applies when chosen', async ()=>{
+  const {THEMES,themeHref}=await import('../app/themes/themes.js');
+  const sw=readFileSync(new URL('../app/sw.js',import.meta.url),'utf8');
+  assert.ok(THEMES.length>=1);
+  for(const t of THEMES){
+    assert.match(t.id,/^[a-z0-9-]+$/);
+    const file=new URL(`../app/${themeHref(t.id)}`,import.meta.url);
+    assert.ok(existsSync(file),`missing ${themeHref(t.id)}`);
+    assert.ok(sw.includes(`'${themeHref(t.id)}'`),`sw.js does not cache ${themeHref(t.id)}`);
+    const css=readFileSync(file,'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+    for(const rule of css.match(/[^{}]+(?=\{)/g).map(x=>x.trim()).filter(x=>x&&!x.startsWith('@')&&!/^(from|to|\d+%)/.test(x)))
+      for(const sel of rule.split(',')) assert.ok(sel.includes(`[data-skin="${t.id}"]`),`${t.id}: "${sel.trim()}" is not scoped to the theme`);
+  }
+  assert.ok(sw.includes("'themes/themes.js'"));
+});

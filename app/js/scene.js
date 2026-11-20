@@ -45,7 +45,9 @@ const PELICAN_OPACITY=.55, PELICAN_SCALE_NARROW=.85;
 
 function readPalette(canvas){
   const s=getComputedStyle(canvas), ink=s.color.match(/-?\d+(\.\d+)?/g);
-  return {rgb:s.getPropertyValue('--water-rgb').trim()||'31, 94, 255',alpha:parseFloat(s.getPropertyValue('--water-alpha'))||.07,inkRgb:ink?ink.slice(0,3).join(', '):'0, 0, 0'};
+  const ia=parseFloat(s.getPropertyValue('--island-alpha'));
+  return {rgb:s.getPropertyValue('--water-rgb').trim()||'31, 94, 255',alpha:parseFloat(s.getPropertyValue('--water-alpha'))||.07,inkRgb:ink?ink.slice(0,3).join(', '):'0, 0, 0',
+    islandRgb:s.getPropertyValue('--island-rgb').trim()||null,islandAlpha:isNaN(ia)?null:ia}; // a theme may colour the island apart from the water
 }
 function surfaceOffset(band,x,width,time){
   let o=0;
@@ -74,7 +76,7 @@ function canopyAt(fx){
 /* Golem Grad, back to front: the hills behind, a squashed reflection, the wooded crown, the pale rock, a crest line.
    Every irregularity comes from the loop index, so the island is the same shape on every frame. */
 function drawIsland(ctx,left,waterline,w,h,rgb,alpha){
-  const X=fx=>left+fx*w, Y=fy=>waterline-h+fy*h, tint=a=>`rgba(${rgb}, ${Math.min(a,.7)})`;
+  const X=fx=>left+fx*w, Y=fy=>waterline-h+fy*h, tint=a=>`rgba(${rgb}, ${Math.min(a,.92)})`; // the standard lake stays far below the cap; a theme may make the island nearly solid
   const silhouette=()=>{
     ctx.moveTo(X(0),Y(1)); ctx.lineTo(X(0),Y(.9)); ctx.lineTo(X(.012),Y(.86)); ctx.lineTo(X(.016),Y(.62)); ctx.lineTo(X(ISLAND_CANOPY[0][0]),Y(ISLAND_CANOPY[0][1]));
     const end=ISLAND_CANOPY[ISLAND_CANOPY.length-1][0];
@@ -191,7 +193,7 @@ export function startWater(canvas,opts={}){
     const islandFade=still?1:ease(elapsed/SCENE_FADE), pelicanFade=still?1:ease((elapsed-PELICAN_FADE_DELAY)/SCENE_FADE);
     // the island goes down first, so the waves wash over its base
     const place=wide?ISLAND_WIDE:ISLAND_NARROW, islandW=Math.min(width*place.width,ISLAND_MAX_WIDTH);
-    drawIsland(ctx,width*place.left,height*(TOP+SPREAD*(.5/BANDS.length))+4,islandW,islandW*ISLAND_ASPECT,palette.rgb,palette.alpha*INTENSITY*2.6*islandFade);
+    drawIsland(ctx,width*place.left,height*(TOP+SPREAD*(.5/BANDS.length))+4,islandW,islandW*ISLAND_ASPECT,palette.islandRgb||palette.rgb,(palette.islandAlpha??palette.alpha*INTENSITY*2.6)*islandFade);
     for(let b=0;b<BANDS.length;b++){
       const band=BANDS[b], baseY=bandY(b), surface=x=>baseY+surfaceOffset(band,x,width,elapsed)*INTENSITY;
       const pts=[]; for(let x=0;x<=width;x+=STEP) pts.push([x,surface(x)]);
