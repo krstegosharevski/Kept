@@ -3,8 +3,8 @@
    (set on <html> by ui.js applyTheme, and by index.html before the first paint), so it changes nothing while it is off.
    A theme can recolour the app through the colour tokens (--bg, --surface, --tint …, in light and dark mode), recolour the lake
    (--water-rgb, --water-alpha, --island-rgb, --island-alpha, and the colour of #water for the pelicans), and dress the scenery
-   slots in index.html (#skin behind the lake and #skin-front in front of it, each with four <i> children, hidden unless a theme
-   shows them).
+   slots in index.html (#skin behind the lake and #skin-front in front of it, each with six <i> children, .s1–.s6 and .f1–.f6,
+   hidden unless a theme shows them).
 
    Only themes with visible:true appear in Settings. To add one: make its folder, add a line here, and add its file to the
    list in sw.js (so it works offline). To retire one: set visible:false (anyone using it goes back to the standard look),
@@ -14,6 +14,8 @@ export const THEMES=[
     color:{light:'#FFE4EE',dark:'#12061F'}}, // the status bar colour in each mode
   {id:'dig-a-hole',name:'Dig a Hole',hint:'Airbrushed pearl and chrome: a pearl moon over the lake, a freshly dug hole and pink goo.',visible:true,
     color:{light:'#D4D3DC',dark:'#142119'}},
+  {id:'surreal-christmas',name:'Let it be Christmas',hint:'For the holidays: a Christmas tree, snow puffs hopping over the lake, giant baubles on the water and a moon in a Santa hat.',visible:true,
+    color:{light:'#9DBDE3',dark:'#050B1A'}},
 ];
 export const visibleThemes=()=>THEMES.filter(t=>t.visible);
 export const themeById=id=>THEMES.find(t=>t.id===id)||null;

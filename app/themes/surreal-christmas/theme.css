@@ -1,0 +1,183 @@
+/* Let it be Christmas (id surreal-christmas): a Kept theme for the holidays (20 Nov 2026). The owner's lake, Golem Grad and the pelicans on a snowy evening, with
+   Christmas mixed up surreally: a crescent moon dozing in a Santa hat, a giant candy cane arching over the lake like a rainbow, giant
+   glass baubles floating on the water, snow falling, a glossy tree with twinkling lights and a sleeping star on a snowy hill, presents on
+   another hill, and two snow puffs (original fluffy snow creatures in knit hats) hopping across the lake, splashing in the middle.
+   Every drawing has Apple-style edges: a crisp light rim along its top edges and a soft contact shadow, as on Apple's icons.
+   Light mode is a pale winter dusk (ice blue to a pink-gold horizon); dark mode is a midnight-blue night with an aurora.
+   Layout (390 × 844 phone): the lake's waterline is 176px above the bottom, the island's crown about 212px; the tab bar covers the
+   bottom 74px; on Today the sky is free from about 330px down. The hills rise to 110px and 100px, the tree stands on the left hill
+   (its trunk meets the snow at about 100px), the presents sit on the right one at 80px, the puffs hop along 104px.
+   Every rule is scoped to [data-skin="surreal-christmas"]; see app/themes/themes.js for how themes are added and retired. */
+
+/* ---------- colours, light mode: winter dusk ---------- */
+:root[data-skin="surreal-christmas"]{
+  --bg:#EEF3F9; --surface:#FFFFFF; --ink:#152238;
+  --muted:rgba(30,50,85,.62); --faint:rgba(30,50,85,.32); --line:rgba(40,70,120,.18); --ring-off:rgba(40,70,120,.32);
+  --fill:rgba(215,38,61,.07); --fill-2:rgba(215,38,61,.13); --seg-on:#FFFFFF;
+  --tint:#D7263D; --tint-soft:rgba(215,38,61,.12); --green:#1E9E5A;
+  --glass:rgba(250,252,255,.76); --glass-line:rgba(255,255,255,.9); --glass-shadow:0 6px 24px rgba(40,70,120,.16),0 1px 2px rgba(40,70,120,.08);
+  /* the lake: icy blue water, a misty blue-grey island, the pelicans in deep blue */
+  --water-rgb:70, 130, 200; --water-alpha:.12; --island-rgb:150, 172, 205; --island-alpha:.72;
+  /* the scenery */
+  --xm-sky:linear-gradient(180deg,#9DBDE3 0%,#B9D0EC 30%,#D8E3F2 55%,#F2DDE3 78%,#F8D9C2 100%);
+  --xm-glow:radial-gradient(260px 120px at 50% calc(100% - 180px),rgba(255,214,170,.55),transparent),
+    radial-gradient(160px 70px at 22% 16%,rgba(255,255,255,.55),transparent),radial-gradient(200px 80px at 80% 26%,rgba(255,255,255,.45),transparent);
+  --xm-flake:rgba(255,255,255,.95); --xm-moonglow:rgba(255,236,170,.75);
+  --xm-snow:radial-gradient(ellipse 40% 30% at 38% 14%,#FFFFFF,rgba(255,255,255,0)),linear-gradient(180deg,#FFFFFF 0%,#EEF4FB 35%,#CADAED 100%);
+  --xm-snow-2:radial-gradient(ellipse 36% 30% at 56% 14%,#FFFFFF,rgba(255,255,255,0)),linear-gradient(180deg,#FFFFFF 0%,#E8F0FA 40%,#C2D3EA 100%);
+  --xm-rim:rgba(255,255,255,.95); --xm-shadow:rgba(40,70,120,.22); --xm-ripple:rgba(255,255,255,.9);
+  --xm-title:linear-gradient(90deg,#C8102E,#D99A1E); --xm-edge:rgba(40,70,120,.1); --xm-birds:#2A4670;
+}
+/* ---------- colours, dark mode: midnight with an aurora ---------- */
+@media (prefers-color-scheme: dark){:root[data-skin="surreal-christmas"]:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0A1426; --surface:#15213A; --ink:#F2F6FF;
+  --muted:rgba(215,228,255,.64); --faint:rgba(215,228,255,.32); --line:rgba(160,190,255,.18); --ring-off:rgba(215,228,255,.34);
+  --fill:rgba(255,90,110,.12); --fill-2:rgba(255,90,110,.2); --seg-on:#26365A;
+  --tint:#FF4D5E; --tint-soft:rgba(255,77,94,.2); --green:#33C27A;
+  --glass:rgba(16,28,52,.76); --glass-line:rgba(170,200,255,.16); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(120,170,255,.08);
+  --water-rgb:120, 170, 255; --water-alpha:.11; --island-rgb:6, 12, 26; --island-alpha:.9;
+  --xm-sky:linear-gradient(180deg,#050B1A 0%,#0A1730 35%,#13284A 65%,#24406A 88%,#365A86 100%);
+  --xm-glow:radial-gradient(ellipse 70% 14% at 30% 20%,rgba(80,255,190,.26),transparent),radial-gradient(ellipse 55% 12% at 72% 28%,rgba(150,110,255,.22),transparent),
+    radial-gradient(ellipse 50% 10% at 48% 36%,rgba(255,90,170,.14),transparent),radial-gradient(260px 110px at 50% calc(100% - 180px),rgba(255,200,140,.18),transparent);
+  --xm-flake:rgba(255,255,255,.9); --xm-moonglow:rgba(255,226,140,.6);
+  --xm-snow:radial-gradient(ellipse 40% 30% at 38% 14%,rgba(220,232,255,.9),rgba(220,232,255,0)),linear-gradient(180deg,#C9D7EE 0%,#8399BF 40%,#3F5279 100%);
+  --xm-snow-2:radial-gradient(ellipse 36% 30% at 56% 14%,rgba(220,232,255,.85),rgba(220,232,255,0)),linear-gradient(180deg,#C2D1EA 0%,#7B91B8 40%,#3A4C72 100%);
+  --xm-rim:rgba(235,242,255,.8); --xm-shadow:rgba(0,0,0,.45); --xm-ripple:rgba(220,235,255,.75);
+  --xm-title:linear-gradient(90deg,#FF6B7A,#FFD37A); --xm-edge:rgba(160,190,255,.12); --xm-birds:#050B18;
+}}
+:root[data-skin="surreal-christmas"][data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0A1426; --surface:#15213A; --ink:#F2F6FF;
+  --muted:rgba(215,228,255,.64); --faint:rgba(215,228,255,.32); --line:rgba(160,190,255,.18); --ring-off:rgba(215,228,255,.34);
+  --fill:rgba(255,90,110,.12); --fill-2:rgba(255,90,110,.2); --seg-on:#26365A;
+  --tint:#FF4D5E; --tint-soft:rgba(255,77,94,.2); --green:#33C27A;
+  --glass:rgba(16,28,52,.76); --glass-line:rgba(170,200,255,.16); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(120,170,255,.08);
+  --water-rgb:120, 170, 255; --water-alpha:.11; --island-rgb:6, 12, 26; --island-alpha:.9;
+  --xm-sky:linear-gradient(180deg,#050B1A 0%,#0A1730 35%,#13284A 65%,#24406A 88%,#365A86 100%);
+  --xm-glow:radial-gradient(ellipse 70% 14% at 30% 20%,rgba(80,255,190,.26),transparent),radial-gradient(ellipse 55% 12% at 72% 28%,rgba(150,110,255,.22),transparent),
+    radial-gradient(ellipse 50% 10% at 48% 36%,rgba(255,90,170,.14),transparent),radial-gradient(260px 110px at 50% calc(100% - 180px),rgba(255,200,140,.18),transparent);
+  --xm-flake:rgba(255,255,255,.9); --xm-moonglow:rgba(255,226,140,.6);
+  --xm-snow:radial-gradient(ellipse 40% 30% at 38% 14%,rgba(220,232,255,.9),rgba(220,232,255,0)),linear-gradient(180deg,#C9D7EE 0%,#8399BF 40%,#3F5279 100%);
+  --xm-snow-2:radial-gradient(ellipse 36% 30% at 56% 14%,rgba(220,232,255,.85),rgba(220,232,255,0)),linear-gradient(180deg,#C2D1EA 0%,#7B91B8 40%,#3A4C72 100%);
+  --xm-rim:rgba(235,242,255,.8); --xm-shadow:rgba(0,0,0,.45); --xm-ripple:rgba(220,235,255,.75);
+  --xm-title:linear-gradient(90deg,#FF6B7A,#FFD37A); --xm-edge:rgba(160,190,255,.12); --xm-birds:#050B18;
+}
+/* sheets are a little lighter than the page in dark mode */
+@media (prefers-color-scheme: dark){:root[data-skin="surreal-christmas"]:not([data-theme="light"]) .sheet{--bg:#101C33;--surface:#1B2945}}
+:root[data-skin="surreal-christmas"][data-theme="dark"] .sheet{--bg:#101C33;--surface:#1B2945}
+
+/* shapes and snowflakes */
+:root[data-skin="surreal-christmas"]{
+  --xm-hill-1:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 210 110' preserveAspectRatio='none'%3E%3Cpath d='M0 110V34C22 14 66 6 106 12C146 18 182 46 198 82C204 94 207 102 210 110Z'/%3E%3C/svg%3E");
+  --xm-hill-2:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 100' preserveAspectRatio='none'%3E%3Cpath d='M190 100V30C170 12 134 4 100 10C64 16 30 40 12 76C6 88 2 96 0 100Z'/%3E%3C/svg%3E");
+  /* snow, three depths: many small flakes, medium ones, and big soft ones in front of the hills. Each layer is a repeating tile that
+     falls exactly one tile per loop (straight down, so the loop is seamless); the sideways drift is a separate sway that never snaps */
+  --xm-flakes-s:radial-gradient(circle at 146px 122px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 153px 51px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 134px 124px,var(--xm-flake) 0 1.0px,transparent 1.5px),radial-gradient(circle at 50px 27px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 39px 26px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 165px 13px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 104px 118px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 160px 169px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 6px 138px,var(--xm-flake) 0 1.0px,transparent 1.5px),radial-gradient(circle at 12px 51px,var(--xm-flake) 0 0.9px,transparent 1.4px),radial-gradient(circle at 156px 10px,var(--xm-flake) 0 1.4px,transparent 1.9px),radial-gradient(circle at 86px 115px,var(--xm-flake) 0 1.4px,transparent 1.9px),radial-gradient(circle at 53px 135px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 78px 130px,var(--xm-flake) 0 1.0px,transparent 1.5px),radial-gradient(circle at 24px 120px,var(--xm-flake) 0 0.9px,transparent 1.4px),radial-gradient(circle at 107px 144px,var(--xm-flake) 0 1.3px,transparent 1.8px);
+  --xm-flakes-s2:radial-gradient(circle at 77px 24px,var(--xm-flake) 0 1.4px,transparent 1.9px),radial-gradient(circle at 81px 111px,var(--xm-flake) 0 0.8px,transparent 1.3px),radial-gradient(circle at 94px 36px,var(--xm-flake) 0 1.0px,transparent 1.5px),radial-gradient(circle at 71px 116px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 119px 9px,var(--xm-flake) 0 0.8px,transparent 1.3px),radial-gradient(circle at 130px 110px,var(--xm-flake) 0 0.9px,transparent 1.4px),radial-gradient(circle at 113px 94px,var(--xm-flake) 0 0.8px,transparent 1.3px),radial-gradient(circle at 55px 12px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 47px 58px,var(--xm-flake) 0 1.2px,transparent 1.7px),radial-gradient(circle at 95px 147px,var(--xm-flake) 0 1.4px,transparent 1.9px),radial-gradient(circle at 97px 75px,var(--xm-flake) 0 1.3px,transparent 1.8px),radial-gradient(circle at 83px 24px,var(--xm-flake) 0 1.2px,transparent 1.7px);
+  --xm-flakes-m:radial-gradient(circle at 26px 186px,var(--xm-flake) 0 2.4px,transparent 3.2px),radial-gradient(circle at 198px 62px,var(--xm-flake) 0 1.9px,transparent 2.7px),radial-gradient(circle at 11px 21px,var(--xm-flake) 0 2.1px,transparent 2.9px),radial-gradient(circle at 31px 106px,var(--xm-flake) 0 2.1px,transparent 2.9px),radial-gradient(circle at 78px 102px,var(--xm-flake) 0 1.8px,transparent 2.6px),radial-gradient(circle at 8px 179px,var(--xm-flake) 0 1.7px,transparent 2.5px),radial-gradient(circle at 57px 17px,var(--xm-flake) 0 1.7px,transparent 2.5px),radial-gradient(circle at 185px 105px,var(--xm-flake) 0 2.0px,transparent 2.8px),radial-gradient(circle at 148px 165px,var(--xm-flake) 0 2.0px,transparent 2.8px),radial-gradient(circle at 176px 73px,var(--xm-flake) 0 1.8px,transparent 2.6px);
+  --xm-flakes-l:radial-gradient(circle at 166px 177px,var(--xm-flake) 0 3.5px,transparent 5.7px),radial-gradient(circle at 216px 67px,var(--xm-flake) 0 3.0px,transparent 5.2px),radial-gradient(circle at 58px 12px,var(--xm-flake) 0 3.2px,transparent 5.4px),radial-gradient(circle at 256px 97px,var(--xm-flake) 0 3.1px,transparent 5.3px),radial-gradient(circle at 104px 237px,var(--xm-flake) 0 4.0px,transparent 6.2px),radial-gradient(circle at 74px 221px,var(--xm-flake) 0 3.7px,transparent 5.9px),radial-gradient(circle at 67px 210px,var(--xm-flake) 0 3.9px,transparent 6.1px);
+  /* the snowbank along the shore: a soft wavy top */
+  --xm-bank:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 90' preserveAspectRatio='none'%3E%3Cpath d='M0 90V22C30 10 60 8 92 16S150 30 186 20S250 2 290 12S350 30 400 14V90Z'/%3E%3C/svg%3E");
+}
+
+/* ---------- the scenery behind the lake ---------- */
+[data-skin="surreal-christmas"] #skin{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--xm-sky)}
+/* soft clouds and the horizon glow in light mode; an aurora that slowly breathes in dark mode */
+[data-skin="surreal-christmas"] #skin::before{content:"";position:absolute;inset:-6%;background:var(--xm-glow);animation:xmas-aurora 22s ease-in-out infinite alternate}
+/* the moon in a Santa hat: 80px, centred 62% across, 226px up: inside the candy cane's arch (inner radius 155px) and above the island */
+[data-skin="surreal-christmas"] #skin .s1{position:absolute;left:calc(62% - 40px);bottom:226px;width:80px;height:80px;
+  background:url("moon-hat.svg") center/100% 100% no-repeat;filter:drop-shadow(0 0 14px var(--xm-moonglow));animation:xmas-moon 8s ease-in-out infinite alternate}
+/* the candy cane arching over the lake like a rainbow: a 168px half ring standing on the waterline (176px), 13px thick, red and
+   white stripes with a glossy highlight along it; behind the moon and the island */
+[data-skin="surreal-christmas"] #skin .s2{position:absolute;z-index:-1;left:calc(50% - 168px);bottom:176px;width:336px;height:168px;
+  background:radial-gradient(circle at 50% 100%,transparent 158px,rgba(255,255,255,.75) 158.5px 160px,transparent 161px),
+    repeating-conic-gradient(from 0deg at 50% 100%,#E0283F 0 5deg,#FFF6F6 5deg 10deg);
+  -webkit-mask:radial-gradient(circle at 50% 100%,transparent 155px,#000 155.5px 167.5px,transparent 168px);mask:radial-gradient(circle at 50% 100%,transparent 155px,#000 155.5px 167.5px,transparent 168px);
+  filter:drop-shadow(0 -1px 0 var(--xm-rim));opacity:.92}
+/* giant glass baubles floating on the lake, low in the water so the waves wash over them; the second one is tinted gold */
+[data-skin="surreal-christmas"] #skin .s3{position:absolute;inset:0}
+[data-skin="surreal-christmas"] #skin .s3::before,[data-skin="surreal-christmas"] #skin .s3::after{content:"";position:absolute;background:url("bauble.svg") center/100% 100% no-repeat;
+  filter:drop-shadow(0 4px 5px var(--xm-shadow));transform-origin:50% 100%}
+[data-skin="surreal-christmas"] #skin .s3::before{left:calc(38% - 18px);bottom:126px;width:36px;height:42px;animation:xmas-float 5.4s ease-in-out infinite alternate}
+[data-skin="surreal-christmas"] #skin .s3::after{left:calc(63% - 13px);bottom:138px;width:26px;height:30px;animation:xmas-float 4.6s ease-in-out -2s infinite alternate;
+  filter:hue-rotate(42deg) saturate(.95) brightness(1.25) drop-shadow(0 4px 5px var(--xm-shadow))}
+/* snow: two layers of flakes falling at different speeds, the bigger ones drifting */
+[data-skin="surreal-christmas"] #skin .s4{position:absolute;inset:0 -14px;z-index:1;animation:xmas-sway 7s ease-in-out infinite alternate}
+[data-skin="surreal-christmas"] #skin .s4::before,[data-skin="surreal-christmas"] #skin .s4::after{content:"";position:absolute;left:0;right:0;top:-240px;bottom:0}
+[data-skin="surreal-christmas"] #skin .s4::before{background:var(--xm-flakes-s);background-size:180px 180px;animation:xmas-snow-s 14s linear infinite}
+[data-skin="surreal-christmas"] #skin .s4::after{background:var(--xm-flakes-s2);background-size:150px 150px;opacity:.75;animation:xmas-snow-s2 18s linear infinite}
+[data-skin="surreal-christmas"] #skin .s5{position:absolute;inset:0 -14px;z-index:1;animation:xmas-sway 9s ease-in-out -3s infinite alternate-reverse}
+[data-skin="surreal-christmas"] #skin .s5::before{content:"";position:absolute;left:0;right:0;top:-220px;bottom:0;background:var(--xm-flakes-m);background-size:220px 220px;animation:xmas-snow-m 10s linear infinite}
+/* presents falling from the sky with the snow, tumbling and swaying, and sinking into the lake (about 150px up): a red one every 19s
+   at 20% across, and a teal one every 24s at 74% */
+[data-skin="surreal-christmas"] #skin .s6{position:absolute;inset:0;z-index:1}
+[data-skin="surreal-christmas"] #skin .s6::before,[data-skin="surreal-christmas"] #skin .s6::after{content:"";position:absolute;top:-44px;width:28px;height:28px;
+  background:url("gift.svg") center/100% 100% no-repeat;filter:drop-shadow(0 -1px 0 var(--xm-rim)) drop-shadow(0 3px 4px var(--xm-shadow));opacity:0}
+[data-skin="surreal-christmas"] #skin .s6::before{left:calc(20% - 14px);animation:xmas-gift-fall 19s linear -4s infinite,xmas-tumble 3.6s ease-in-out infinite alternate}
+[data-skin="surreal-christmas"] #skin .s6::after{left:calc(74% - 11px);width:22px;height:22px;animation:xmas-gift-fall 24s linear -15s infinite,xmas-tumble 3s ease-in-out -1s infinite alternate;
+  filter:hue-rotate(185deg) saturate(1.1) drop-shadow(0 -1px 0 var(--xm-rim)) drop-shadow(0 3px 4px var(--xm-shadow))}
+
+/* ---------- in front of the lake (above the water, below the app) ---------- */
+[data-skin="surreal-christmas"] #skin-front{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+[data-skin="surreal-christmas"] #skin-front i{position:absolute}
+/* the hills, each a stage with Apple-style edges: a crisp rim of light on top and a soft shadow, for the hill and what stands on it */
+[data-skin="surreal-christmas"] #skin-front .f1,[data-skin="surreal-christmas"] #skin-front .f3{bottom:0;filter:drop-shadow(0 -1px 0 var(--xm-rim)) drop-shadow(0 -4px 10px var(--xm-shadow))}
+[data-skin="surreal-christmas"] #skin-front .f1::before,[data-skin="surreal-christmas"] #skin-front .f3::before,
+[data-skin="surreal-christmas"] #skin-front .f1::after,[data-skin="surreal-christmas"] #skin-front .f3::after{content:"";position:absolute}
+[data-skin="surreal-christmas"] #skin-front .f1{left:0;width:210px;height:110px}
+[data-skin="surreal-christmas"] #skin-front .f1::before{inset:0;background:var(--xm-snow);-webkit-mask:var(--xm-hill-1) 0 0/100% 100% no-repeat;mask:var(--xm-hill-1) 0 0/100% 100% no-repeat}
+/* the tree (120 × 192, centred over the hill's crest so its trunk meets the snow, about 100px up) and the presents under it
+   (124 × 37, along the crest where the snow lies 91–101px up), in one box so the presents stand in front of the tree */
+[data-skin="surreal-christmas"] #skin-front .f1::after{left:0;bottom:90px;width:160px;height:198px;
+  background:url("gifts-tree.svg") left 16px bottom 0/124px 37px no-repeat,url("tree.svg") left 18px bottom 6px/120px 192px no-repeat}
+[data-skin="surreal-christmas"] #skin-front .f3{right:0;width:190px;height:100px;z-index:1}
+[data-skin="surreal-christmas"] #skin-front .f3::before{inset:0;background:var(--xm-snow-2);-webkit-mask:var(--xm-hill-2) 0 0/100% 100% no-repeat;mask:var(--xm-hill-2) 0 0/100% 100% no-repeat}
+/* a big pile of presents and a candy cane on the right hill's top (the snow lies 64–90px up there) */
+[data-skin="surreal-christmas"] #skin-front .f3::after{right:10px;bottom:72px;width:150px;height:94px;background:url("gifts.svg") center bottom/100% 100% no-repeat}
+/* the snow puffs: every 18s a puff (50px) and its little one (36px, 0.7s behind) hop in from the left, four unhurried hops of 1.5s each:
+   onto the left hill, into the middle of the lake (a ripple; the landing is at 50% across), behind the presents, and away.
+   translate carries them across, transform makes each hop (squash, stretch, a 72px arc). They pass in front of the tree. */
+[data-skin="surreal-christmas"] #skin-front .f2{inset:0}
+[data-skin="surreal-christmas"] #skin-front .f2::before,[data-skin="surreal-christmas"] #skin-front .f2::after{content:"";position:absolute;bottom:104px;
+  background:url("puff.svg") center/100% 100% no-repeat;transform-origin:50% 100%;filter:drop-shadow(0 -1px 0 var(--xm-rim)) drop-shadow(0 5px 4px var(--xm-shadow))}
+[data-skin="surreal-christmas"] #skin-front .f2::before{left:-55px;width:50px;height:50px;animation:xmas-across 18s linear infinite,xmas-hop 18s linear infinite}
+[data-skin="surreal-christmas"] #skin-front .f2::after{left:-48px;width:36px;height:36px;animation:xmas-across 18s linear .7s infinite both,xmas-hop 18s linear .7s infinite both}
+/* the splash rings where they land in the lake */
+[data-skin="surreal-christmas"] #skin-front .f4{inset:0}
+[data-skin="surreal-christmas"] #skin-front .f4::before,[data-skin="surreal-christmas"] #skin-front .f4::after{content:"";position:absolute;left:calc(50% - 40px);bottom:96px;width:80px;height:20px;border-radius:50%;
+  border:2px solid var(--xm-ripple);box-shadow:inset 0 0 0 5px rgba(255,255,255,.12);opacity:0;animation:xmas-ripple 18s ease-out infinite}
+[data-skin="surreal-christmas"] #skin-front .f4::after{left:calc(50% - 28px);bottom:99px;width:56px;height:14px;animation-delay:.7s}
+/* a snowbank along the whole shore, up to about 90px (the tab bar covers the bottom 74px), with the same Apple-style rim */
+[data-skin="surreal-christmas"] #skin-front .f6{left:0;right:0;bottom:0;height:90px;background:var(--xm-snow);
+  -webkit-mask:var(--xm-bank) 0 0/100% 100% no-repeat;mask:var(--xm-bank) 0 0/100% 100% no-repeat}
+[data-skin="surreal-christmas"] #skin-front .f6{filter:drop-shadow(0 -1px 0 var(--xm-rim))}
+/* big soft flakes falling in front of everything in the scene */
+[data-skin="surreal-christmas"] #skin-front .f5{left:-14px;right:-14px;top:-300px;bottom:0;z-index:2;background:var(--xm-flakes-l);background-size:300px 300px;opacity:.9;
+  animation:xmas-snow-l 9s linear infinite,xmas-sway 6s ease-in-out infinite alternate}
+/* the pelicans, birds and fish of the lake are drawn in the colour of #water */
+[data-skin="surreal-christmas"] #water{color:var(--xm-birds)}
+
+@keyframes xmas-aurora{from{transform:translate(0,0) skewX(0)}to{transform:translate(18px,8px) skewX(-6deg)}}
+@keyframes xmas-moon{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-5px) rotate(3deg)}}
+@keyframes xmas-float{from{transform:translateY(0) rotate(-5deg)}to{transform:translateY(3px) rotate(5deg)}}
+@keyframes xmas-snow-s{from{transform:translateY(0)}to{transform:translateY(180px)}}
+@keyframes xmas-snow-s2{from{transform:translateY(0)}to{transform:translateY(150px)}}
+@keyframes xmas-snow-m{from{transform:translateY(0)}to{transform:translateY(220px)}}
+@keyframes xmas-snow-l{from{transform:translateY(0)}to{transform:translateY(300px)}}
+@keyframes xmas-sway{from{translate:-12px 0}to{translate:12px 0}}
+@keyframes xmas-gift-fall{0%{translate:0 0;opacity:0}4%{opacity:1}50%{translate:30px calc(50vh - 50px)}88%{opacity:1}96%,100%{translate:-10px calc(100vh - 160px);opacity:0}}
+@keyframes xmas-tumble{from{transform:rotate(-28deg)}to{transform:rotate(32deg)}}
+@keyframes xmas-across{0%{translate:0 0}33.33%,100%{translate:calc(100vw + 60px) 0}}
+@keyframes xmas-hop{0%{transform:translateY(0) scale(1.14,.86)}0.83%{transform:translateY(-10px) scale(.92,1.1)}4.17%{transform:translateY(-72px) scale(1,1)}7.5%{transform:translateY(-8px) scale(.95,1.06)}8.33%{transform:translateY(0) scale(1.14,.86)}9.17%{transform:translateY(-10px) scale(.92,1.1)}12.5%{transform:translateY(-72px) scale(1,1)}15.83%{transform:translateY(-8px) scale(.95,1.06)}16.67%{transform:translateY(0) scale(1.14,.86)}17.5%{transform:translateY(-10px) scale(.92,1.1)}20.83%{transform:translateY(-72px) scale(1,1)}24.17%{transform:translateY(-8px) scale(.95,1.06)}25%{transform:translateY(0) scale(1.14,.86)}25.83%{transform:translateY(-10px) scale(.92,1.1)}29.17%{transform:translateY(-72px) scale(1,1)}32.5%{transform:translateY(-8px) scale(.95,1.06)}33.33%{transform:translateY(0) scale(1.14,.86)}34.33%,100%{transform:translateY(0) scale(1,1)}}
+@keyframes xmas-ripple{0%,16.47%{opacity:0;transform:scale(.25)}16.97%{opacity:1;transform:scale(.35)}23.67%{opacity:0;transform:scale(1.15)}100%{opacity:0;transform:scale(1.15)}}
+@media (prefers-reduced-motion: reduce){
+  [data-skin="surreal-christmas"] #skin::before,[data-skin="surreal-christmas"] #skin i,[data-skin="surreal-christmas"] #skin i::before,[data-skin="surreal-christmas"] #skin i::after{animation:none}
+  [data-skin="surreal-christmas"] #skin-front .f5{animation:none}
+  [data-skin="surreal-christmas"] #skin-front .f2,[data-skin="surreal-christmas"] #skin-front .f4,[data-skin="surreal-christmas"] #skin .s6{display:none} /* the puffs stay home; no presents fall */
+}
+
+/* ---------- small touches: a red-to-gold title and a frosted edge on the cards ---------- */
+[data-skin="surreal-christmas"] .navbar span{background:var(--xm-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="surreal-christmas"] .head .titles:not(.rf) h1{background:var(--xm-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="surreal-christmas"] .group,[data-skin="surreal-christmas"] .card{box-shadow:0 0 0 1px var(--xm-edge),inset 0 1px 0 rgba(255,255,255,.55)}

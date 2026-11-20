@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+<!-- Surreal Christmas: a present that falls from the sky with the snow (theme.css tumbles it and tints a second copy). -->
+<defs>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5C6F"/><stop offset="1" stop-color="#A3162E"/></linearGradient>
+  <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4FD8C4"/><stop offset="1" stop-color="#127A72"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE38A"/><stop offset="1" stop-color="#C98B12"/></linearGradient>
+  <linearGradient id="plum" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B98CFF"/><stop offset="1" stop-color="#5B2DA8"/></linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7CC4FF"/><stop offset="1" stop-color="#1F5FB8"/></linearGradient>
+  <linearGradient id="white" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C9D6E6"/></linearGradient>
+  <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5FE09A"/><stop offset="1" stop-color="#147A45"/></linearGradient>
+  <linearGradient id="rGold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C98B12"/><stop offset=".5" stop-color="#FFF0B8"/><stop offset="1" stop-color="#C98B12"/></linearGradient>
+  <linearGradient id="rRed" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A3162E"/><stop offset=".5" stop-color="#FF8A98"/><stop offset="1" stop-color="#A3162E"/></linearGradient>
+  <linearGradient id="rGreen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0C5A33"/><stop offset=".5" stop-color="#6FE3A6"/><stop offset="1" stop-color="#0C5A33"/></linearGradient>
+  <linearGradient id="rSilver" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7D8B9A"/><stop offset=".5" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7D8B9A"/></linearGradient>
+  <linearGradient id="grim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".3" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+  <filter id="gb2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<g transform="rotate(0 20 38)"><rect x="6" y="12" width="28" height="26" rx="2.3" fill="url(#red)" stroke="url(#grim)" stroke-width="1.1"/><rect x="17.6" y="12" width="4.8" height="26" fill="url(#rGold)"/><rect x="6" y="22.9" width="28" height="4.3" fill="url(#rGold)" opacity=".95"/><path d="M20 12C12.7 4.2 8.8 10.3 17.8 12ZM20 12C27.3 4.2 31.2 10.3 22.2 12Z" fill="url(#rGold)" stroke="#FFFFFF" stroke-opacity=".6" stroke-width=".5"/><circle cx="20" cy="11.6" r="1.7" fill="url(#rGold)"/></g>
+</svg>

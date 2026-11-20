@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
+<!-- Surreal Christmas: a giant glass bauble floating on the lake. A gold cap and loop, a painted band, and an Apple-style window
+     reflection and rim light. theme.css tints a second copy gold. -->
+<defs>
+  <radialGradient id="glass" cx="34%" cy="30%" r="78%"><stop offset="0" stop-color="#FF9AA5"/><stop offset=".45" stop-color="#E0283F"/><stop offset=".85" stop-color="#8E1426"/><stop offset="1" stop-color="#5E0A18"/></radialGradient>
+  <linearGradient id="cap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8F5E0A"/><stop offset=".4" stop-color="#FFF0B8"/><stop offset=".7" stop-color="#E9B83A"/><stop offset="1" stop-color="#8F5E0A"/></linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".05"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".3"/></linearGradient>
+  <filter id="b1" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".8"/></filter>
+</defs>
+<path d="M26 7a4 4 0 1 1 8 0" fill="none" stroke="#E9B83A" stroke-width="1.6"/>
+<circle cx="30" cy="42" r="26" fill="url(#glass)" stroke="url(#rim)" stroke-width="1.2"/>
+<path d="M5.4 38Q30 50 54.6 38" fill="none" stroke="#FFE7A3" stroke-width="2.4" opacity=".9"/>
+<path d="M5 44Q30 56 55 44" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-dasharray="1 3.4" stroke-linecap="round" opacity=".9"/>
+<path d="M12 28C14 22 19 18 24 17C22 21 21 25 21 29C17 29 14 29 12 28Z" fill="#FFFFFF" opacity=".75" filter="url(#b1)"/>
+<ellipse cx="40" cy="58" rx="9" ry="3" fill="#FF9AA5" opacity=".35" filter="url(#b1)"/>
+<circle cx="27" cy="21.4" r="1.4" fill="#FFFFFF"/>
+<rect x="22" y="10" width="16" height="9" rx="2.4" fill="url(#cap)" stroke="#FFF6D6" stroke-width=".5"/>
+<path d="M24 12v5M28 12v5M32 12v5M36 12v5" stroke="#8F5E0A" stroke-width=".6" opacity=".6"/>
+</svg>
