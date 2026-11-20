@@ -55,6 +55,7 @@ Initialize a git repository and commit after each milestone.
    - Nothing is due on them, and nothing can be checked.
    - They are left out of every percentage and never break a streak.
    - They are shown in **black** everywhere: the Today screen, the week chart, the month calendar, the routine dots and the schedule day picker.
+   - **Open weekends (21 Nov 2026):** Settings → Week → "Weekends are rest days" (on by default). Turning it off opens Saturdays and Sundays from today for routines made with the 4th How often option, **Weekend** (Saturday, Sunday or both; Mon – Fri, Some days and × a week stay Monday to Friday). Past weekends stay rest days. The history is kept as `weekends` [{from, open}] in the data (and backups), so the past never changes. An open weekend day counts like any other day in %, streaks and ranks, and is coloured like weekdays in Stats. Turning rest days back on asks first ("Make weekends rest days?", naming the weekend routines); weekend routines are then stopped (moved to Stopped, history kept; they can't be resumed while weekends are rest days), today's ticks on them go if today is a weekend, and vacation days booked on weekends from today go back to the allowance. Weekends already done stay counted. The Wildcard still works on any weekend; vacation days can be booked on open weekend days.
    - **Vacation days** (see Today) turn chosen weekdays into rest days too. They are shown in **sky blue** (#5AC8FA / #64D2FF).
 3. **The past stays as it was.**
    - Changing a routine's schedule affects only today and later days.
@@ -90,6 +91,7 @@ localStorage key `kept-data-v1`:
   - `{type:"daily"}`: Monday to Friday.
   - `{type:"days", days:[0,2,4]}`: chosen weekdays, with Monday = 0 through Friday = 4. Values 5 and 6 are never allowed.
   - `{type:"weekly", target:1..5}`: a number of times per week, on any weekdays.
+  - `{type:"weekend", days:[5,6]}`: Saturday and/or Sunday, due only while weekends are open (21 Nov 2026).
 - **`schedules`** is a history sorted by `from`.
   - The schedule for a given date is the last entry with `from <= date`.
   - Editing a schedule appends `{from: today, ...}`. If the last entry's `from` is already today, replace that entry instead.

@@ -1,5 +1,5 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
-import {key,parse,addDays,dow,isRest,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
+import {key,parse,addDays,dow,isRest,isWeekend,restOn,weekendsOpenOn,weekendsOpenSince,openWeekends,closeWeekends,weekendRoutines,canResume,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
   VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
@@ -32,7 +32,7 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const VERSION='1.0.0';
-const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{},rules:[]});
+const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{},rules:[],weekends:[]});
 let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
@@ -77,6 +77,7 @@ function schedText(r,d){
   const s=schedOn(r,d||TODAY());
   if(s.type==='daily'||s.type==='off') return 'Mon – Fri';
   if(s.type==='days') return s.days.length>=5?'Mon – Fri':s.days.slice().sort().map(i=>DAYS[i]).join(' · ');
+  if(s.type==='weekend') return s.days.map(i=>DAYS[i]).join(' · '); // Sat, Sun or Sat · Sun
   return d?`${weekDone(S,r,d)} of ${weekTarget(S,s.target,weekStart(d))} this week`:`${s.target}× per week`; // fewer in a week with vacation days
 }
 
@@ -113,7 +114,7 @@ function rankFrame(i,inner){
 }
 
 function renderToday(){
-  const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=isRest(d),away=!rest&&isVacation(S,d),yest=+d===+addDays(t,-1);
+  const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=restOn(S,d),away=!rest&&isVacation(S,d),yest=+d===+addDays(t,-1);
   const due=S.routines.filter(r=>isDue(r,d,S));
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
@@ -146,6 +147,7 @@ function renderToday(){
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
+  if(isToday&&isWeekend(d)&&!rest) html+=wildcardSection(t); // an open weekend: its routines, then the Wildcard for missed Mon–Fri
   $app.innerHTML=html; popId=null;
   const slot=$app.querySelector('.dslot');
   if(slot){quietDandelion??=slowDandelion(); if(!quietDandelion.dataset.done) slot.append(quietDandelion)}
@@ -154,7 +156,7 @@ function renderToday(){
 
 function renderRoutines(){
   const active=S.routines.filter(r=>!r.stopped), stopped=S.routines.filter(r=>r.stopped);
-  let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends off</div><h1>Routines</h1></div></header>`;
+  let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends ${weekendsOpenOn(S,TODAY())?'open':'off'}</div><h1>Routines</h1></div></header>`;
   html+=`<div class="group tiles"><button class="row link newroutine" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
   if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row${fx(r.color)}" style="--c:${shown(r.color)}" data-act="edit" data-id="${r.id}">
     <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
@@ -207,20 +209,20 @@ function renderStats(){
     html+=rangeHead('W',isCur?'This week':`${a.getDate()} ${MONTHS[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MONTHS[b.getMonth()].slice(0,3)}`,isCur)
     +`<div class="card">${kpi(Math.round(st.pct*100),'Completed')}
     <div class="bars">${[...Array(7)].map((_,i)=>{const d=addDays(a,i),td=+d===+t?' today':'';
-      if(isRest(d)) return `<div class="bar rest${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Rest</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
+      if(restOn(S,d)) return `<div class="bar rest${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Rest</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
       if(isVacation(S,d)) return `<div class="bar vac${td}"><span class="p"></span><div class="cw"><div class="col" style="height:100%"><span>Away</span></div></div><span class="d">${DAYS1[i]}</span></div>`;
       const fut=d>t,v=fut?null:dayRatio(S,d),h=v==null?0:Math.round(v*100);
       return `<div class="bar${fut?' future':h?'':' zero'}${td}"><span class="p">${fut||v==null?'':h+'%'}</span><div class="cw"><div class="col" style="height:${h}%"></div></div><span class="d">${DAYS1[i]}</span></div>`}).join('')}</div></div>
     <h2 class="sh">By routine</h2><div class="group tiles">${st.per.map(({r,e,d})=>`<div class="rstat${fx(r.color)}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="nm">${esc(r.name)}</div><div class="pc">${d}/${e}</div>
-      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(isRest(dd))return '<i class="rest"></i>';if(isVacation(S,dd))return '<i class="vac"></i>';if(dd>t||!isDue(r,dd,S))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
+      <div class="dots">${[...Array(7)].map((_,i)=>{const dd=addDays(a,i);if(restOn(S,dd))return '<i class="rest"></i>';if(isVacation(S,dd))return '<i class="vac"></i>';if(dd>t||!isDue(r,dd,S))return '<i class="off"></i>';return `<i class="${isDone(S,r,key(dd))?(isMadeUp(S,r.id,key(dd))?'on mu':'on'):''}"></i>`}).join('')}</div></div>`).join('')}</div>`;
   } else {
     const a=monthRef,b=new Date(a.getFullYear(),a.getMonth()+1,0);
     const st=monthResult(S,a,t);
     const isCur=a.getFullYear()===t.getFullYear()&&a.getMonth()===t.getMonth();
     let cells=DAYS1.map(x=>`<span class="h">${x}</span>`).join('')+'<span class="day blank"></span>'.repeat(dow(a));
     for(let d=a;d<=b;d=addDays(d,1)){const td=+d===+t?' today':'';
-      if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
+      if(restOn(S,d)){cells+=`<span class="day rest${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, rest day">${d.getDate()}</span>`;continue}
       const fut=d>t;
       if(isVacation(S,d)){cells+=`<span class="day vac${td}" role="img" aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}, vacation day">${d.getDate()}</span>`;continue}
       const hc=fut?'l0':heatClass(dayRatio(S,d),d<t); // the traffic light: red when missed, then orange, yellow, light green, green
@@ -276,6 +278,7 @@ function renderSettings(){
   <div class="group"><button class="row" data-act="openRules"><div class="body">Rules</div>${(S.rules||[]).length?`<span class="hint num">${S.rules.length}</span>`:''}${DISC}</button></div>
   <p class="gf">Your own rules for your routines, like what counts as done.</p>
   ${themeSection()}
+  ${weekSection()}
   <div class="gh">Backup</div>
   <div class="group"><button class="row link" data-act="saveBackup">Save backup</button></div>
   <p class="gf">Last backup: ${ago(meta.lastBackupAt)}. On iPhone, choose Save to Files or iCloud Drive.</p>
@@ -351,6 +354,22 @@ const FX_SYNC=/^fx(sign|glint|ckglow|glow|pulse|shine|spin|flow|flowy)$/;
 function syncFx(){
   try{ for(const a of document.getAnimations()) if(FX_SYNC.test(a.animationName)) a.startTime=-(a.effect?.getTiming?.().delay||0); }catch(e){}
 }
+/* Settings → Week: weekends are rest days (the default) or open for routines, from today on; the past stays as it was */
+function weekSection(){
+  const t=TODAY(), open=weekendsOpenOn(S,t), since=weekendsOpenSince(S,t);
+  return `<div class="gh">Week</div>
+  <div class="group"><div class="row"><div class="body">Weekends are rest days</div><button class="switch" role="switch" aria-checked="${!open}" aria-label="Weekends are rest days" data-act="weekends"><span></span></button></div></div>
+  <p class="gf">${open?`Weekends are open since ${short(since)}. Add routines for them with “Weekend” in How often.`:'Turn this off to plan routines for Saturday and Sunday. It starts today; past weekends stay rest days.'}</p>`;
+}
+/* switching rest days back on asks first: weekend routines are stopped (they keep their history) */
+function askWeekendsRest(){
+  const gone=weekendRoutines(S,TODAY()), n=gone.length, names=andList(gone.map(r=>esc(r.name)));
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard" role="dialog" aria-modal="true" aria-labelledby="wkTitle" tabindex="-1">
+    <div class="wicon wkicon">${MOON}</div><h2 id="wkTitle">Make weekends rest days?</h2>
+    <p>Saturdays and Sundays will be rest days again from today.${n?` <span class="num">${n}</span> weekend routine${n===1?'':'s'} will be removed: ${names}. You can find ${n===1?'it':'them'} under Stopped.`:''} Weekends you already did stay in your stats.</p>
+    <button class="primary" data-act="weekendsRest">Make weekends rest days</button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
+  $done.querySelector('.donecard').focus({preventScroll:true});
+}
 /* Settings → Theme: the standard look and every theme that is offered (visible in app/themes/themes.js) */
 function themeSection(){
   const themes=visibleThemes(); if(!themes.length) return '';
@@ -374,7 +393,7 @@ const $sheet=document.getElementById('sheetRoot');
 function openEditor(id){
   const r=S.routines.find(x=>x.id===id), {from,...s}=r?schedOn(r,TODAY()):{type:'daily'};
   edit={id:r?.id??null,name:r?.name??'',emoji:r?.emoji??EMOJI[0],color:r?.color??COLORS[0],stopped:r?.stopped??null,
-    sched:{days:[0,2,4],target:3,...(s.type==='off'?{type:'daily'}:JSON.parse(JSON.stringify(s)))}};
+    sched:{days:[0,2,4],target:3,wdays:[5,6],...(s.type==='off'?{type:'daily'}:s.type==='weekend'?{type:'weekend',wdays:s.days.slice()}:JSON.parse(JSON.stringify(s)))}};
   confirmDel=false; sheetOpening=true; renderSheet(); setTimeout(()=>{const i=document.getElementById('rname');if(i&&!edit.id)i.focus()},50);
 }
 /* re-rendered on every change: slide in only when opening, and keep the scroll position */
@@ -382,6 +401,7 @@ function renderSheet(){
   fxRefresh();
   if(!edit){if(vac)renderVacSheet();else if(rule)renderRuleSheet();else $sheet.innerHTML='';syncFx();return}
   const s=edit.sched, top=$sheet.querySelector('.sheet')?.scrollTop||0;
+  const wkOpen=weekendsOpenOn(S,TODAY()), wkOpt=wkOpen||s.type==='weekend'; // the Weekend option shows while weekends are open
   $sheet.innerHTML=`<div class="overlay${sheetOpening?' opening':''}" data-act="closeBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${edit.id?'Edit routine':'New routine'}">
     <div class="grabber" aria-hidden="true"></div>
     <div class="sheethead"><button class="gbtn glass" data-act="close" aria-label="Cancel">${XMARK}</button><h2>${edit.id?'Edit routine':'New routine'}</h2><button class="gbtn prominent" data-act="saveR" aria-label="Save">${TICK}</button></div>
@@ -393,14 +413,16 @@ function renderSheet(){
     <div class="group pad"><div class="picks colors">${COLORS.map(c=>{const lk=fxLocked(c);return `<button class="sw${fx(c)}${lk?' locked':''}${fx(c)&&c===colPop?' pop':''}" style="--c:${cssColor(c)}" data-act="col" data-v="${c}" aria-pressed="${edit.color===c}" aria-label="${COLOR_NAMES[c]}${lk?', locked until Iron Will':''}">${lk?LOCK:fx(c)?'<i class="gl" aria-hidden="true"></i>':''}</button>`}).join('')}</div></div>
     <p class="gf">${fxOn?'The neon colours are unlocked: your rank this month is Iron Will or higher.':'The neon colours unlock at Iron Will. Reach it this month to use them.'}</p>
     ${edit.stopped?`<div class="gh">How often</div><p class="gf first">Stopped ${short(edit.stopped)}. Resume tracking to change how often.</p>`:`<div class="gh">How often</div>
-    <div class="group pad"><div class="seg" role="group" aria-label="How often">
+    <div class="group pad"><div class="seg${wkOpt?' four':''}" role="group" aria-label="How often">
       <button data-act="stype" data-v="daily" aria-pressed="${s.type==='daily'}">Mon – Fri</button>
       <button data-act="stype" data-v="days" aria-pressed="${s.type==='days'}">Some days</button>
-      <button data-act="stype" data-v="weekly" aria-pressed="${s.type==='weekly'}">× per week</button></div>
-      ${s.type==='days'?`<div class="daysrow">${DAYS1.map((d,i)=>i>=5?`<span class="dayc rest" role="img" aria-label="${DAYS[i]}, rest day">${d}</span>`:`<button class="dayc" data-act="day" data-v="${i}" aria-pressed="${s.days.includes(i)}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>`:''}
+      <button data-act="stype" data-v="weekly" aria-pressed="${s.type==='weekly'}">× a week</button>
+      ${wkOpt?`<button data-act="stype" data-v="weekend" aria-pressed="${s.type==='weekend'}">Weekend</button>`:''}</div>
+      ${s.type==='days'?`<div class="daysrow">${DAYS1.map((d,i)=>i>=5?`<span class="dayc rest" role="img" aria-label="${DAYS[i]}, ${wkOpen?'use Weekend for this day':'rest day'}">${d}</span>`:`<button class="dayc" data-act="day" data-v="${i}" aria-pressed="${s.days.includes(i)}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>`:''}
+      ${s.type==='weekend'?`<div class="daysrow wk">${[5,6].map(i=>`<button class="dayc" data-act="wday" data-v="${i}" aria-pressed="${s.wdays.includes(i)}">${DAYS_FULL[i]}</button>`).join('')}</div>`:''}
       ${s.type==='weekly'?`<div class="stepper"><span><b class="num">${s.target}</b> ${s.target===1?'time':'times'} per week</span><span class="ctl"><button data-act="tgt" data-v="-1" aria-label="Fewer" ${s.target<=1?'disabled':''}>−</button><button data-act="tgt" data-v="1" aria-label="More" ${s.target>=5?'disabled':''}>+</button></span></div>`:''}
     </div>
-    <p class="gf">Saturday and Sunday are always rest days.${edit.id?' Schedule changes apply from today. Past days keep their old schedule.':''}</p>`}
+    <p class="gf">${s.type==='weekend'?'Weekend routines are due on the days you pick.':wkOpen?'Mon – Fri, Some days and × a week are for Monday to Friday. Use Weekend for Saturday and Sunday.':'Saturday and Sunday are rest days. You can open them in Settings.'}${edit.id?' Schedule changes apply from today. Past days keep their old schedule.':''}</p>`}
     <button class="primary" data-act="saveR">${edit.id?'Save changes':'Add routine'}</button>
     ${edit.id?`<div class="group"><button class="row link center" data-act="${edit.stopped?'resume':'stopR'}" data-id="${edit.id}">${edit.stopped?'Resume tracking':'Stop tracking'}</button></div>
     ${edit.stopped?'':'<p class="gf">Stopping keeps its history. You can resume it later.</p>'}
@@ -454,7 +476,7 @@ function stretches(keys){
   const out=[];
   for(const k of [...keys].sort()){
     const d=parse(k), last=out[out.length-1];
-    let n=last&&addDays(last.b,1); while(n&&isRest(n)) n=addDays(n,1);
+    let n=last&&addDays(last.b,1); while(n&&restOn(S,n)) n=addDays(n,1);
     if(last&&+n===+d) last.b=d; else out.push({a:d,b:d});
   }
   return out;
@@ -493,7 +515,7 @@ function renderVacSheet(){
   let cells=DAYS1.map(x=>`<span class="h">${x}</span>`).join('')+'<span class="day blank"></span>'.repeat(dow(a));
   for(let d=a;d<=b;d=addDays(d,1)){
     const k=key(d), td=+d===+t?' today':'', lbl=`${d.getDate()} ${MONTHS[d.getMonth()]}`, n=d.getDate(), booked=isVacation(S,d);
-    if(isRest(d)){cells+=`<span class="day rest${td}" role="img" aria-label="${lbl}, rest day">${n}</span>`;continue}
+    if(restOn(S,d)){cells+=`<span class="day rest${td}" role="img" aria-label="${lbl}, rest day">${n}</span>`;continue}
     if(d<t||d>until){cells+=`<span class="day future${booked?' vac':''}${td}" role="img" aria-label="${lbl}${booked?', vacation day':''}">${n}</span>`;continue}
     if(booked){const x=vac.del.has(k);
       cells+=`<button class="day vac${x?' vdel':''}${td}" data-act="vacPick" data-k="${k}" aria-pressed="${x}" aria-label="${lbl}, vacation day${x?', will be cancelled':''}">${n}</button>`;continue}
@@ -699,18 +721,19 @@ document.addEventListener('click',e=>{
     case 'col': { const c=el.dataset.v; if(fxLocked(c)){toast('Reach Iron Will this month to unlock this colour');break}
       syncName(); edit.color=c; colPop=c; renderSheet(); colPop=null; break; }
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
+    case 'wday': { syncName(); const i=+el.dataset.v, d=edit.sched.wdays; const p=d.indexOf(i); if(p>=0){if(d.length>1)d.splice(p,1)}else{d.push(i);d.sort()} renderSheet(); break; }
     case 'day': { syncName(); const i=+el.dataset.v, d=edit.sched.days; if(i>=5) break; const p=d.indexOf(i); if(p>=0){if(d.length>1)d.splice(p,1)}else d.push(i); renderSheet(); break; }
     case 'tgt': syncName(); edit.sched.target=Math.min(5,Math.max(1,edit.sched.target+ +el.dataset.v)); renderSheet(); break;
     case 'saveR': {
       syncName(); const name=edit.name.trim();
       if(!name){toast('Give the routine a name');document.getElementById('rname').focus();break}
-      const s=edit.sched, sched=s.type==='days'?{type:'days',days:s.days.slice().sort()}:s.type==='weekly'?{type:'weekly',target:s.target}:{type:'daily'};
+      const s=edit.sched, sched=s.type==='days'?{type:'days',days:s.days.slice().sort()}:s.type==='weekly'?{type:'weekly',target:s.target}:s.type==='weekend'?{type:'weekend',days:s.wdays.slice().sort()}:{type:'daily'};
       if(edit.id){const r=S.routines.find(x=>x.id===edit.id);Object.assign(r,{name,emoji:edit.emoji,color:edit.color});if(!r.stopped)changeSchedule(r,sched,TODAY());toast('Routine saved')}
       else{const k=key(TODAY());S.routines.push({id:'r_'+Date.now().toString(36),name,emoji:edit.emoji,color:edit.color,created:k,stopped:null,schedules:[{from:k,...sched}]});toast('Routine added')}
       commit(); edit=null; renderSheet(); render(); break;
     }
     case 'stopR': { const r=S.routines.find(x=>x.id===el.dataset.id); stopRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Stopped. Its history is kept.'); break; }
-    case 'resume': { const r=S.routines.find(x=>x.id===el.dataset.id); resumeRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Tracking again from today'); break; }
+    case 'resume': { const r=S.routines.find(x=>x.id===el.dataset.id); if(!canResume(S,r,TODAY())){toast('Open weekends in Settings first');break} resumeRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Tracking again from today'); break; }
     case 'delR':
       if(!confirmDel){confirmDel=true;syncName();renderSheet();break}
       S.routines=S.routines.filter(r=>r.id!==edit.id); S.rules=(S.rules||[]).filter(x=>x.routine!==edit.id); // its rules go with it
@@ -718,6 +741,10 @@ document.addEventListener('click',e=>{
       commit(); edit=null; renderSheet(); render(); toast('Routine deleted'); break;
     case 'theme': { const dark=!isDark(); el.setAttribute('aria-checked',dark); setMeta({theme:dark?'dark':'light'}); applyTheme(); setTimeout(render,220); break; } // let the switch slide first
     case 'themeAuto': setMeta({theme:null}); applyTheme(); render(); break;
+    case 'weekends': { const t=TODAY();
+      if(weekendsOpenOn(S,t)){askWeekendsRest();break}
+      el.setAttribute('aria-checked','false'); openWeekends(S,t); commit(); toast('Weekends are open from today'); setTimeout(render,220); break; } // let the switch slide first
+    case 'weekendsRest': { const gone=closeWeekends(S,TODAY()); commit(); closeDone(); toast(gone.length?`Weekends are rest days. ${gone.length} routine${gone.length===1?'':'s'} stopped.`:'Weekends are rest days again'); render(); break; }
     case 'skin': setMeta({skin:el.dataset.id||null}); applyTheme(); render(); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;

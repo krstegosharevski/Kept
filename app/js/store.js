@@ -27,7 +27,7 @@ export function eraseAll(){try{localStorage.removeItem(KEY);localStorage.removeI
 
 /* kept-backup-YYYY-MM-DD.json */
 export function backupFile(data,now=new Date()){
-  const body={app:'kept',schema:1,exportedAt:now.toISOString(),routines:data.routines,checks:data.checks,wildcards:data.wildcards||{},madeUp:data.madeUp||{},vacations:data.vacations||{},rules:data.rules||[]};
+  const body={app:'kept',schema:1,exportedAt:now.toISOString(),routines:data.routines,checks:data.checks,wildcards:data.wildcards||{},madeUp:data.madeUp||{},vacations:data.vacations||{},rules:data.rules||[],weekends:data.weekends||[]};
   return new File([JSON.stringify(body,null,1)],`kept-backup-${key(now)}.json`,{type:'application/json'});
 }
 /* the data in a backup file, normalized, or null when it is not one */

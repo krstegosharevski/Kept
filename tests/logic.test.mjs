@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 import {key,parse,isDue,isRest,normalize,doneCount,expected,streaks,changeSchedule,stopRoutine,resumeRoutine,rangeStats,RANKS,pct1,rankIndex,rankFrom,monthResult,rankMonths,dayRatio,isDone,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp} from '../app/js/logic.js';
-import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,NEON_RANK,neonUnlocked,heatClass} from '../app/js/logic.js';
+import {VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,NEON_RANK,neonUnlocked,heatClass,openWeekends,closeWeekends,restOn,weekendsOpenOn,weekendsOpenSince,canResume} from '../app/js/logic.js';
 
 const D=parse;
 /* week used throughout: Mon 2026-10-19 … Sun 2026-10-25, and Mon 2026-10-26 … Sun 2026-11-01 */
@@ -326,4 +326,78 @@ test('Themes: each one listed has its stylesheet, is cached for offline use, and
       for(const sel of rule.split(',')) assert.ok(sel.includes(`[data-skin="${t.id}"]`),`${t.id}: "${sel.trim()}" is not scoped to the theme`);
   }
   assert.ok(sw.includes("'themes/themes.js'"));
+});
+
+/* Open weekends. Sat 2026-11-14/Sun 15 are before opening; weekends open from Sat 2026-11-21. */
+const wkRoutine=(id,days,extra={})=>({id,name:id,emoji:'🏃',color:'#34C759',created:'2026-11-21',stopped:null,schedules:[{from:'2026-11-21',type:'weekend',days}],...extra});
+
+test('Open weekends: opening from a Saturday leaves earlier weekends as rest days; the past never changes', ()=>{
+  const data={routines:[routine({type:'daily'})],checks:{},wildcards:{},madeUp:{},vacations:{}};
+  openWeekends(data,D('2026-11-21'));
+  assert.deepEqual(data.weekends,[{from:'2026-11-21',open:true}]);
+  assert.equal(restOn(data,D('2026-11-14')),true);   // before opening
+  assert.equal(restOn(data,D('2026-11-21')),false);  // from today
+  assert.equal(restOn(data,D('2026-11-29')),false);
+  assert.equal(restOn(data,D('2026-11-20')),false);  // a Friday is never a rest day
+  assert.equal(weekendsOpenOn(data,D('2026-11-23')),true);
+  assert.equal(weekendsOpenSince(data,D('2026-11-23')),'2026-11-21');
+  // a Mon–Fri routine is still not due on an open weekend
+  assert.equal(isDue(data.routines[0],D('2026-11-21'),data),false);
+});
+
+test('Open weekends: a Weekend routine is due only on its open days and counts in the %, the month and its streak', ()=>{
+  const r=wkRoutine('w',[6]); // Sundays
+  const data={routines:[r],checks:{'2026-11-22':['w'],'2026-11-29':['w']},wildcards:{},madeUp:{},vacations:{},weekends:[{from:'2026-11-21',open:true}]};
+  assert.equal(isDue(r,D('2026-11-21'),data),false); // a Saturday, not one of its days
+  assert.equal(isDue(r,D('2026-11-22'),data),true);
+  assert.equal(isDue(r,D('2026-11-23'),data),false); // a Monday
+  assert.equal(rangeStats(data,D('2026-11-16'),D('2026-11-30')).pct,1);
+  assert.equal(dayRatio(data,D('2026-11-22')),1);
+  assert.deepEqual(streaks(data,r,D('2026-11-30')),{cur:2,best:2,unit:'d'});
+  assert.equal(monthResult(data,D('2026-11-01'),D('2026-11-30')).exp,2);
+});
+
+test('Open weekends: closing stops Weekend routines, keeps the weekends already done, refunds weekend vacation days', ()=>{
+  const r=wkRoutine('w',[5,6]);
+  const data={routines:[r,routine({type:'daily'})],checks:{'2026-11-21':['w'],'2026-11-22':['w'],'2026-11-28':['w']},wildcards:{},madeUp:{},
+    vacations:{'2026-12-05':'2026-11-23','2026-12-07':'2026-11-23'},weekends:[{from:'2026-11-21',open:true}]};
+  const gone=closeWeekends(data,D('2026-11-28')); // a Saturday: today's tick on it goes
+  assert.deepEqual(gone.map(x=>x.id),['w']);
+  assert.equal(r.stopped,'2026-11-28');
+  assert.deepEqual(data.weekends,[{from:'2026-11-21',open:true},{from:'2026-11-28',open:false}]);
+  assert.equal(data.checks['2026-11-28'],undefined);
+  assert.equal(restOn(data,D('2026-11-22')),false); // the weekend already done stays open, and counted
+  assert.equal(doneCount(data,r,D('2026-11-21'),D('2026-11-22')),2);
+  assert.equal(restOn(data,D('2026-11-29')),true);
+  assert.deepEqual(Object.keys(data.vacations),['2026-12-07']); // the Saturday vacation day went back, the Monday stays
+  assert.equal(canResume(data,r,D('2026-11-30')),false); // not while weekends are rest days
+  openWeekends(data,D('2026-12-05'));
+  assert.equal(canResume(data,r,D('2026-12-05')),true);
+});
+
+test('Open weekends: opening and closing on the same day leaves no trace', ()=>{
+  const data={routines:[],checks:{},weekends:[]};
+  openWeekends(data,D('2026-11-23')); closeWeekends(data,D('2026-11-23'));
+  assert.deepEqual(data.weekends,[]);
+  openWeekends(data,D('2026-11-23')); openWeekends(data,D('2026-11-23'));
+  assert.deepEqual(data.weekends,[{from:'2026-11-23',open:true}]);
+});
+
+test('Open weekends: normalize keeps weekend check-ins and vacation days only on open days, and cleans weekend schedules', ()=>{
+  const d=normalize({routines:[routine({type:'daily'}),wkRoutine('w',[6,9,'x'])],checks:{'2026-11-15':['w'],'2026-11-22':['w']},
+    vacations:{'2026-11-14':'2026-11-01','2026-11-29':'2026-11-01'},weekends:[{from:'2026-11-21',open:true},{from:'bad',open:true},{from:'2026-11-23'}]});
+  assert.deepEqual(d.weekends,[{from:'2026-11-21',open:true}]);
+  assert.deepEqual(Object.keys(d.checks),['2026-11-22']);           // 15 Nov was a rest day
+  assert.deepEqual(Object.keys(d.vacations),['2026-11-29']);        // 14 Nov was a rest day
+  assert.deepEqual(d.routines[1].schedules[0].days,[6]);
+  assert.deepEqual(normalize({routines:[],checks:{}}).weekends,[]); // older data and backups still load
+});
+
+test('Open weekends: weekly targets still count Monday to Friday, the Wildcard still works on a weekend, vacations on open weekends', ()=>{
+  const wkly=routine({type:'weekly',target:5},{id:'k'});
+  const data={routines:[wkly],checks:{},wildcards:{},madeUp:{},vacations:{},weekends:[{from:'2026-11-21',open:true}]};
+  assert.equal(expected(wkly,D('2026-11-23'),D('2026-11-29'),data),5); // a full week, weekends open: still 5
+  assert.equal(useWildcard(data,D('2026-11-28')),true);                // nothing done this week, an open Saturday
+  assert.equal(canBook(data,'2026-11-29',D('2026-11-23')),'');         // an open Sunday can be booked
+  assert.equal(canBook({...data,weekends:[]},'2026-11-29',D('2026-11-23')),'weekend'); // a rest Sunday can't
 });

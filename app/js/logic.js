@@ -7,7 +7,8 @@ export const key=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate()
 export const parse=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
 export const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
 export const dow=d=>(d.getDay()+6)%7; // Monday = 0 … Sunday = 6
-export const isRest=d=>dow(d)>=5; // Saturday and Sunday are fixed rest days
+export const isWeekend=d=>dow(d)>=5;
+export const isRest=isWeekend; // Saturday and Sunday are rest days unless they were open that day (restOn, with the data, knows)
 export const weekStart=d=>addDays(sod(d),-dow(d));
 export const TODAY=()=>sod(new Date());
 export const maxD=(a,b)=>a>b?a:b, minD=(a,b)=>a<b?a:b;
@@ -18,8 +19,13 @@ export const RULE_MAX=255; // the longest a rule can be, in characters
 /* the demo's routine colors, mapped to the Apple system colors the app uses now */
 const DEMO_COLORS={'#1F9D74':'#34C759','#2E7DD7':'#007AFF','#7B5CD6':'#AF52DE','#3A9FB0':'#30B0C7','#D9822B':'#FF9500','#C2417A':'#FF2D55'};
 const byFrom=(a,b)=>a.from<b.from?-1:a.from>b.from?1:0;
-/* one schedule entry, made valid. 'off' marks a stretch when tracking was stopped */
+/* one schedule entry, made valid. 'off' marks a stretch when tracking was stopped; 'weekend' is due on Saturday and/or Sunday
+   (days 5 and 6) while weekends are open */
 function cleanSched(s){
+  if(s.type==='weekend'){
+    const days=[...new Set((Array.isArray(s.days)?s.days:[]).map(Number))].filter(i=>i===5||i===6).sort();
+    return {from:s.from,type:'weekend',days:days.length?days:[5,6]};
+  }
   if(s.type==='days'){
     const days=[...new Set((Array.isArray(s.days)?s.days:[]).map(Number))].filter(i=>Number.isInteger(i)&&i>=0&&i<5).sort();
     return days.length?{from:s.from,type:'days',days}:{from:s.from,type:'daily'}; // weekend days are never allowed
@@ -46,9 +52,13 @@ export function normalize(d){
     routines.push({id,name:String(x.name??'').trim().slice(0,40)||'Routine',emoji:typeof x.emoji==='string'&&x.emoji?x.emoji:'🌱',
       color:DEMO_COLORS[color]||(/^#[0-9A-F]{6}$/.test(color)?color:'#34C759'),created,stopped:isKey(x.stopped)?x.stopped:null,schedules});
   }
+  /* Open weekends: a history [{from, open}], sorted; one entry per day (the later one wins) */
+  const weekends=(Array.isArray(d.weekends)?d.weekends:[]).filter(w=>w&&isKey(w.from)&&typeof w.open==='boolean')
+    .map(w=>({from:w.from,open:w.open})).sort(byFrom).filter((w,i,all)=>!(all[i+1]&&all[i+1].from===w.from));
+  const W={weekends};
   const checks={};
   for(const[k,list]of Object.entries(d.checks)){
-    if(!isKey(k)||isRest(parse(k))||!Array.isArray(list)) continue; // no check-ins on rest days
+    if(!isKey(k)||restOn(W,parse(k))||!Array.isArray(list)) continue; // no check-ins on rest days
     const kept=[...new Set(list.map(String))].filter(id=>ids.has(id)); // nor for routines that no longer exist
     if(kept.length) checks[k]=kept;
   }
@@ -63,11 +73,11 @@ export function normalize(d){
     const kept=[...new Set(list.map(String))].filter(id=>checks[k].includes(id));
     if(kept.length) madeUp[k]=kept;
   }
-  /* Vacation days: { weekday key: the day it was booked }. Weekdays only, never a day with check-ins, at most 10 per half-year (the earliest days are kept). */
+  /* Vacation days: { day key: the day it was booked }. Weekdays and open weekend days only, never a day with check-ins, at most 10 per half-year (the earliest days are kept). */
   const vacations={}, perHalf={};
   for(const k of Object.keys(d.vacations&&typeof d.vacations==='object'?d.vacations:{}).sort()){
     const on=d.vacations[k];
-    if(!isKey(k)||key(parse(k))!==k||!isKey(on)||isRest(parse(k))||checks[k]) continue;
+    if(!isKey(k)||key(parse(k))!==k||!isKey(on)||restOn(W,parse(k))||checks[k]) continue;
     const h=halfOf(k); perHalf[h]=(perHalf[h]||0)+1;
     if(perHalf[h]<=VACATION_DAYS) vacations[k]=on;
   }
@@ -79,7 +89,7 @@ export function normalize(d){
     if(!text||!ids.has(routine)) continue;
     ruleIds.add(String(x.id)); rules.push({id:String(x.id),routine,text,created:isKey(x.created)?x.created:key(TODAY())});
   }
-  return {schema:1,routines,checks,wildcards,madeUp,vacations,rules};
+  return {schema:1,routines,checks,wildcards,madeUp,vacations,rules,weekends};
 }
 
 /* ---------- schedules ---------- */
@@ -95,12 +105,14 @@ export const isTracked=(r,d)=>{const k=key(d);return k>=r.created&&!(r.stopped&&
 export function isDue(r,d,data){
   if(isOff(data,d)||!isTracked(r,d)) return false;
   const s=schedOn(r,d);
+  if(s.type==='weekend') return isWeekend(d)&&s.days.includes(dow(d)); // only open weekends get this far
+  if(isWeekend(d)) return false; // every other schedule is Monday to Friday
   if(s.type==='days') return s.days.includes(dow(d));
   return s.type!=='off'; // daily, and weekly routines are due on every weekday
 }
 /* did the routine exist at all between a and b */
 export const existsIn=(r,a,b)=>r.created<=key(b)&&!(r.stopped&&r.stopped<=key(a));
-const sameSched=(a,b)=>a.type===b.type&&(a.type!=='days'||a.days.join()===b.days.join())&&(a.type!=='weekly'||a.target===b.target);
+const sameSched=(a,b)=>a.type===b.type&&(a.type!=='days'&&a.type!=='weekend'||a.days.join()===b.days.join())&&(a.type!=='weekly'||a.target===b.target);
 /* the schedule from day k on; an entry that already starts on k is replaced */
 function setSchedule(r,k,{from,...s}){r.schedules=r.schedules.filter(x=>x.from<k).concat({from:k,...s})}
 /* a schedule change applies from today; past days keep the schedule they had */
@@ -138,7 +150,7 @@ export function expected(r,a,b,data){
   for(let d=a;d<=b;d=addDays(d,1)){
     if(!isTracked(r,d)) continue;
     const s=schedOn(r,d);
-    if(s.type==='weekly'){if(s!==seg){if(seg)flush();seg=s} if(!isOff(data,d))wd++}
+    if(s.type==='weekly'){if(s!==seg){if(seg)flush();seg=s} if(!isWeekend(d)&&!isVacation(data,d))wd++} // weekly targets count Monday to Friday
     else{if(seg)flush(); if(isDue(r,d,data))n++}
   }
   if(seg)flush();
@@ -219,7 +231,7 @@ export function wildcardsLeft(data,today){
   const m=key(today).slice(0,7);
   return Math.max(0,WILDCARDS_PER_MONTH-Object.values(data.wildcards||{}).filter(on=>on.slice(0,7)===m).length);
 }
-export const wildcardOpen=(data,today)=>isRest(today)&&!!(data.wildcards||{})[key(weekStart(today))];
+export const wildcardOpen=(data,today)=>isWeekend(today)&&!!(data.wildcards||{})[key(weekStart(today))]; // on any weekend, open or not
 export const isMadeUp=(data,id,k)=>((data.madeUp||{})[k]||[]).includes(id);
 /* what was missed this week, Monday to Friday, as [{r, k}] (k = the weekday it belongs to).
    Daily and "some days" routines: each due day not done. Weekly routines: one entry per check-in short of the target,
@@ -242,7 +254,7 @@ export function weekMissed(data,today){
 }
 /* spends a Wildcard on this weekend; false when it isn't allowed */
 export function useWildcard(data,today){
-  if(!isRest(today)||wildcardOpen(data,today)||!wildcardsLeft(data,today)||!weekMissed(data,today).some(x=>!x.done)) return false;
+  if(!isWeekend(today)||wildcardOpen(data,today)||!wildcardsLeft(data,today)||!weekMissed(data,today).some(x=>!x.done)) return false;
   wc(data)[key(weekStart(today))]=key(today); return true;
 }
 /* ticks off (or, if made up already, unticks) a missed routine for weekday k; only while this weekend is open */
@@ -261,7 +273,7 @@ export function makeUp(data,id,k,today){
    Only today (while nothing is checked off yet) and future weekdays up to the end of the next half can be booked; past ones are locked. */
 export const VACATION_DAYS=10;
 export const isVacation=(data,d)=>!!(data&&data.vacations&&data.vacations[key(d)]);
-export const isOff=(data,d)=>isRest(d)||isVacation(data,d);
+export const isOff=(data,d)=>restOn(data,d)||isVacation(data,d);
 /* '2026b' for July–December 2026 */
 function halfOf(k){return k.slice(0,4)+(+k.slice(5,7)<=6?'a':'b')}
 /* the half-year around day d: 1 January – 30 June, or 1 July – 31 December */
@@ -280,7 +292,7 @@ export function weekTarget(data,target,w){
 /* '' when day k can be booked, else why not: 'weekend', 'past', 'far', 'booked', 'checked' (today, with something already ticked) or 'full' */
 export function canBook(data,k,today){
   const d=parse(k), t=key(today);
-  if(isRest(d)) return 'weekend';
+  if(restOn(data,d)) return 'weekend'; // a weekend rest day has nothing to take off; an open one can be booked
   if(k<t) return 'past';
   if(d>bookUntil(today)) return 'far';
   if(isVacation(data,d)) return 'booked';
@@ -297,5 +309,42 @@ export function cancelVacation(data,k,today){
   if(k<key(today)||!(data.vacations||{})[k]) return false;
   delete data.vacations[k]; return true;
 }
-/* the first day after d that is neither a weekend nor a vacation day */
+/* the first day after d that is neither a rest day nor a vacation day */
 export function nextWorkday(data,d){let x=addDays(d,1);while(isOff(data,x))x=addDays(x,1);return x}
+
+/* ---------- Open weekends ---------- */
+/* Saturday and Sunday are rest days unless the owner opened them in Settings. data.weekends keeps the history, so the past never
+   changes: [{from:'2026-11-21', open:true}, {from:'2026-12-14', open:false}] opens weekends from 21 Nov and closes them from 14 Dec.
+   A weekend day is open when the last entry on or before it says so; with no entries weekends are rest days. */
+function openOn(data,k){let o=false;for(const w of (data&&data.weekends)||[]){if(w.from<=k)o=w.open;else break}return o}
+export const weekendOpen=(data,d)=>isWeekend(d)&&openOn(data,key(d));
+export const restOn=(data,d)=>isWeekend(d)&&!openOn(data,key(d));
+/* whether weekends are open as of day t (the Settings switch), and since when */
+export const weekendsOpenOn=(data,t)=>openOn(data,key(t));
+export function weekendsOpenSince(data,t){const k=key(t),l=(data.weekends||[]).filter(w=>w.from<=k);return l.length&&l[l.length-1].open?l[l.length-1].from:null}
+/* opens or closes weekends from today; an entry already from today is replaced, and nothing is added when nothing changes */
+function setWeekends(data,open,today){
+  const k=key(today), list=(data.weekends||[]).filter(w=>w.from<k), was=list.length?list[list.length-1].open:false;
+  data.weekends=was===open?list:list.concat({from:k,open});
+}
+export function openWeekends(data,today){setWeekends(data,true,today)}
+/* the routines made for weekends that are still active: closing weekends stops them */
+export const weekendRoutines=(data,today)=>data.routines.filter(r=>!r.stopped&&r.created<=key(today)&&schedOn(r,today).type==='weekend');
+/* closes weekends from today: weekend routines are stopped (their history stays), today's check-ins on them go if today is a weekend,
+   and vacation days booked on weekends from today on go back to the allowance. Returns the routines it stopped. */
+export function closeWeekends(data,today){
+  const k=key(today), gone=weekendRoutines(data,today);
+  for(const r of gone){
+    stopRoutine(r,today);
+    if(data.checks[k]){data.checks[k]=data.checks[k].filter(id=>id!==r.id);if(!data.checks[k].length)delete data.checks[k]}
+  }
+  for(const v of Object.keys(data.vacations||{})) if(v>=k&&isWeekend(parse(v))) delete data.vacations[v];
+  setWeekends(data,false,today);
+  return gone;
+}
+/* a stopped weekend routine can only come back while weekends are open */
+export function canResume(data,r,today){
+  if(!r.stopped) return false;
+  const s=r.schedules.filter(x=>x.from<=r.stopped&&x.type!=='off').pop();
+  return !(s&&s.type==='weekend')||weekendsOpenOn(data,today);
+}

@@ -761,3 +761,9 @@ button.hero:active{transform:scale(.98)}
 /* a little Vice City (20 Nov 2026): the glints twinkle with Miami pink and cyan halos, taking turns */
 .lightmode .sw.fx:nth-child(odd) .gl,.lightmode .row:nth-child(odd) .tile::before,.lightmode .rstat:nth-child(odd) .tile::before{filter:drop-shadow(0 0 2.5px var(--vc-pink))}
 .lightmode .sw.fx:nth-child(even) .gl,.lightmode .row:nth-child(even) .tile::before,.lightmode .rstat:nth-child(even) .tile::before{filter:drop-shadow(0 0 2.5px var(--vc-cyan))}
+/* open weekends (21 Nov 2026): four How often buttons fit a phone, the Weekend option's two day chips sit in the middle,
+   and the confirm for making weekends rest days again shows the rest-day moon */
+.seg.four button{padding:0 4px;font-size:14px;letter-spacing:-.03em}
+.daysrow.wk{justify-content:center;gap:12px}
+.daysrow.wk .dayc{width:auto;padding:0 20px;border-radius:999px} /* "Saturday" and "Sunday" written out, so the two are never confused */
+.wkicon svg{color:var(--ink)}
