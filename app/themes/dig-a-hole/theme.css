@@ -1,0 +1,204 @@
+/* Dig a Hole: a Kept theme (20 Nov 2026), after four airbrushed, pearlescent artworks the owner shared (a pearly lamb on a sky-blue
+   gradient, a glowing green moon face, periwinkle figures with hot pink drips, chrome hands and glassy tears). Nothing is copied from
+   them; only their palette and finish: soft airbrush gradients, film grain, pearl and chrome with an oily shimmer, and pink goo.
+   The owner's lake, Golem Grad and the pelicans stay. A pearl moon floats just above the island and shines in the water; in front of
+   the lake, a pearl-mint mound in the bottom left with a freshly dug hole, a little heap and a chrome spade, and a periwinkle chrome mound
+   in the bottom right with pink goo dripping down it. Light mode is the lamb's lilac-to-cyan sky; dark mode is the moon's grainy moss green.
+   Colours were sampled from the artworks (band averages and k-means): sky #D0D0D8 → #9DC5E2 → #16A8D4, pearl #EFF0EB, mint #73B19D,
+   moss #3B5438, periwinkle #6780B9 / #466299 / #2A436D, chrome #8F9BA4 / #3F5A66, pink #C5599E.
+   Layout (390 × 844 phone): the lake's waterline is 176px above the bottom and the island's crown about 212px; the tab bar covers the
+   bottom 74px; on Today the sky is free from about 330px down to the crown. So the moon (104px) sits at 204–308px, its lower edge just
+   behind the crown, and everything in front of the lake rises above 74px.
+   Every rule is scoped to [data-skin="dig-a-hole"]; see app/themes/themes.js for how themes are added and retired. */
+
+/* ---------- colours, light mode: the lamb's sky ---------- */
+:root[data-skin="dig-a-hole"]{
+  --bg:#E4E7EF; --surface:#FFFFFF; --ink:#1B2240;
+  --muted:rgba(36,48,92,.62); --faint:rgba(36,48,92,.32); --line:rgba(70,98,153,.2); --ring-off:rgba(70,98,153,.34);
+  --fill:rgba(74,93,176,.08); --fill-2:rgba(74,93,176,.14); --seg-on:#FFFFFF;
+  --tint:#4A5DB0; --tint-soft:rgba(74,93,176,.12); --green:#2E9E7E;
+  --glass:rgba(246,248,252,.74); --glass-line:rgba(255,255,255,.85); --glass-shadow:0 6px 24px rgba(42,67,109,.16),0 1px 2px rgba(42,67,109,.08);
+  /* the lake: cyan water, a periwinkle island, the pelicans in deep periwinkle */
+  --water-rgb:22, 168, 212; --water-alpha:.13; --island-rgb:70, 98, 153; --island-alpha:.66;
+  /* the scenery */
+  --hole-sky:linear-gradient(180deg,#D4D3DC 0%,#C8D2E2 22%,#B4CEE6 44%,#9DC5E2 60%,#62BBDD 78%,#22A9D6 100%);
+  --hole-grain:.24;
+  --hole-blob-1:rgba(255,178,214,.5); --hole-blob-2:rgba(178,238,208,.55);
+  --hole-orb-1:#F4F8EE; --hole-orb-2:#BFE2CF; --hole-orb-3:#7DBFA2; --hole-orb-pink:rgba(255,150,205,.72); --hole-orb-mint:rgba(96,196,156,.7);
+  --hole-rim:rgba(255,255,244,.9); --hole-halo:rgba(255,255,240,.7); --hole-halo-2:rgba(236,248,238,.5); --hole-shine:rgba(255,255,255,.62);
+  --hole-m1:radial-gradient(ellipse 34% 22% at 42% 14%,rgba(255,255,255,.95),rgba(255,255,255,0)),
+    radial-gradient(ellipse 30% 26% at 74% 42%,rgba(255,170,212,.5),transparent),
+    radial-gradient(ellipse 50% 40% at 16% 74%,rgba(110,196,158,.6),transparent),
+    linear-gradient(180deg,#EEF5EE 0%,#C9E3D4 40%,#86BCA3 78%,#5E9C84 100%);
+  --hole-m2:radial-gradient(ellipse 30% 20% at 54% 12%,rgba(255,255,255,.9),rgba(255,255,255,0)),
+    radial-gradient(ellipse 44% 34% at 80% 62%,rgba(63,90,102,.5),transparent),
+    radial-gradient(ellipse 30% 24% at 26% 46%,rgba(200,210,255,.6),transparent),
+    linear-gradient(180deg,#C3CDEE 0%,#90A1D0 34%,#6780B9 64%,#466299 100%);
+  --hole-pit:#0C1620; --hole-pit-2:#2A436D; --hole-lip:#B9DCCB; --hole-lip-light:rgba(255,255,255,.85);
+  --hole-heap:linear-gradient(180deg,#F3F8F2,#B4D8C6 70%,#86BCA3);
+  --hole-title:linear-gradient(90deg,#4A5DB0,#C23A85);
+  --hole-edge:rgba(70,98,153,.14); --hole-gloss:rgba(255,255,255,.9); --hole-birds:#2A436D;
+}
+/* ---------- colours, dark mode: the moon's moss green ---------- */
+@media (prefers-color-scheme: dark){:root[data-skin="dig-a-hole"]:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#111C15; --surface:#1B2A21; --ink:#EEF5EA;
+  --muted:rgba(222,238,224,.62); --faint:rgba(222,238,224,.32); --line:rgba(170,220,190,.18); --ring-off:rgba(220,240,225,.34);
+  --fill:rgba(160,220,190,.12); --fill-2:rgba(160,220,190,.2); --seg-on:#2E4536;
+  --tint:#E25D9E; --tint-soft:rgba(226,93,158,.2); --green:#34C08A;
+  --glass:rgba(22,36,28,.74); --glass-line:rgba(200,240,215,.16); --glass-shadow:0 6px 24px rgba(0,0,0,.45),0 0 18px rgba(150,220,180,.08);
+  --water-rgb:120, 200, 170; --water-alpha:.12; --island-rgb:12, 24, 17; --island-alpha:.88;
+  --hole-sky:radial-gradient(circle at 70% calc(100% - 254px),rgba(236,242,206,.34) 0,rgba(140,170,110,.2) 110px,transparent 250px),
+    radial-gradient(ellipse 130% 85% at 50% 62%,#4C6244 0%,#34503A 40%,#203527 72%,#121E16 100%);
+  --hole-grain:.22;
+  --hole-blob-1:rgba(240,120,180,.14); --hole-blob-2:rgba(150,230,190,.16);
+  --hole-orb-1:#EAF6E8; --hole-orb-2:#9FD8B8; --hole-orb-3:#3F8F6C; --hole-orb-pink:rgba(255,190,225,.45); --hole-orb-mint:rgba(70,170,130,.7);
+  --hole-rim:rgba(244,248,214,.95); --hole-halo:rgba(236,244,200,.62); --hole-halo-2:rgba(170,210,150,.32); --hole-shine:rgba(226,244,214,.5);
+  --hole-m1:radial-gradient(ellipse 34% 22% at 42% 14%,rgba(220,240,214,.55),rgba(220,240,214,0)),
+    radial-gradient(ellipse 30% 26% at 74% 42%,rgba(240,120,180,.22),transparent),
+    radial-gradient(ellipse 50% 40% at 16% 74%,rgba(60,130,100,.5),transparent),
+    linear-gradient(180deg,#7FA588 0%,#4E7459 40%,#2B4433 78%,#17261C 100%);
+  --hole-m2:radial-gradient(ellipse 30% 20% at 54% 12%,rgba(220,226,255,.5),rgba(220,226,255,0)),
+    radial-gradient(ellipse 44% 34% at 80% 62%,rgba(20,33,38,.6),transparent),
+    radial-gradient(ellipse 30% 24% at 26% 46%,rgba(150,165,230,.4),transparent),
+    linear-gradient(180deg,#6F7DB4 0%,#4C5D98 34%,#2F3D70 64%,#1A2346 100%);
+  --hole-pit:#050A07; --hole-pit-2:#16261C; --hole-lip:#6E9678; --hole-lip-light:rgba(220,240,214,.5);
+  --hole-heap:linear-gradient(180deg,#9EC1A6,#557A5F 70%,#2E4836);
+  --hole-title:linear-gradient(90deg,#BFEBD5,#F59ACB);
+  --hole-edge:rgba(170,220,190,.14); --hole-gloss:rgba(220,245,228,.1); --hole-birds:#0C1610;
+}}
+:root[data-skin="dig-a-hole"][data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111C15; --surface:#1B2A21; --ink:#EEF5EA;
+  --muted:rgba(222,238,224,.62); --faint:rgba(222,238,224,.32); --line:rgba(170,220,190,.18); --ring-off:rgba(220,240,225,.34);
+  --fill:rgba(160,220,190,.12); --fill-2:rgba(160,220,190,.2); --seg-on:#2E4536;
+  --tint:#E25D9E; --tint-soft:rgba(226,93,158,.2); --green:#34C08A;
+  --glass:rgba(22,36,28,.74); --glass-line:rgba(200,240,215,.16); --glass-shadow:0 6px 24px rgba(0,0,0,.45),0 0 18px rgba(150,220,180,.08);
+  --water-rgb:120, 200, 170; --water-alpha:.12; --island-rgb:12, 24, 17; --island-alpha:.88;
+  --hole-sky:radial-gradient(circle at 70% calc(100% - 254px),rgba(236,242,206,.34) 0,rgba(140,170,110,.2) 110px,transparent 250px),
+    radial-gradient(ellipse 130% 85% at 50% 62%,#4C6244 0%,#34503A 40%,#203527 72%,#121E16 100%);
+  --hole-grain:.22;
+  --hole-blob-1:rgba(240,120,180,.14); --hole-blob-2:rgba(150,230,190,.16);
+  --hole-orb-1:#EAF6E8; --hole-orb-2:#9FD8B8; --hole-orb-3:#3F8F6C; --hole-orb-pink:rgba(255,190,225,.45); --hole-orb-mint:rgba(70,170,130,.7);
+  --hole-rim:rgba(244,248,214,.95); --hole-halo:rgba(236,244,200,.62); --hole-halo-2:rgba(170,210,150,.32); --hole-shine:rgba(226,244,214,.5);
+  --hole-m1:radial-gradient(ellipse 34% 22% at 42% 14%,rgba(220,240,214,.55),rgba(220,240,214,0)),
+    radial-gradient(ellipse 30% 26% at 74% 42%,rgba(240,120,180,.22),transparent),
+    radial-gradient(ellipse 50% 40% at 16% 74%,rgba(60,130,100,.5),transparent),
+    linear-gradient(180deg,#7FA588 0%,#4E7459 40%,#2B4433 78%,#17261C 100%);
+  --hole-m2:radial-gradient(ellipse 30% 20% at 54% 12%,rgba(220,226,255,.5),rgba(220,226,255,0)),
+    radial-gradient(ellipse 44% 34% at 80% 62%,rgba(20,33,38,.6),transparent),
+    radial-gradient(ellipse 30% 24% at 26% 46%,rgba(150,165,230,.4),transparent),
+    linear-gradient(180deg,#6F7DB4 0%,#4C5D98 34%,#2F3D70 64%,#1A2346 100%);
+  --hole-pit:#050A07; --hole-pit-2:#16261C; --hole-lip:#6E9678; --hole-lip-light:rgba(220,240,214,.5);
+  --hole-heap:linear-gradient(180deg,#9EC1A6,#557A5F 70%,#2E4836);
+  --hole-title:linear-gradient(90deg,#BFEBD5,#F59ACB);
+  --hole-edge:rgba(170,220,190,.14); --hole-gloss:rgba(220,245,228,.1); --hole-birds:#0C1610;
+}
+/* sheets are a little lighter than the page in dark mode */
+@media (prefers-color-scheme: dark){:root[data-skin="dig-a-hole"]:not([data-theme="light"]) .sheet{--bg:#16241B;--surface:#22342A}}
+:root[data-skin="dig-a-hole"][data-theme="dark"] .sheet{--bg:#16241B;--surface:#22342A}
+
+/* film grain: grey fractal noise, blended soft-light so it adds texture without greying the colours */
+:root[data-skin="dig-a-hole"]{
+  --hole-noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='2.2 0 0 0 -.6 2.2 0 0 0 -.6 2.2 0 0 0 -.6 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --hole-noise-soft:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='2.2 0 0 0 -.6 2.2 0 0 0 -.6 2.2 0 0 0 -.6 0 0 0 0 .3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --hole-m1-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 164' preserveAspectRatio='none'%3E%3Cpath d='M0 164V44C22 16 74 2 118 10C160 18 196 54 210 104C216 128 218 148 220 164Z'/%3E%3C/svg%3E");
+  --hole-m2-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 146' preserveAspectRatio='none'%3E%3Cpath d='M180 146V36C162 14 124 2 88 8C50 14 18 48 6 100C2 118 0 134 0 146Z'/%3E%3C/svg%3E");
+  --hole-goo-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 146' preserveAspectRatio='none'%3E%3Cpath d='M34 39.3 L37 35.8 L40 32.6 L43 29.7 L46 27 L49 24.5 L52 22.1 L55 20 L58 18.1 L61 16.3 L64 14.7 L67 13.2 L70 11.9 L73 10.7 L76 9.7 L79 8.8 L82 8 L85 7.3 L88 6.8 L91 6.3 L94 6 L97 5.7 L100 5.5 L103 5.3 L106 5.3 L109 5.3 L112 5.4 L115 5.5 L118 5.8 L121 6.1 L124 6.5 L127 7 L130 7.6 L133 8.2 L136 9 L139 9.8 L142 10.7 L145 11.7 L148 12.8 L151 14 L154 15.4 L157 16.9 L160 18.5 L160 18.5 L160 19.7 L157 19.6 L154 19.6 L151 19.7 L148 20 L145 20.4 L142 19.9 L139 19 L136 18.2 L133 17.4 L130 16.8 L127 16.2 L125 15.9 L125 23 A3 3 0 0 1 119 23 L119 15.1 L118 15 L115 14.7 L112 14.6 L109 14.5 L106 14.5 L103 14.5 L100 14.7 L97 14.9 L95 15.1 L95 36 A4 4 0 0 1 87 36 L87 16.2 L85 16.5 L82 17.2 L79 18 L76 18.9 L73 19.9 L70 21.1 L67 22.4 L64 23.9 L62 24.9 L62 52 A4 4 0 0 1 54 52 L54 29.9 L52 31.3 L49 33.2 L46 34.2 L43 35.4 L40 36.8 L37 38.5 L34 40.5Z'/%3E%3C/svg%3E");
+  --hole-spade-svg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 60'%3E%3Cpath d='M4 0h12v3.5h-4V36h2.5C16.5 36 18 37.5 18 40v8c0 5-3.6 9.4-8 12c-4.4-2.6-8-7-8-12v-8c0-2.5 1.5-4 3.5-4H8V3.5H4Z'/%3E%3C/svg%3E");
+}
+
+/* ---------- the scenery behind the lake ---------- */
+[data-skin="dig-a-hole"] #skin{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--hole-sky)}
+[data-skin="dig-a-hole"] #skin::after{content:"";position:absolute;inset:0;background:var(--hole-noise);opacity:var(--hole-grain);mix-blend-mode:soft-light}
+/* the pearl moon (moon.svg, a calm face with a glassy tear): 116px, centred at 70% across, 196px up, just above the island's eastern
+   tail (about 190px there) and under the cards' usual end (about 330px) */
+[data-skin="dig-a-hole"] #skin .s1{position:absolute;left:calc(70% - 58px);bottom:196px;width:116px;height:116px;border-radius:50%;
+  background:url("moon.svg") center/100% 100% no-repeat;
+  box-shadow:0 0 0 1.5px var(--hole-rim),0 0 18px 6px var(--hole-halo),0 0 64px 24px var(--hole-halo-2);
+  animation:hole-float 9s ease-in-out infinite alternate}
+/* the moon's shine in the water, from the waterline (176px) down */
+[data-skin="dig-a-hole"] #skin .s2{position:absolute;left:calc(70% - 32px);bottom:96px;width:64px;height:80px;
+  background:repeating-linear-gradient(180deg,var(--hole-shine) 0 2px,transparent 2px 8px);
+  -webkit-mask-image:radial-gradient(ellipse 50% 100% at 50% 0,#000 25%,transparent 100%);mask-image:radial-gradient(ellipse 50% 100% at 50% 0,#000 25%,transparent 100%);
+  animation:hole-shimmer 4.5s ease-in-out infinite alternate}
+/* (the glow in the dark sky is centred on the moon: 70% across, 196 + 58 = 254px up) */
+/* two airbrushed clouds of colour drifting in the sky, under everything */
+[data-skin="dig-a-hole"] #skin::before{content:"";position:absolute;inset:-12%;
+  background:radial-gradient(150px 115px at 18% 18%,var(--hole-blob-1),transparent),radial-gradient(160px 130px at 86% 52%,var(--hole-blob-2),transparent);
+  animation:hole-drift 28s ease-in-out infinite alternate}
+/* the flyers: a sleeping pearl head (left to right, every 34s) and a periwinkle dreamer dripping goo (right to left, every 46s), each
+   on fluttering wings (drawn in the artwork). They cross the open sky between 230px and 330px up, past the moon, and bob as they go.
+   .s3 is only their stage; translate carries them across, transform bobs them. */
+[data-skin="dig-a-hole"] #skin .s3{position:absolute;inset:0}
+[data-skin="dig-a-hole"] #skin .s3::before,[data-skin="dig-a-hole"] #skin .s3::after{content:"";position:absolute;background:center/100% 100% no-repeat}
+[data-skin="dig-a-hole"] #skin .s3::before{left:-96px;bottom:238px;width:84px;height:65px;background-image:url("flyer-pearl.svg");
+  animation:hole-fly-right 34s linear infinite,hole-bob 3.2s ease-in-out infinite alternate}
+[data-skin="dig-a-hole"] #skin .s3::after{right:-86px;bottom:262px;width:72px;height:68px;background-image:url("flyer-blue.svg");
+  animation:hole-fly-left 46s linear -21s infinite,hole-bob 2.6s ease-in-out -1s infinite alternate}
+/* glass bubbles rising slowly from the lake, left of the island */
+[data-skin="dig-a-hole"] #skin .s4{position:absolute;inset:0}
+[data-skin="dig-a-hole"] #skin .s4::before,[data-skin="dig-a-hole"] #skin .s4::after{content:"";position:absolute;border-radius:50%;opacity:0;
+  background:radial-gradient(circle at 34% 28%,#FFFFFF 0 10%,rgba(255,255,255,.12) 28%,rgba(190,240,255,.22) 68%,rgba(255,255,255,.8) 100%)}
+[data-skin="dig-a-hole"] #skin .s4::before{left:12%;bottom:200px;width:14px;height:14px;animation:hole-rise 13s ease-out infinite}
+[data-skin="dig-a-hole"] #skin .s4::after{left:22%;bottom:192px;width:9px;height:9px;animation:hole-rise 13s ease-out -6s infinite}
+
+/* ---------- in front of the lake (above the water, below the app) ---------- */
+[data-skin="dig-a-hole"] #skin-front{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+[data-skin="dig-a-hole"] #skin-front i{position:absolute}
+/* the mounds: airbrushed pearl and chrome, with the same grain; 164px and 146px tall so they rise well above the tab bar (74px) */
+[data-skin="dig-a-hole"] #skin-front .f1{left:0;bottom:0;width:220px;height:164px}
+[data-skin="dig-a-hole"] #skin-front .f1::before{content:"";position:absolute;inset:0;background:var(--hole-noise-soft),var(--hole-m1);background-blend-mode:soft-light,normal,normal,normal,normal;
+  -webkit-mask:var(--hole-m1-svg) 0 0/100% 100% no-repeat;mask:var(--hole-m1-svg) 0 0/100% 100% no-repeat}
+/* someone down the hole (peeker.svg): every 14s a chrome head rises until its eyes clear the rim, glances about and sinks again.
+   Its box spans the hole (x 42–130 in the mound) from 50px above it; the clip ends on the hole's front lip (centre 76px down the box,
+   radii 44 × 12), so the head comes up from inside. It sits above the hole (z-index 1); only background-position moves. */
+[data-skin="dig-a-hole"] #skin-front .f1::after{content:"";position:absolute;left:42px;top:-50px;width:88px;height:88px;z-index:1;
+  clip-path:path('M0 0H88V76A44 12 0 0 1 0 76Z');background:url("peeker.svg") 24px 92px/40px 46px no-repeat;animation:hole-peek 14s ease-in-out infinite}
+[data-skin="dig-a-hole"] #skin-front .f3{right:0;bottom:0;width:180px;height:146px;background:var(--hole-noise-soft),var(--hole-m2);background-blend-mode:soft-light,normal,normal,normal,normal;
+  -webkit-mask:var(--hole-m2-svg) 0 0/100% 100% no-repeat;mask:var(--hole-m2-svg) 0 0/100% 100% no-repeat}
+/* the hole, dug just under the left mound's top (88 × 24, its centre 26px below the summit line) */
+[data-skin="dig-a-hole"] #skin-front .f2{left:42px;bottom:126px;width:88px;height:24px;border-radius:50%;
+  background:radial-gradient(ellipse 50% 50% at 50% 60%,var(--hole-pit) 0 46%,var(--hole-pit-2) 74%,var(--hole-lip) 100%);
+  box-shadow:inset 0 5px 7px rgba(0,0,0,.55),0 1.5px 0 var(--hole-lip-light)}
+/* the heap it came from, on the slope to its right (the surface falls from 150px to 121px above the bottom there), and the chrome
+   spade stuck in it, leaning away from the hole */
+[data-skin="dig-a-hole"] #skin-front .f2::before{content:"";position:absolute;left:90px;bottom:-4px;width:42px;height:30px;border-radius:58% 42% 30% 30%/92% 80% 20% 20%;
+  background:radial-gradient(ellipse 30% 30% at 38% 26%,rgba(255,255,255,.9),transparent),var(--hole-heap);
+  -webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)} /* its base melts into the mound */
+[data-skin="dig-a-hole"] #skin-front .f2::after{content:"";position:absolute;left:104px;bottom:16px;width:15px;height:45px;transform:rotate(20deg);transform-origin:50% 100%;
+  background:linear-gradient(90deg,#4E6470 0%,#EEF3F6 38%,#A9BAC3 58%,#3F5A66 100%);
+  -webkit-mask:var(--hole-spade-svg) 0 0/100% 100% no-repeat;mask:var(--hole-spade-svg) 0 0/100% 100% no-repeat}
+/* pink goo: a glossy cap poured over the right mound's top (drawn in the mound's own 180 × 146 box, 1px above its surface), running
+   down in three drips; every 8s a drop swells at the tip of the longest (90px above the bottom, clear of the tab bar) and falls */
+[data-skin="dig-a-hole"] #skin-front .f4{right:0;bottom:0;width:180px;height:146px}
+[data-skin="dig-a-hole"] #skin-front .f4::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 16% 6% at 58% 6%,rgba(255,236,246,.95),transparent),
+    radial-gradient(ellipse 4% 10% at 32% 26%,rgba(255,226,240,.8),transparent),
+    linear-gradient(180deg,#F58CC2 0%,#E4519A 10%,#C8307F 22%,#A81D63 40%);
+  -webkit-mask:var(--hole-goo-svg) 0 0/100% 100% no-repeat;mask:var(--hole-goo-svg) 0 0/100% 100% no-repeat}
+[data-skin="dig-a-hole"] #skin-front .f4::after{content:"";position:absolute;left:54px;top:49px;width:8px;height:9px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;
+  background:radial-gradient(circle at 34% 30%,#FFE3F0 0 16%,#F06AAE 44%,#B71F6E 100%);transform-origin:50% 0;animation:hole-drop 8s ease-in infinite}
+/* the pelicans, birds and fish of the lake are drawn in the colour of #water */
+[data-skin="dig-a-hole"] #water{color:var(--hole-birds)}
+
+@keyframes hole-float{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+@keyframes hole-fly-right{0%{translate:0 0}36%{translate:calc(50vw + 48px) -34px}72%,100%{translate:calc(100vw + 192px) 6px}}
+@keyframes hole-fly-left{0%{translate:0 0}38%{translate:calc(-50vw - 43px) 26px}76%,100%{translate:calc(-100vw - 172px) -8px}}
+@keyframes hole-bob{from{transform:translateY(-5px) rotate(-4deg)}to{transform:translateY(5px) rotate(4deg)}}
+@keyframes hole-rise{0%{transform:translate(0,0);opacity:0}10%{opacity:.9}70%{opacity:.7}100%{transform:translate(14px,-150px) scale(1.2);opacity:0}}
+@keyframes hole-peek{0%,48%{background-position:24px 92px}56%{background-position:24px 40px}64%{background-position:24px 40px}67%{background-position:24px 47px}
+  71%,80%{background-position:24px 40px}90%,100%{background-position:24px 92px}}
+@keyframes hole-shimmer{from{opacity:.55}to{opacity:1}}
+@keyframes hole-drift{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,24px) scale(1.12)}}
+@keyframes hole-drop{0%{transform:scale(.4);opacity:0}8%{opacity:1}70%{transform:scale(1.25);opacity:1}
+  82%{transform:translateY(8px) scale(1,1.3);opacity:1}92%{transform:translateY(16px) scale(.9,1.2);opacity:0}100%{transform:scale(.4);opacity:0}}
+@media (prefers-reduced-motion: reduce){
+  [data-skin="dig-a-hole"] #skin::before,[data-skin="dig-a-hole"] #skin i,[data-skin="dig-a-hole"] #skin-front i::after{animation:none}
+  [data-skin="dig-a-hole"] #skin .s3,[data-skin="dig-a-hole"] #skin .s4{display:none} /* the flyers and bubbles stay away; the peeker stays down the hole */
+}
+
+/* ---------- small touches: a pearly gradient title and a glossy edge on the cards ---------- */
+[data-skin="dig-a-hole"] .navbar span{background:var(--hole-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="dig-a-hole"] .head .titles:not(.rf) h1{background:var(--hole-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="dig-a-hole"] .group,[data-skin="dig-a-hole"] .card{box-shadow:0 0 0 1px var(--hole-edge),inset 0 1px 0 var(--hole-gloss)}

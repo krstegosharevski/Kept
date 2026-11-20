@@ -324,6 +324,11 @@ test('Themes: each one listed has its stylesheet, is cached for offline use, and
     const css=readFileSync(file,'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
     for(const rule of css.match(/[^{}]+(?=\{)/g).map(x=>x.trim()).filter(x=>x&&!x.startsWith('@')&&!/^(from|to|\d+%)/.test(x)))
       for(const sel of rule.split(',')) assert.ok(sel.includes(`[data-skin="${t.id}"]`),`${t.id}: "${sel.trim()}" is not scoped to the theme`);
+    for(const [,u] of css.replace(/url\("data:[^"]*"\)/g,'').matchAll(/url\(["']?([^"')]+)["']?\)/g)){ // the theme's own artwork (not inline data): present, and cached for offline use
+      const art=`themes/${t.id}/${u}`;
+      assert.ok(existsSync(new URL(`../app/${art}`,import.meta.url)),`missing ${art}`);
+      assert.ok(sw.includes(`'${art}'`),`sw.js does not cache ${art}`);
+    }
   }
   assert.ok(sw.includes("'themes/themes.js'"));
 });

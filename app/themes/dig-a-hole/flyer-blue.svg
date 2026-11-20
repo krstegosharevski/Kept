@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 150">
+<!-- Dig a Hole: a periwinkle dreamer looking up, pink goo dripping from its lips, carried by two chrome wings that beat (SMIL) -->
+<defs>
+  <radialGradient id="skin" cx="36%" cy="28%" r="82%"><stop offset="0" stop-color="#E8ECFF"/><stop offset=".35" stop-color="#AEB9EE"/><stop offset=".72" stop-color="#6F82C8"/><stop offset="1" stop-color="#3B4C92"/></radialGradient>
+  <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".3" stop-color="#C9D4DB"/><stop offset=".55" stop-color="#7F939E"/><stop offset=".7" stop-color="#E9EFF3"/><stop offset="1" stop-color="#3F5A66"/></linearGradient>
+  <linearGradient id="goo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A81D63"/><stop offset=".35" stop-color="#EE5DA5"/><stop offset=".5" stop-color="#FFC9E3"/><stop offset=".65" stop-color="#EE5DA5"/><stop offset="1" stop-color="#B02470"/></linearGradient>
+  <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F58CC2"/><stop offset="1" stop-color="#B7246F"/></linearGradient>
+  <radialGradient id="ball" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C3CBEF"/></radialGradient>
+  <filter id="b6" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+  <filter id="b3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="b1" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".8"/></filter>
+  <clipPath id="eL"><path d="M58 58Q66 51 75 57Q66 62 58 58Z"/></clipPath>
+  <clipPath id="eR"><path d="M85 57Q94 51 102 58Q94 62 85 57Z"/></clipPath>
+  <g id="w">
+    <path d="M0 0C-6-20-24-34-46-32C-40-24-34-18-30-12C-38-12-44-8-48-2C-34 2-16 4 0 0Z" fill="url(#chrome)" stroke="#FFFFFF" stroke-opacity=".8" stroke-width=".7"/>
+    <path d="M-8-6C-18-16-28-24-40-28M-8-1C-20-4-32-6-44-3" fill="none" stroke="#3F5A66" stroke-opacity=".45" stroke-width=".8"/>
+  </g>
+</defs>
+<g transform="translate(54 56)"><g><use href="#w"/><animateTransform attributeName="transform" type="rotate" values="10;-24;10" dur="1.1s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<g transform="translate(106 56) scale(-1 1)"><g><use href="#w"/><animateTransform attributeName="transform" type="rotate" values="10;-24;10" dur="1.1s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<g transform="rotate(10 80 64)">
+  <circle cx="80" cy="64" r="31" fill="url(#skin)"/>
+  <ellipse cx="66" cy="44" rx="13" ry="7" fill="#FFFFFF" opacity=".75" filter="url(#b3)" transform="rotate(-25 66 44)"/>
+  <ellipse cx="98" cy="84" rx="16" ry="12" fill="#2A3B7A" opacity=".4" filter="url(#b6)"/>
+  <ellipse cx="62" cy="80" rx="10" ry="8" fill="#FF8CC6" opacity=".35" filter="url(#b6)"/>
+  <!-- half-open eyes, looking up -->
+  <ellipse cx="66" cy="58" rx="11" ry="6" fill="#2A3B7A" opacity=".35" filter="url(#b3)"/>
+  <ellipse cx="94" cy="58" rx="11" ry="6" fill="#2A3B7A" opacity=".35" filter="url(#b3)"/>
+  <path d="M58 58Q66 51 75 57Q66 62 58 58Z" fill="url(#ball)"/>
+  <g clip-path="url(#eL)"><circle cx="67" cy="54.4" r="4.4" fill="#4C5FA8"/><circle cx="67" cy="54.4" r="1.9" fill="#121A3A"/></g>
+  <path d="M85 57Q94 51 102 58Q94 62 85 57Z" fill="url(#ball)"/>
+  <g clip-path="url(#eR)"><circle cx="93" cy="54.4" r="4.4" fill="#4C5FA8"/><circle cx="93" cy="54.4" r="1.9" fill="#121A3A"/></g>
+  <circle cx="65.8" cy="53.6" r="1" fill="#FFFFFF"/><circle cx="91.8" cy="53.6" r="1" fill="#FFFFFF"/>
+  <path d="M58 58Q66 62 75 57M85 57Q94 62 102 58" fill="none" stroke="#1E2A5C" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M59 56Q66 50 74 55M86 55Q94 50 101 56" fill="none" stroke="#FFFFFF" stroke-width=".9" opacity=".6"/>
+  <!-- nose -->
+  <ellipse cx="78" cy="64" rx="3" ry="9" fill="#FFFFFF" opacity=".55" filter="url(#b3)"/>
+  <ellipse cx="80" cy="73" rx="7" ry="2.4" fill="#2A3B7A" opacity=".45" filter="url(#b1)"/>
+  <!-- lips, slightly open, and the goo that runs from them -->
+  <path d="M70 81Q75 77.6 80 79.4Q85 77.6 90 81Q85 83 80 83Q75 83 70 81Z" fill="url(#lip)"/>
+  <path d="M71 82Q80 84.6 89 82Q86 89 80 89Q74 89 71 82Z" fill="url(#lip)"/>
+  <ellipse cx="78" cy="85.6" rx="3" ry=".9" fill="#FFFFFF" opacity=".8" filter="url(#b1)"/>
+</g>
+<!-- the goo hangs straight down from the lip, whatever the head's tilt -->
+<path d="M75.4 92C75.6 100 74.6 110 75 118C75.2 122 79.2 122 79.4 118C79.8 110 79 100 79.4 91Z" fill="url(#goo)"/>
+<path d="M77.2 117C77.2 121 72.4 124 72.4 128A4.8 4.8 0 0 0 82 128C82 124 77.2 121 77.2 117Z" fill="url(#goo)"/>
+<ellipse cx="75.6" cy="127" rx="1.2" ry="2" fill="#FFFFFF" opacity=".9"/>
+</svg>

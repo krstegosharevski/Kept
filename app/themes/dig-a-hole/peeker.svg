@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 64">
+<!-- Dig a Hole: a pearl-chrome head that peeks out of the hole (theme.css raises and lowers it); its eyes glance left and right (SMIL) -->
+<defs>
+  <radialGradient id="skin" cx="36%" cy="26%" r="84%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".3" stop-color="#DCE6EA"/><stop offset=".62" stop-color="#97ADB7"/><stop offset="1" stop-color="#3F5A66"/></radialGradient>
+  <radialGradient id="ball" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C6D3D9"/></radialGradient>
+  <filter id="b3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="b1" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".7"/></filter>
+  <clipPath id="eL"><path d="M10.5 30C11 22.6 24 22.6 24.5 30C24 35.4 11 35.4 10.5 30Z"/></clipPath>
+  <clipPath id="eR"><path d="M31.5 30C32 22.6 45 22.6 45.5 30C45 35.4 32 35.4 31.5 30Z"/></clipPath>
+</defs>
+<ellipse cx="28" cy="36" rx="24" ry="28" fill="url(#skin)"/>
+<ellipse cx="38" cy="50" rx="12" ry="10" fill="#C8A0B8" opacity=".45" filter="url(#b3)"/>
+<ellipse cx="20" cy="14" rx="10" ry="5" fill="#FFFFFF" opacity=".85" filter="url(#b3)" transform="rotate(-20 20 14)"/>
+<ellipse cx="17.5" cy="30" rx="10" ry="6" fill="#2D4652" opacity=".35" filter="url(#b3)"/>
+<ellipse cx="38.5" cy="30" rx="10" ry="6" fill="#2D4652" opacity=".35" filter="url(#b3)"/>
+<path d="M10.5 30C11 22.6 24 22.6 24.5 30C24 35.4 11 35.4 10.5 30Z" fill="url(#ball)"/>
+<path d="M31.5 30C32 22.6 45 22.6 45.5 30C45 35.4 32 35.4 31.5 30Z" fill="url(#ball)"/>
+<g clip-path="url(#eL)"><g><circle cx="17.5" cy="30" r="4.6" fill="#5E8A96"/><circle cx="17.5" cy="30" r="2.2" fill="#0F1E24"/><circle cx="16.4" cy="28.6" r="1.1" fill="#FFFFFF"/>
+  <animateTransform attributeName="transform" type="translate" values="0 0;-3 0;-3 0;3 0;3 0;0 0" keyTimes="0;.15;.4;.55;.85;1" dur="5s" repeatCount="indefinite"/></g></g>
+<g clip-path="url(#eR)"><g><circle cx="38.5" cy="30" r="4.6" fill="#5E8A96"/><circle cx="38.5" cy="30" r="2.2" fill="#0F1E24"/><circle cx="37.4" cy="28.6" r="1.1" fill="#FFFFFF"/>
+  <animateTransform attributeName="transform" type="translate" values="0 0;-3 0;-3 0;3 0;3 0;0 0" keyTimes="0;.15;.4;.55;.85;1" dur="5s" repeatCount="indefinite"/></g></g>
+<path d="M10.5 30C11 22.6 24 22.6 24.5 30M31.5 30C32 22.6 45 22.6 45.5 30" fill="none" stroke="#1D3038" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M12 19.6Q17.5 16.4 23 19M33 19Q38.5 16.4 44 19.6" fill="none" stroke="#2D4652" stroke-width="1" stroke-linecap="round" opacity=".55"/>
+<path d="M12 32Q17.5 35.6 23 32M33 32Q38.5 35.6 44 32" fill="none" stroke="#FFFFFF" stroke-width=".8" opacity=".7"/>
+<ellipse cx="27" cy="40" rx="2.4" ry="7" fill="#FFFFFF" opacity=".6" filter="url(#b1)"/>
+<ellipse cx="28" cy="47" rx="5" ry="1.8" fill="#2D4652" opacity=".5" filter="url(#b1)"/>
+</svg>

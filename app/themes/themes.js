@@ -10,8 +10,10 @@
    list in sw.js (so it works offline). To retire one: set visible:false (anyone using it goes back to the standard look),
    then delete its folder, its line here and its line in sw.js. */
 export const THEMES=[
-  {id:'vice-city',name:'Vice City',hint:'For a limited time. A neon sunset over the lake, with palm trees on the beach.',visible:true,
+  {id:'vice-city',name:'Vice City',hint:'For a limited time, to celebrate the release of Grand Theft Auto VI: a neon Vice City sunset over the lake, with palm trees swaying on the beach.',visible:true,
     color:{light:'#FFE4EE',dark:'#12061F'}}, // the status bar colour in each mode
+  {id:'dig-a-hole',name:'Dig a Hole',hint:'Airbrushed pearl and chrome: a pearl moon over the lake, a freshly dug hole and pink goo.',visible:true,
+    color:{light:'#D4D3DC',dark:'#142119'}},
 ];
 export const visibleThemes=()=>THEMES.filter(t=>t.visible);
 export const themeById=id=>THEMES.find(t=>t.id===id)||null;

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 124">
+<!-- Dig a Hole: a sleeping pearl head with a blue tear, carried by two glassy, iridescent wings that flutter (SMIL, so it moves even as a background image) -->
+<defs>
+  <radialGradient id="skin" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#E4F3EA"/><stop offset=".8" stop-color="#A9D8C1"/><stop offset="1" stop-color="#6FB394"/></radialGradient>
+  <linearGradient id="wing" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset=".4" stop-color="#E6D9FF" stop-opacity=".8"/><stop offset=".75" stop-color="#B8ECFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFC4E4" stop-opacity=".6"/></linearGradient>
+  <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7A6CE"/><stop offset="1" stop-color="#C23A85"/></linearGradient>
+  <linearGradient id="tear" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E8FAFF"/><stop offset=".5" stop-color="#7FD3FF"/><stop offset="1" stop-color="#2E8FE0"/></linearGradient>
+  <filter id="b6" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+  <filter id="b3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="b1" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".8"/></filter>
+  <g id="w">
+    <path d="M0 0C-8-22-30-36-50-30C-44-18-30-6 0 0Z" fill="url(#wing)" stroke="#FFFFFF" stroke-opacity=".9" stroke-width=".8"/>
+    <path d="M0 2C-14-8-38-10-50 2C-36 8-18 10 0 2Z" fill="url(#wing)" stroke="#FFFFFF" stroke-opacity=".9" stroke-width=".8"/>
+    <path d="M-6-4C-18-16-30-22-42-24M-8 2C-20-1-32-1-42 1" fill="none" stroke="#FFFFFF" stroke-opacity=".7" stroke-width=".7"/>
+  </g>
+</defs>
+<!-- wings behind the head -->
+<g transform="translate(56 58)"><g><use href="#w"/><animateTransform attributeName="transform" type="rotate" values="8;-18;8" dur="1.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<g transform="translate(104 58) scale(-1 1)"><g><use href="#w"/><animateTransform attributeName="transform" type="rotate" values="8;-18;8" dur="1.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<!-- the head, tipped to one side -->
+<g transform="rotate(-12 80 66)">
+  <ellipse cx="80" cy="66" rx="30" ry="35" fill="url(#skin)"/>
+  <ellipse cx="96" cy="84" rx="16" ry="14" fill="#FF9BCB" opacity=".45" filter="url(#b6)"/>
+  <ellipse cx="62" cy="80" rx="12" ry="14" fill="#9BE6C4" opacity=".55" filter="url(#b6)"/>
+  <ellipse cx="70" cy="44" rx="13" ry="7" fill="#FFFFFF" opacity=".9" filter="url(#b3)" transform="rotate(-20 70 44)"/>
+  <!-- closed eyes with lashes -->
+  <ellipse cx="68" cy="64" rx="9" ry="5" fill="#3E8F6E" opacity=".3" filter="url(#b3)"/>
+  <ellipse cx="92" cy="64" rx="9" ry="5" fill="#3E8F6E" opacity=".3" filter="url(#b3)"/>
+  <path d="M61 63Q68 69 75 63M85 63Q92 69 99 63" fill="none" stroke="#1F5443" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M63 66l-1.5 3M67 67.6l-.6 3.2M71 67l.4 3.2M87 66l-1 3M91 67.6l-.2 3.2M95 67l.8 3" fill="none" stroke="#1F5443" stroke-width="1" stroke-linecap="round"/>
+  <!-- nose, blush, lips -->
+  <ellipse cx="80" cy="76" rx="3.6" ry="2.4" fill="#F28DBF" opacity=".9"/>
+  <ellipse cx="79" cy="75.3" rx="1.2" ry=".7" fill="#FFFFFF" opacity=".8"/>
+  <ellipse cx="62" cy="76" rx="6" ry="3.4" fill="#FF7FBF" opacity=".5" filter="url(#b3)"/>
+  <ellipse cx="98" cy="76" rx="6" ry="3.4" fill="#FF7FBF" opacity=".5" filter="url(#b3)"/>
+  <path d="M74 85Q77 82.6 80 84Q83 82.6 86 85Q80 90.5 74 85Z" fill="url(#lip)"/>
+  <ellipse cx="79" cy="86.6" rx="2.4" ry=".8" fill="#FFFFFF" opacity=".8" filter="url(#b1)"/>
+  <!-- the tear running from the left eye -->
+  <path d="M61 67Q58.6 74 59.6 80" fill="none" stroke="#7FD3FF" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+  <path d="M59.6 79C59.6 83 56.4 85.6 56.4 88.6A3.4 3.4 0 0 0 63.2 88.6C63.2 85.6 59.6 83 59.6 79Z" fill="url(#tear)" stroke="#FFFFFF" stroke-width=".5"/>
+  <ellipse cx="58.6" cy="88" rx=".8" ry="1.5" fill="#FFFFFF"/>
+</g>
+</svg>
