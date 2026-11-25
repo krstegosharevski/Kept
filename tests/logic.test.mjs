@@ -406,3 +406,47 @@ test('Open weekends: weekly targets still count Monday to Friday, the Wildcard s
   assert.equal(canBook(data,'2026-11-29',D('2026-11-23')),'');         // an open Sunday can be booked
   assert.equal(canBook({...data,weekends:[]},'2026-11-29',D('2026-11-23')),'weekend'); // a rest Sunday can't
 });
+
+test('Shop: everyone starts with 100 Pelican Coins; buying spends them, and a theme is bought once', async()=>{
+  const {COINS_START,coinsLeft,ownsTheme,cantBuy,buyTheme}=await import('../app/js/logic.js');
+  const d={purchases:[]}, t={id:'vice-city',price:10,available:true}, day=parse('2026-11-25');
+  assert.equal(COINS_START,100); assert.equal(coinsLeft(d),100); assert.equal(coinsLeft({}),100);
+  assert.equal(cantBuy(d,t),null);
+  assert.ok(buyTheme(d,t,day)); assert.ok(ownsTheme(d,'vice-city')); assert.equal(coinsLeft(d),90);
+  assert.deepEqual(d.purchases,[{id:'vice-city',price:10,at:'2026-11-25'}]);
+  assert.equal(cantBuy(d,t),'owned'); assert.equal(buyTheme(d,t,day),false); assert.equal(coinsLeft(d),90);
+});
+test('Shop: a theme off sale cannot be bought, but one already bought stays owned; too few coins blocks a purchase', async()=>{
+  const {coinsLeft,ownsTheme,cantBuy,buyTheme}=await import('../app/js/logic.js');
+  const day=parse('2026-11-25'), d={purchases:[{id:'dig-a-hole',price:10,at:'2026-11-20'}]};
+  assert.equal(cantBuy(d,{id:'vice-city',price:10,available:false}),'unavailable');
+  assert.equal(buyTheme(d,{id:'vice-city',price:10,available:false},day),false);
+  assert.ok(ownsTheme(d,'dig-a-hole')); assert.equal(cantBuy(d,{id:'dig-a-hole',price:10,available:false}),'owned'); // off sale, still yours
+  assert.equal(cantBuy(d,{id:'gold',price:91,available:true}),'coins'); // 90 left
+  assert.ok(buyTheme(d,{id:'gold',price:90,available:true},day)); assert.equal(coinsLeft(d),0);
+});
+test('Shop: a theme in use when the Shop arrived is given for free; normalize keeps valid purchases and drops the rest', async()=>{
+  const {grantTheme,coinsLeft,ownsTheme}=await import('../app/js/logic.js');
+  const d={purchases:[]}, day=parse('2026-11-25');
+  assert.ok(grantTheme(d,'vice-city',day)); assert.ok(ownsTheme(d,'vice-city')); assert.equal(coinsLeft(d),100);
+  assert.equal(grantTheme(d,'vice-city',day),false);
+  const n=normalize({routines:[],checks:{},purchases:[{id:'vice-city',price:10,at:'2026-11-20'},{id:'vice-city',price:5,at:'2026-11-21'},{id:'Bad id',price:10},{id:'x',price:-1},{id:'y',price:1.5},{id:'z',price:'7',at:'nope'},null,'a']});
+  assert.deepEqual(n.purchases.map(p=>[p.id,p.price]),[['vice-city',10],['z',7]]);
+  assert.equal(n.purchases[0].at,'2026-11-20'); assert.match(n.purchases[1].at,/^\d{4}-\d{2}-\d{2}$/);
+  assert.deepEqual(normalize({routines:[],checks:{}}).purchases,[]);
+});
+test('Shop: every theme has a price, a sale switch and its card; the coins and every Shop picture are cached for offline use', async()=>{
+  const {THEMES,shopImage}=await import('../app/themes/themes.js');
+  const sw=readFileSync(new URL('../app/sw.js',import.meta.url),'utf8');
+  for(const f of ['icons/coin.svg','icons/coin-small.svg','themes/shop-kept-light.jpg','themes/shop-kept-dark.jpg']){
+    assert.ok(existsSync(new URL(`../app/${f}`,import.meta.url)),`missing ${f}`); assert.ok(sw.includes(`'${f}'`),`sw.js does not cache ${f}`);
+  }
+  for(const t of THEMES){
+    assert.ok(Number.isInteger(t.price)&&t.price>=0,`${t.id}: price`); assert.equal(typeof t.available,'boolean',`${t.id}: available`);
+    assert.ok(t.short&&typeof t.tag==='string',`${t.id}: short and tag`);
+    for(const m of ['light','dark']){
+      assert.match(t.swatch[m],/^#[0-9A-F]{6}$/i); assert.match(t.tint[m],/^#[0-9A-F]{6}$/i);
+      const f=shopImage(t.id,m); assert.ok(existsSync(new URL(`../app/${f}`,import.meta.url)),`missing ${f}`); assert.ok(sw.includes(`'${f}'`),`sw.js does not cache ${f}`);
+    }
+  }
+});

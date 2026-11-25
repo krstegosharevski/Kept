@@ -17,7 +17,7 @@ export function save(data){try{localStorage.setItem(KEY,JSON.stringify(data));re
 
 /* settings kept outside the data: when the last backup was made, the day the reminder was put off,
    the appearance chosen in Settings ('light' or 'dark'; null follows the device; index.html reads it too),
-   and the theme (an id from app/themes/themes.js, or null for the standard look; index.html reads it too). */
+   and the theme in use (an id from app/themes/themes.js that was bought in the Shop, or null for the standard look; index.html reads it too). */
 export function loadMeta(){
   try{const m=JSON.parse(localStorage.getItem(META)||'{}');return {lastBackupAt:m.lastBackupAt??null,reminderDismissedOn:m.reminderDismissedOn??null,theme:m.theme==='light'||m.theme==='dark'?m.theme:null,skin:typeof m.skin==='string'?m.skin:null}}
   catch(e){return {lastBackupAt:null,reminderDismissedOn:null,theme:null,skin:null}}
@@ -27,7 +27,7 @@ export function eraseAll(){try{localStorage.removeItem(KEY);localStorage.removeI
 
 /* kept-backup-YYYY-MM-DD.json */
 export function backupFile(data,now=new Date()){
-  const body={app:'kept',schema:1,exportedAt:now.toISOString(),routines:data.routines,checks:data.checks,wildcards:data.wildcards||{},madeUp:data.madeUp||{},vacations:data.vacations||{},rules:data.rules||[],weekends:data.weekends||[]};
+  const body={app:'kept',schema:1,exportedAt:now.toISOString(),routines:data.routines,checks:data.checks,wildcards:data.wildcards||{},madeUp:data.madeUp||{},vacations:data.vacations||{},rules:data.rules||[],weekends:data.weekends||[],purchases:data.purchases||[]};
   return new File([JSON.stringify(body,null,1)],`kept-backup-${key(now)}.json`,{type:'application/json'});
 }
 /* the data in a backup file, normalized, or null when it is not one */

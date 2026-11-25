@@ -21,6 +21,7 @@
   --fxpy:0px; --fxpb:12px; --fxps:3px; --fxpa:65%;
   --fx-hi:100%; --fx-pick:0%;
   --vacation:#5AC8FA; --vac-ink:#1B6B93; /* vacation days: Apple sky blue, the lake's colour; the pelican is drawn in vac-ink */
+  --tag:#BF4800; /* Shop: the small label above a theme ("New"), Apple's orange */
   --glass:rgba(255,255,255,.72); --glass-line:rgba(255,255,255,.75); --glass-shadow:0 6px 24px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
   --water-rgb:31, 94, 255; --water-alpha:.07; /* the lake's blue, from the owner's website */
   --hair:.5px; --radius:22px;
@@ -35,7 +36,7 @@
   --fill:rgba(118,118,128,.24); --fill-2:rgba(120,120,128,.36); --seg-on:#636366;
   --tint:#0A84FF; --tint-soft:rgba(10,132,255,.2); --green:#30D158; --danger:#FF453A;
   --rest-line:rgba(255,255,255,.18); --water-alpha:.09;
-  --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E;
+  --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E; --tag:#FF9F0A;
   --n-green:#39FF14; --n-blue:#1F51FF; --n-purple:#BC13FE; --n-teal:#00F5D4; --n-orange:#FF5F1F;
   --n-green-ink:#000; --n-blue-ink:#fff; --n-purple-ink:#fff; --n-teal-ink:#000; --n-orange-ink:#fff;
   --fxy:0px; --fxb1:5px; --fxs1:1px; --fxa1:35%; --fxb2:16px; --fxs2:4px; --fxa2:70%;
@@ -50,7 +51,7 @@
   --fill:rgba(118,118,128,.24); --fill-2:rgba(120,120,128,.36); --seg-on:#636366;
   --tint:#0A84FF; --tint-soft:rgba(10,132,255,.2); --green:#30D158; --danger:#FF453A;
   --rest-line:rgba(255,255,255,.18); --water-alpha:.09;
-  --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E;
+  --vacation:#64D2FF; --vac-ink:#A5E4FF; --pl-eye:#1C1C1E; --tag:#FF9F0A;
   --n-green:#39FF14; --n-blue:#1F51FF; --n-purple:#BC13FE; --n-teal:#00F5D4; --n-orange:#FF5F1F;
   --n-green-ink:#000; --n-blue-ink:#fff; --n-purple-ink:#fff; --n-teal-ink:#000; --n-orange-ink:#fff;
   --fxy:0px; --fxb1:5px; --fxs1:1px; --fxa1:35%; --fxb2:16px; --fxs2:4px; --fxa2:70%;
@@ -556,7 +557,7 @@ button.hero:active{transform:scale(.98)}
 /* floating glass tab bar */
 .tabs{position:fixed;z-index:20;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));margin:0 auto;max-width:440px;
   bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 8px));border-radius:999px;padding:4px}
-.tabs nav{display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs nav{display:grid;grid-template-columns:repeat(6,1fr)}
 .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:54px;border:0;border-radius:999px;background:transparent;
   color:var(--ink);font-size:10px;font-weight:600;letter-spacing:.01em;transition:background-color .2s,color .2s}
 .tabs svg{width:26px;height:26px}
@@ -767,3 +768,81 @@ button.hero:active{transform:scale(.98)}
 .daysrow.wk{justify-content:center;gap:12px}
 .daysrow.wk .dayc{width:auto;padding:0 20px;border-radius:999px} /* "Saturday" and "Sunday" written out, so the two are never confused */
 .wkicon svg{color:var(--ink)}
+
+/* ---------- Shop: Pelican Coins and themes (ui.js renderShop) ---------- */
+.coin{display:block;flex:none}
+.coinpill{flex:none;display:flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 9px;border-radius:999px;font-size:17px;font-weight:700}
+.coincard{display:flex;align-items:center;gap:14px;padding:12px 16px}
+.coinpile{position:relative;flex:none;width:74px;height:62px} /* three coins: two small ones tilted behind, the main one in front */
+.coinpile img{position:absolute;height:auto}
+.coinpile img:nth-child(1){left:4px;top:10px;width:30px;transform:rotate(-14deg)}
+.coinpile img:nth-child(2){right:4px;top:6px;width:30px;transform:rotate(12deg)}
+.coinpile img:nth-child(3){left:13px;top:12px;width:48px}
+.coincard .eyebrow{margin:0}
+.coinnum{font-family:var(--font-round);font-size:28px;font-weight:700;line-height:1.1}
+.coincard .hint{font-size:15px;color:var(--muted)}
+.shopseg{margin-top:16px}
+.shoptitle{margin:28px 0 14px;text-align:center;font-size:24px;font-weight:700;letter-spacing:-.02em}
+/* a theme's card, like Apple lists its products: label, picture, light and dark dots, name, one line, price, Buy, Preview */
+.tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tcard{display:flex;flex-direction:column;align-items:center;min-width:0;padding:16px 10px 12px;border-radius:28px;background:var(--surface);text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.08)}
+.ttag{height:16px;margin:0 0 12px;font-size:12px;font-weight:600;color:var(--tag)}
+.tpic{display:block;width:100%;height:240px;border-radius:20px;object-fit:cover;object-position:50% 72%}
+.tdots{display:flex;gap:2px;margin-top:12px}
+.tdots button{width:28px;height:28px;display:grid;place-items:center;padding:0;border:0;background:transparent}
+.tdots i{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.tdots button[aria-pressed="true"] i{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--muted)}
+.tcard h3{margin:8px 0 0;font-size:19px;font-weight:700;line-height:1.2;letter-spacing:-.02em}
+.tshort{min-height:35px;margin:6px 4px 0;font-size:13px;line-height:1.35;color:var(--muted)}
+.tprice{display:flex;align-items:center;gap:5px;margin:12px 0 0;font-size:13px;color:var(--muted)}
+.tprice b{font-size:15px;font-weight:600;color:var(--ink)}
+.tbuy{min-height:40px;margin-top:14px;padding:0 24px;border:0;border-radius:999px;background:var(--tint);color:#fff;font-size:15px;font-weight:600;transition:transform .15s}
+.tbuy:active{transform:scale(.95)}
+.tbuy.off{background:var(--fill);color:var(--muted)}
+.tmore{min-height:40px;margin-top:4px;padding:0 10px;border:0;background:transparent;color:var(--tint);font-size:15px}
+.shopnote{text-align:center}
+.shopnote h3{font-size:17px;font-weight:600}
+.shopnote p{margin:6px 0 12px;font-size:15px;color:var(--muted)}
+/* Owned and Settings → Theme: a row with a small picture of the look */
+.row.throw{min-height:72px;padding-block:10px}
+.thumb{flex:none;width:52px;height:52px;border-radius:12px;object-fit:cover;object-position:50% 85%}
+.pickmark.on{visibility:visible}
+/* Buy and Use ask first: the pop-up has the theme's picture */
+.buycard .buypic{display:block;width:100%;height:150px;margin:20px 0 14px;border-radius:18px;object-fit:cover;object-position:50% 85%}
+.primary.withcoin{display:flex;align-items:center;justify-content:center;gap:7px}
+.primary.quiet{background:var(--fill);color:var(--ink)}
+/* Preview: the real theme on today's screen; the tab bar and top bar give way to the preview's bars, and the screen can't be tapped */
+body.previewing .tabs,body.previewing .navbar{visibility:hidden}
+body.previewing #app{pointer-events:none}
+.pvbar{position:fixed;z-index:25;inset:0 0 auto;display:flex;align-items:center;gap:10px;border-width:0 0 var(--hair);border-radius:0;
+  padding:calc(4px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 4px max(12px,env(safe-area-inset-left,0px))}
+.pvbar .gbtn{background:var(--fill)}
+.pvtitle{flex:1;min-width:0;display:flex;flex-direction:column;text-align:center}
+.pvtitle span{font-size:12px;font-weight:600;text-transform:uppercase;color:var(--muted)}
+.pvtitle b{font-size:17px;font-weight:600}
+.pvpanel{position:fixed;z-index:25;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));
+  max-width:460px;margin:0 auto;padding:14px;border-radius:28px;display:flex;flex-direction:column;gap:10px}
+.pvpanel p{margin:0 4px;font-size:14px;text-align:center;color:var(--muted)}
+/* after buying: the theme renders in 30px blocks, ring by ring from the middle (ui.js showUnlock), then "yours" with Use now and Later */
+.unlock{position:fixed;inset:0;z-index:35;overflow:hidden;background:#0E0E12;outline:none}
+.ul-tiles i{position:absolute;width:30px;height:30px;background:var(--c);animation:ulPop .26s steps(3,end) var(--d) backwards} /* backwards: hidden until its turn, then fully shown (a stepped end can stop a step short) */
+.ul-tiles b{display:block;width:100%;height:100%;background-image:var(--img);background-size:var(--bs);animation:ulShow .16s steps(2,end) var(--d2) backwards}
+.unlock.still .ul-tiles{position:absolute;inset:0;background:var(--img) center/cover no-repeat}
+@keyframes ulPop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes ulShow{from{opacity:0}to{opacity:1}}
+.ul-panel{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));
+  max-width:460px;margin:0 auto;padding:18px 16px 16px;border-radius:28px;color:var(--ink)}
+.ul-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;font-size:17px;font-weight:600}
+.ul-pct{font-size:15px;color:var(--muted)}
+.ul-bar{height:6px;border-radius:3px;overflow:hidden;background:var(--fill)}
+.ul-bar i{display:block;width:0;height:100%;border-radius:3px;background:var(--tint);transition:width .1s linear}
+.ul-done{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.ul-done[hidden],.ul-load[hidden]{display:none}
+.ul-tick{width:52px;height:52px;margin-bottom:6px;border-radius:50%;background:var(--tint);display:grid;place-items:center;animation:ulPopIn .42s cubic-bezier(.2,.9,.3,1.2) both}
+.ul-tick svg{width:28px;height:28px}
+.ul-done h2{font-size:22px;font-weight:700;animation:ulRise .3s ease-out .12s both}
+.ul-done p{margin:0;font-size:15px;color:var(--muted);animation:ulRise .3s ease-out .18s both}
+.ul-done .primary{margin-top:12px;animation:ulRise .3s ease-out .24s both}
+.ul-done .wcancel{border-radius:999px;font-weight:600;animation:ulRise .3s ease-out .28s both}
+@keyframes ulPopIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes ulRise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}

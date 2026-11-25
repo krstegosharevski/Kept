@@ -89,7 +89,14 @@ export function normalize(d){
     if(!text||!ids.has(routine)) continue;
     ruleIds.add(String(x.id)); rules.push({id:String(x.id),routine,text,created:isKey(x.created)?x.created:key(TODAY())});
   }
-  return {schema:1,routines,checks,wildcards,madeUp,vacations,rules,weekends};
+  /* Shop purchases: [{id, price, at}], one per theme (the first wins), a whole number of coins from 0 up */
+  const purchases=[], bought=new Set();
+  for(const x of Array.isArray(d.purchases)?d.purchases:[]){
+    if(!x||typeof x!=='object'||typeof x.id!=='string'||!/^[a-z0-9-]+$/.test(x.id)||bought.has(x.id)) continue;
+    const price=Number(x.price); if(!Number.isInteger(price)||price<0) continue;
+    bought.add(x.id); purchases.push({id:x.id,price,at:isKey(x.at)?x.at:key(TODAY())});
+  }
+  return {schema:1,routines,checks,wildcards,madeUp,vacations,rules,weekends,purchases};
 }
 
 /* ---------- schedules ---------- */
@@ -347,4 +354,30 @@ export function canResume(data,r,today){
   if(!r.stopped) return false;
   const s=r.schedules.filter(x=>x.from<=r.stopped&&x.type!=='off').pop();
   return !(s&&s.type==='weekend')||weekendsOpenOn(data,today);
+}
+
+/* ---------- Shop: Pelican Coins and themes ---------- */
+/* Everyone starts with COINS_START Pelican Coins. Each purchase is kept in data.purchases as {id, price, at} (at: the day it was bought),
+   so it goes into backups; the balance is the start minus what was spent. A theme once bought is owned for good, even after the Shop
+   stops selling it (themes.js available:false); one that was never bought can only be bought while it is available. */
+export const COINS_START=100;
+export const coinsLeft=data=>COINS_START-(data.purchases||[]).reduce((n,p)=>n+p.price,0);
+export const ownsTheme=(data,id)=>(data.purchases||[]).some(p=>p.id===id);
+/* why a theme can't be bought now ('owned', 'unavailable' or 'coins'), or null when it can */
+export function cantBuy(data,theme){
+  if(ownsTheme(data,theme.id)) return 'owned';
+  if(!theme.available) return 'unavailable';
+  if(coinsLeft(data)<theme.price) return 'coins';
+  return null;
+}
+export function buyTheme(data,theme,today){
+  if(cantBuy(data,theme)) return false;
+  data.purchases=(data.purchases||[]).concat({id:theme.id,price:theme.price,at:key(today)});
+  return true;
+}
+/* a theme given for free (price 0): someone already using a theme when the Shop arrived keeps it */
+export function grantTheme(data,id,today){
+  if(ownsTheme(data,id)) return false;
+  data.purchases=(data.purchases||[]).concat({id,price:0,at:key(today)});
+  return true;
 }

@@ -1,10 +1,11 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,isWeekend,restOn,weekendsOpenOn,weekendsOpenSince,openWeekends,closeWeekends,weekendRoutines,canResume,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
-  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked} from './logic.js';
+  VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked,
+  coinsLeft,ownsTheme,cantBuy,buyTheme,grantTheme} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
-import {visibleThemes,themeById,themeHref} from '../themes/themes.js';
+import {THEMES,themeById,themeHref,shopImage} from '../themes/themes.js';
 
 /* routine colours: Apple green, blue, purple, teal and orange (the red was taken out on 19 Nov 2026),
    then two on trial, neon green and neon blue: wherever they show, they have a ring and they move (the "fx" class, styles.css) */
@@ -32,11 +33,13 @@ const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const VERSION='1.0.0';
-const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{},rules:[],weekends:[]});
+const empty=()=>({schema:1,routines:[],checks:{},wildcards:{},madeUp:{},vacations:{},rules:[],weekends:[],purchases:[]});
 let meta=loadMeta(), pendingRestore=null; // a backup file read and waiting for the owner to confirm
 const loaded=load();
 let S=loaded.data||empty();
 if(!loaded.data&&!loaded.error) navigator.storage?.persist?.().catch(()=>{}); // first run: ask the browser to keep the data; the answer does not matter
+/* the Shop arrived on 25 Nov 2026: a theme already in use then is given to its owner for free, so nobody loses their look */
+if(!loaded.error&&meta.skin&&themeById(meta.skin)&&grantTheme(S,meta.skin,TODAY())) save(S);
 let view='today', viewDate=TODAY(), statMode='week', weekRef=weekStart(TODAY()), monthRef=monthStart(TODAY());
 let edit=null, confirmDel=false, confirmClear=false, sheetOpening=false;
 let ringFrac=null, popId=null; // the ring animates from its last value; popId is the routine that was just checked off
@@ -48,20 +51,23 @@ const setMeta=m=>{meta={...meta,...m};saveMeta(meta)};
 /* appearance: Settings → Dark mode sets meta.theme to 'light' or 'dark'; null follows the device */
 const systemDark=matchMedia('(prefers-color-scheme: dark)');
 const isDark=()=>meta.theme?meta.theme==='dark':systemDark.matches;
-/* the theme from Settings → Theme (app/themes), only while it is still offered (visible); null is the standard look */
-const skinOn=()=>visibleThemes().some(t=>t.id===meta.skin)?meta.skin:null;
+/* the theme in use (Shop → Owned): only one that was bought (logic.js ownsTheme); null is the standard look */
+const skinOn=()=>meta.skin&&themeById(meta.skin)&&ownsTheme(S,meta.skin)?meta.skin:null;
+/* Shop → Preview tries a theme on the Today screen for real, in light or dark mode, without changing what is chosen: {id, mode, back} */
+let preview=null;
 function applyTheme(){
-  const r=document.documentElement; if(meta.theme) r.setAttribute('data-theme',meta.theme); else r.removeAttribute('data-theme');
-  r.classList.toggle('lightmode',!isDark()); // the neon colours' light-mode look (styles.css, "Hong Kong") hangs on this
+  const r=document.documentElement, mode=preview?preview.mode:meta.theme;
+  if(mode) r.setAttribute('data-theme',mode); else r.removeAttribute('data-theme');
+  r.classList.toggle('lightmode',preview?mode==='light':!isDark()); // the neon colours' light-mode look (styles.css, "Hong Kong") hangs on this
   /* the theme: data-skin on <html> and its stylesheet after styles.css (index.html already added it before the first paint) */
-  const skin=skinOn(), th=skin&&themeById(skin); let link=document.getElementById('skinCss');
+  const skin=preview?preview.id:skinOn(), th=skin&&themeById(skin); let link=document.getElementById('skinCss');
   if(skin){
     r.setAttribute('data-skin',skin);
     if(!link){link=document.createElement('link');link.rel='stylesheet';link.id='skinCss';document.head.append(link)}
     if(link.getAttribute('href')!==themeHref(skin)){link.addEventListener('load',()=>dispatchEvent(new Event('kept-theme')),{once:true});link.setAttribute('href',themeHref(skin))} // the lake repaints once it has loaded
   } else { r.removeAttribute('data-skin'); link?.remove(); }
   /* the status bar colour: both tags show the chosen colour, or each its own when following the device; a theme has its own */
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{const dark=meta.theme?meta.theme==='dark':m.media.includes('dark');
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{const dark=mode?mode==='dark':m.media.includes('dark');
     m.content=th?.color?(dark?th.color.dark:th.color.light):dark?'#000000':'#F2F2F7'});
   dispatchEvent(new Event('kept-theme')); // the lake repaints in the new colours
 }
@@ -370,22 +376,143 @@ function askWeekendsRest(){
     <button class="primary" data-act="weekendsRest">Make weekends rest days</button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
   $done.querySelector('.donecard').focus({preventScroll:true});
 }
-/* Settings → Theme: the standard look and every theme that is offered (visible in app/themes/themes.js) */
+/* Settings → Theme: only the look in use; themes are bought and switched in the Shop (Shop → Owned) */
 function themeSection(){
-  const themes=visibleThemes(); if(!themes.length) return '';
-  const on=skinOn();
+  const on=skinOn(), th=on&&themeById(on);
   return `<div class="gh">Theme</div>
-  <div class="group" role="radiogroup" aria-label="Theme">${[{id:null,name:'Kept',hint:'The standard look.'},...themes].map(t=>
-    `<button class="row pickr" role="radio" aria-checked="${on===t.id}" data-act="skin" data-id="${t.id??''}"><div class="body"><div class="name">${esc(t.name)}</div>
-    <div class="hint">${esc(t.hint)}</div></div><span class="pickmark" aria-hidden="true">${TICK}</span></button>`).join('')}</div>
-  <p class="gf">A theme changes the colours and the scenery, in light and dark mode.</p>`;
+  <div class="group"><div class="row throw">${thumb(on)}<div class="body"><div class="name">${th?esc(th.name):'Kept'}</div><div class="hint">${th?esc(th.short):'The standard look.'}</div></div><span class="pickmark on" aria-hidden="true">${TICK}</span></div>
+    <button class="row link" data-act="goOwned"><div class="body">Change theme in Shop</div>${DISC}</button></div>
+  <p class="gf">Only the theme you are using shows here. Buy themes, and switch between the ones you own, in Shop → Owned.</p>`;
 }
 function render(){
   fxRefresh();
   const tabOn=view==='rules'?'settings':view; // Rules is a page inside Settings
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tabOn?'page':'false'));
-  ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,settings:renderSettings,rules:renderRules})[view]();
+  if(preview){renderToday();renderPreview();syncFx();return} // a theme being tried on: today's screen with the preview's own bars
+  ({today:renderToday,routines:renderRoutines,stats:renderStats,ranks:renderRanks,shop:renderShop,settings:renderSettings,rules:renderRules})[view]();
   syncFx();
+}
+
+/* ---------- Shop: spend Pelican Coins on themes (logic.js keeps the coins and purchases, themes.js the catalogue) ---------- */
+let shopSeg='shop'; // 'shop': themes on sale that you don't own yet; 'owned': the standard look and every theme you bought
+const shopMode={}; // the light or dark dot picked on each card (theme id → 'light' | 'dark'); it starts as the app's mode
+const modeOf=id=>shopMode[id]||(isDark()?'dark':'light');
+const COIN=(sz=18)=>`<img class="coin" src="icons/coin-small.svg" width="${sz}" height="${sz}" alt="">`;
+const coinsText=n=>`${n} Pelican Coin${n===1?'':'s'}`;
+/* a small picture of a look: a theme's scenery, or the standard look (themes/shop-kept-*.jpg) */
+const thumb=(id,cls='thumb')=>`<img class="${cls}" src="${id?shopImage(id,isDark()?'dark':'light'):`themes/shop-kept-${isDark()?'dark':'light'}.jpg`}" alt="">`;
+const SUN='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="currentColor"/><path d="M12 2.3v2.4M12 19.3v2.4M2.3 12h2.4M19.3 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M5.1 18.9l1.7-1.7M17.2 6.8l1.7-1.7" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>';
+const MOON_S='<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+function renderShop(){
+  const coins=coinsLeft(S), on=skinOn(), owned=THEMES.filter(t=>ownsTheme(S,t.id));
+  let html=`<header class="head"><div class="titles"><div class="eyebrow">Spend your coins</div><h1>Shop</h1></div>
+    <div class="coinpill glass" role="img" aria-label="${coinsText(coins)}">${COIN(24)}<span class="num">${coins}</span></div></header>
+    <div class="card coincard"><span class="coinpile" aria-hidden="true"><img src="icons/coin.svg" alt=""><img src="icons/coin.svg" alt=""><img src="icons/coin.svg" alt=""></span>
+      <div><div class="eyebrow">Your balance</div><div class="coinnum num">${coins}</div><div class="hint">Pelican Coin${coins===1?'':'s'}</div></div></div>
+    <div class="seg shopseg" role="group" aria-label="Shop or owned"><button data-act="shopSeg" data-v="shop" aria-pressed="${shopSeg==='shop'}">Shop</button><button data-act="shopSeg" data-v="owned" aria-pressed="${shopSeg==='owned'}">Owned · <span class="num">${owned.length+1}</span></button></div>`;
+  if(shopSeg==='shop'){
+    const sale=THEMES.filter(t=>t.available&&!ownsTheme(S,t.id)), any=THEMES.some(t=>t.available);
+    html+='<h2 class="shoptitle">Themes</h2>';
+    if(sale.length) html+=`<div class="tgrid">${sale.map(t=>{const m=modeOf(t.id),why=cantBuy(S,t);
+      return `<article class="tcard"><p class="ttag">${esc(t.tag||'')}</p>
+        <img class="tpic" src="${shopImage(t.id,m)}" alt="${esc(t.name)} in ${m} mode">
+        <div class="tdots" role="group" aria-label="${esc(t.name)} in light or dark mode">${['light','dark'].map(x=>`<button data-act="tmode" data-id="${t.id}" data-v="${x}" aria-pressed="${m===x}" aria-label="${x==='light'?'Light':'Dark'} mode"><i style="background:${t.swatch[x]}"></i></button>`).join('')}</div>
+        <h3>${esc(t.name)}</h3><p class="tshort">${esc(t.short)}</p>
+        <p class="tprice">${COIN()}<b class="num">${t.price}</b> Pelican Coin${t.price===1?'':'s'}</p>
+        <button class="tbuy${why?' off':''}" data-act="buyAsk" data-id="${t.id}">Buy</button>
+        <button class="tmore" data-act="preview" data-id="${t.id}">Preview ›</button></article>`}).join('')}</div>`;
+    else html+=`<div class="card shopnote"><h3>${any?'You own every theme on sale':'Nothing on sale right now'}</h3>
+      <p>${any?'Pick the one you want in Owned.':'New themes are on the way. Check back soon.'}</p>${owned.length?'<button class="pill" data-act="shopSeg" data-v="owned">Go to Owned</button>':''}</div>`;
+  } else {
+    html+=`<div class="gh">Your themes</div><div class="group" role="radiogroup" aria-label="Your themes">${[null,...owned].map(t=>{const id=t?t.id:null;
+      return `<button class="row pickr throw" role="radio" aria-checked="${on===id}" data-act="useAsk" data-id="${id??''}">${thumb(id)}
+        <div class="body"><div class="name">${t?esc(t.name):'Kept'}</div><div class="hint">${!t?'The standard look.':t.available?esc(t.short):'No longer in the Shop · yours to keep'}</div></div><span class="pickmark" aria-hidden="true">${TICK}</span></button>`}).join('')}</div>
+      <p class="gf">${owned.length?'Tap a theme to use it. Settings shows only the theme you are using.':'Themes you buy in the Shop show up here.'}</p>`;
+  }
+  $app.innerHTML=html;
+}
+/* Buy: say why not (no coins, off sale, owned), or ask first */
+function askBuy(id){
+  const t=themeById(id); if(!t) return;
+  const why=cantBuy(S,t), coins=coinsLeft(S), need=t.price-coins;
+  if(why){toast(why==='coins'?`You need ${coinsText(need).replace(' Pelican',' more Pelican')}`:why==='owned'?'You already own this theme':'This theme is not on sale right now');return}
+  const m=preview&&preview.id===id?preview.mode:modeOf(id);
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard buycard" role="dialog" aria-modal="true" aria-labelledby="buyTitle" tabindex="-1">
+    <img class="buypic" src="${shopImage(id,m)}" alt=""><h2 id="buyTitle">Buy ${esc(t.name)}?</h2>
+    <p>It costs <span class="num">${t.price}</span> Pelican Coin${t.price===1?'':'s'}. You'll have <span class="num">${coins-t.price}</span> left, and the theme is yours to keep.</p>
+    <button class="primary withcoin" data-act="buyTheme" data-id="${id}">Buy for ${COIN(22)}<span class="num">${t.price}</span></button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
+  $done.querySelector('.donecard').focus({preventScroll:true});
+}
+/* Owned: switching the look asks first */
+function askUse(id){
+  const t=id?themeById(id):null; if(id&&!t) return;
+  if(skinOn()===id){toast(t?`${t.name} is already on`:'You are already using the standard look');return}
+  $done.innerHTML=`<div class="overlay center" data-act="doneBg"><div class="donecard buycard" role="dialog" aria-modal="true" aria-labelledby="useTitle" tabindex="-1">
+    ${thumb(id,'buypic')}<h2 id="useTitle">${t?`Use ${esc(t.name)}?`:'Go back to the standard look?'}</h2>
+    <p>${t?`Kept will switch to ${esc(t.name)}, in light and dark mode. You can switch back any time in Owned.`:'Kept will switch back to its standard look. Your themes stay in Owned.'}</p>
+    <button class="primary" data-act="useTheme" data-id="${id||''}">${t?`Use ${esc(t.name)}`:'Use the standard look'}</button><button class="row link center wcancel" data-act="done">Cancel</button></div></div>`;
+  $done.querySelector('.donecard').focus({preventScroll:true});
+}
+function useLook(id){
+  const t=id?themeById(id):null; if(id&&!ownsTheme(S,id)) return;
+  if(preview) closePreview(false);
+  setMeta({skin:id||null}); closeDone(); applyTheme(); render();
+  toast(t?`${t.name} is on`:'Back to the standard look');
+}
+/* Preview: the real theme on today's screen, in light or dark mode; the bars above and below belong to the preview */
+const $preview=document.getElementById('previewRoot');
+function openPreview(id){
+  if(!themeById(id)) return;
+  preview={id,mode:modeOf(id),back:{viewDate,y:scrollY}};
+  viewDate=TODAY(); ringFrac=null; document.body.classList.add('previewing');
+  applyTheme(); render(); window.scrollTo(0,0);
+}
+function closePreview(rerender=true){
+  if(!preview) return;
+  const back=preview.back; preview=null; $preview.innerHTML=''; document.body.classList.remove('previewing');
+  viewDate=back.viewDate; ringFrac=null; applyTheme();
+  if(rerender){render();window.scrollTo(0,back.y)}
+}
+function renderPreview(){
+  const t=themeById(preview.id), dark=preview.mode==='dark', why=cantBuy(S,t), need=t.price-coinsLeft(S);
+  const act=why==='owned'?(skinOn()===t.id?'<button class="primary quiet" data-act="pvClose">In use</button>':`<button class="primary" data-act="useTheme" data-id="${t.id}">Use this theme</button>`)
+    :why==='coins'?`<button class="primary quiet" data-act="buyAsk" data-id="${t.id}">You need <span class="num">${need}</span> more Pelican Coin${need===1?'':'s'}</button>`
+    :why==='unavailable'?'<button class="primary quiet" data-act="pvClose">Not on sale right now</button>'
+    :`<button class="primary withcoin" data-act="buyAsk" data-id="${t.id}">Buy for ${COIN(22)}<span class="num">${t.price}</span></button>`;
+  $preview.innerHTML=`<div class="pvbar glass" role="toolbar" aria-label="Preview of ${esc(t.name)}"><button class="gbtn" data-act="pvClose" aria-label="Close preview">${XMARK}</button>
+      <div class="pvtitle"><span>Preview</span><b>${esc(t.name)}</b></div>
+      <button class="gbtn" data-act="pvMode" aria-label="${dark?'Show light mode':'Show dark mode'}">${dark?SUN:MOON_S}</button></div>
+    <div class="pvpanel glass"><p>This is your Today screen with ${esc(t.name)}.</p>${act}</div>`;
+}
+/* after buying: the theme renders in blocks, ring by ring from the middle, while the bar fills; then "yours" with Use now and Later.
+   Under Reduce Motion it goes straight to the end. */
+let unlockRun=0;
+function showUnlock(t,mode){
+  const tint=t.tint[mode], W=innerWidth, H=innerHeight, Z=30, cols=Math.ceil(W/Z), rows=Math.ceil(H/Z), cx=(cols-1)/2, cy=(rows-1)/2;
+  const sc=Math.max(W/390,H/844), bw=390*sc, bh=844*sc, ox=(W-bw)/2, oy=(H-bh)/2; // the picture covers the screen, like the scenery
+  const pal=[t.swatch[mode],t.color[mode],tint,mode==='dark'?'#000':'#fff'], still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let tiles='';
+  if(!still) for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const ring=Math.max(Math.abs(c-cx),Math.abs(r-cy)), d=Math.round(ring*(1700/Math.max(cx,cy,1))+Math.random()*170);
+    tiles+=`<i style="left:${c*Z}px;top:${r*Z}px;--c:${pal[Math.floor(Math.random()*pal.length)]};--d:${d}ms;--d2:${d+150+Math.round(Math.random()*90)}ms"><b style="background-position:${(ox-c*Z).toFixed(1)}px ${(oy-r*Z).toFixed(1)}px"></b></i>`;
+  }
+  $done.innerHTML=`<div class="unlock${still?' still':''}" role="dialog" aria-modal="true" aria-labelledby="ulTitle" tabindex="-1" style="--tint:${tint}">
+    <div class="ul-tiles" aria-hidden="true" style="--img:url('${shopImage(t.id,mode)}');--bs:${bw.toFixed(1)}px ${bh.toFixed(1)}px">${tiles}</div>
+    <div class="ul-panel glass">
+      <div class="ul-load"><div class="ul-row"><span>Unlocking ${esc(t.name)}…</span><span class="num ul-pct">0%</span></div>
+        <div class="ul-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Unlocking ${esc(t.name)}"><i></i></div></div>
+      <div class="ul-done" hidden><div class="ul-tick">${CHECK}</div><h2 id="ulTitle">${esc(t.name)} is yours</h2><p>You'll find it in Shop → Owned.</p>
+        <button class="primary" data-act="useTheme" data-id="${t.id}">Use now</button><button class="row link center wcancel" data-act="unlockLater" data-id="${t.id}">Later</button></div></div></div>`;
+  const root=$done.firstChild, pct=root.querySelector('.ul-pct'), bar=root.querySelector('.ul-bar'), fill=bar.firstChild, run=++unlockRun, t0=performance.now(), LOAD=still?0:2300, END=still?0:2600;
+  root.focus({preventScroll:true});
+  const step=now=>{
+    if(run!==unlockRun||!root.isConnected) return;
+    const e=now-t0, p=Math.min(100,Math.round(LOAD?e/LOAD*100:100));
+    pct.textContent=p+'%'; fill.style.width=p+'%'; bar.setAttribute('aria-valuenow',p);
+    if(e>=END){root.querySelector('.ul-load').hidden=true;const done=root.querySelector('.ul-done');done.hidden=false;done.querySelector('.primary').focus({preventScroll:true});return}
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 /* ---------- editor sheet ---------- */
@@ -667,7 +794,7 @@ let tt; function toast(m){const t=document.getElementById('toast');t.textContent
 
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
-  const tab=e.target.closest('[data-tab]'); if(tab){view=tab.dataset.tab;confirmClear=false;if(view==='today')viewDate=TODAY();render();window.scrollTo(0,0);return}
+  const tab=e.target.closest('[data-tab]'); if(tab){closePreview(false);view=tab.dataset.tab;confirmClear=false;if(view==='today')viewDate=TODAY();render();window.scrollTo(0,0);return}
   const el=e.target.closest('[data-act]'); if(!el)return;
   const a=el.dataset.act;
   if((a==='closeBg'||a==='doneBg'||a==='rankBg')&&e.target!==el)return;
@@ -745,16 +872,31 @@ document.addEventListener('click',e=>{
       if(weekendsOpenOn(S,t)){askWeekendsRest();break}
       el.setAttribute('aria-checked','false'); openWeekends(S,t); commit(); toast('Weekends are open from today'); setTimeout(render,220); break; } // let the switch slide first
     case 'weekendsRest': { const gone=closeWeekends(S,TODAY()); commit(); closeDone(); toast(gone.length?`Weekends are rest days. ${gone.length} routine${gone.length===1?'':'s'} stopped.`:'Weekends are rest days again'); render(); break; }
-    case 'skin': setMeta({skin:el.dataset.id||null}); applyTheme(); render(); break;
+    case 'shopSeg': shopSeg=el.dataset.v==='owned'?'owned':'shop'; render(); break;
+    case 'tmode': shopMode[el.dataset.id]=el.dataset.v==='dark'?'dark':'light'; render(); break;
+    case 'goOwned': closePreview(false); view='shop'; shopSeg='owned'; render(); window.scrollTo(0,0); break;
+    case 'preview': openPreview(el.dataset.id); break;
+    case 'pvClose': closePreview(); break;
+    case 'pvMode': preview.mode=preview.mode==='dark'?'light':'dark'; shopMode[preview.id]=preview.mode; applyTheme(); render(); break;
+    case 'buyAsk': askBuy(el.dataset.id); break;
+    case 'buyTheme': { const t=themeById(el.dataset.id); if(!t) break;
+      const m=preview&&preview.id===t.id?preview.mode:modeOf(t.id);
+      if(!buyTheme(S,t,TODAY())){closeDone();toast("Couldn't buy this theme");break}
+      commit(); render(); showUnlock(t,m); break; }
+    case 'unlockLater': { const t=themeById(el.dataset.id); closeDone(); render(); if(t) toast(`${t.name} is in Owned`); break; }
+    case 'useAsk': askUse(el.dataset.id||null); break;
+    case 'useTheme': useLook(el.dataset.id||null); break;
     case 'saveBackup': saveBackup(); break;
     case 'later': setMeta({reminderDismissedOn:key(TODAY())}); render(); break;
-    case 'confirmRestore': S=pendingRestore; pendingRestore=null; commit(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break;
+    case 'confirmRestore': { const mine=S.purchases||[]; S=pendingRestore; pendingRestore=null;
+      S.purchases=[...S.purchases,...mine.filter(p=>!S.purchases.some(q=>q.id===p.id))]; // themes bought on this device stay bought
+      commit(); applyTheme(); toast('Backup restored'); view='today'; viewDate=TODAY(); render(); window.scrollTo(0,0); break; }
     case 'cancelRestore': pendingRestore=null; render(); break;
     case 'clear': if(!confirmClear){confirmClear=true;render();break}
       eraseAll(); S=empty(); meta=loadMeta(); applyTheme(); confirmClear=false; toast('All data erased'); render(); break;
   }
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit||vac||rule){edit=null;vac=null;rule=null;renderSheet()}});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return; if($done.firstChild)closeDone(); else if(edit||vac||rule){edit=null;vac=null;rule=null;renderSheet()} else if(preview) closePreview()});
 
 /* ---------- backup and restore ---------- */
 /* the share sheet on iPhone (Save to Files or iCloud Drive), a download elsewhere. Only a finished share or download counts as a backup. */

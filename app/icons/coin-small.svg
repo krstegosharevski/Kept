@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<!-- the Pelican Coin at small sizes (prices, the balance pill): a simpler mark of icons/coin.svg so it reads at 16-24px -->
+<defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE38A"/><stop offset="1" stop-color="#C98B12"/></linearGradient><clipPath id="c"><circle cx="12" cy="11.6" r="8.2"/></clipPath></defs>
+<circle cx="12" cy="12.5" r="11" fill="#8F5E0A"/><circle cx="12" cy="11.6" r="11" fill="url(#f)" stroke="#FFF0B8" stroke-width="1"/>
+<circle cx="12" cy="11.6" r="8.2" fill="#FFFFFF"/>
+<g clip-path="url(#c)"><g transform="translate(12 11.6) scale(.8) translate(-12 -11.6)"><path fill="#C9C2B2" d="M6 11C5 15 8 18 6.4 24H11.2C11 19 9 16 10.6 12Z"/><circle cx="8.8" cy="9.4" r="3" fill="#C9C2B2"/><path fill="#F0592A" d="M10.4 9.8L19 15.6Q17.6 17.4 15 17.2Q11.6 16.6 10.2 13Z"/><path fill="#D9C08E" d="M10.4 8L19.6 14.6Q20.6 15.6 19.4 16Q19 16.1 18.6 15.8L10.2 10.2Z"/></g></g>
+</svg>
