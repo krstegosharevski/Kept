@@ -11,7 +11,8 @@
    tag (a small label above the picture, '' for none), short (one line), shop-light.jpg and shop-dark.jpg in its folder (the
    scenery, phone-shaped, 390 × 844 at 2×), swatch (the light and dark dots) and tint (its accent colour, in light and dark mode).
 
-   To add one: make its folder, add a line here, and add its files to the list in sw.js (so it works offline).
+   To add one: make its folder, add a line at the end here (the list is oldest first; the Shop shows the newest first), and add its files to
+   the list in sw.js (so it works offline).
    Never delete a theme someone may have bought: take it off sale instead. */
 export const THEMES=[
   {id:'vice-city',name:'Vice City',hint:'For a limited time, to celebrate the release of Grand Theft Auto VI: a neon Vice City sunset over the lake, with palm trees swaying on the beach.',

@@ -411,7 +411,7 @@ function renderShop(){
       <div><div class="eyebrow">Your balance</div><div class="coinnum num">${coins}</div><div class="hint">Pelican Coin${coins===1?'':'s'}</div></div></div>
     <div class="seg shopseg" role="group" aria-label="Shop or owned"><button data-act="shopSeg" data-v="shop" aria-pressed="${shopSeg==='shop'}">Shop</button><button data-act="shopSeg" data-v="owned" aria-pressed="${shopSeg==='owned'}">Owned · <span class="num">${owned.length+1}</span></button></div>`;
   if(shopSeg==='shop'){
-    const sale=THEMES.filter(t=>t.available&&!ownsTheme(S,t.id)), any=THEMES.some(t=>t.available);
+    const sale=THEMES.filter(t=>t.available&&!ownsTheme(S,t.id)).reverse(), any=THEMES.some(t=>t.available); // the newest first (themes.js lists them oldest first)
     html+='<h2 class="shoptitle">Themes</h2>';
     if(sale.length) html+=`<div class="tgrid">${sale.map(t=>{const m=modeOf(t.id),why=cantBuy(S,t);
       return `<article class="tcard"><p class="ttag">${esc(t.tag||'')}</p>
