@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 130">
+<!-- Barcelona Nights: the spires of a basilica on the far shore, a simple distant silhouette (a mask; theme.css colours it). -->
+<path d="M6 130V92L10 70L13 92V130Z"/>
+<path d="M15 130V62L20 22Q21 16 22 22L27 62V130Z"/><circle cx="21" cy="17" r="2.6"/>
+<path d="M29 130V48L35 8Q36 2 37 8L43 48V130Z"/><circle cx="36" cy="3.4" r="3"/>
+<path d="M45 130V58L50 20Q51 14 52 20L57 58V130Z"/><circle cx="51" cy="15" r="2.6"/>
+<path d="M59 130V84L64 52L69 84V130Z"/>
+<path d="M2 130V104H78V130Z"/><path d="M70 130V96L74 82L78 96V130Z"/>
+</svg>

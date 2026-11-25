@@ -1,0 +1,150 @@
+/* Barcelona Fan Edition (id barcelona-nights): a Kept theme (25 Nov 2026) for the owner, a fan of the blue and garnet: a football night over the lake.
+   A stadium stands on the lake in place of Golem Grad (a big open bowl seen a little from above, in the spirit of Camp Nou: blue and garnet
+   panels, three tiers of seats and the floodlit pitch, a ring of lights on its rim, the theme's own fan badge on top), floodlight beams sweep the sky,
+   the spires of a basilica stand on the far shore, blue, garnet and gold confetti falls with fireworks now and then, two stands in
+   blue and garnet stripes fill the bottom corners with the crowd's lights twinkling and a corner flag waving, and a football bounces
+   across the lake. Light mode is a Mediterranean evening; dark mode is the match at night.
+   All artwork is Kept's own: no club crest, name or logo. Every rule is scoped to [data-skin="barcelona-nights"]; see app/themes/themes.js. */
+
+/* ---------- colours, light mode: a Mediterranean evening ---------- */
+:root[data-skin="barcelona-nights"]{
+  --bg:#EEF3FB; --surface:#FFFFFF; --ink:#0B1636;
+  --muted:rgba(20,35,85,.62); --faint:rgba(20,35,85,.3); --line:rgba(20,50,120,.2); --ring-off:rgba(20,50,120,.34);
+  --fill:rgba(0,77,152,.08); --fill-2:rgba(0,77,152,.14); --seg-on:#FFFFFF;
+  --tint:#A50044; --tint-soft:rgba(165,0,68,.11); --green:#0FA36B;
+  --glass:rgba(247,250,255,.78); --glass-line:rgba(255,255,255,.82); --glass-shadow:0 6px 24px rgba(0,40,110,.14),0 1px 2px rgba(0,30,90,.08);
+  /* the lake: Mediterranean blue, the pelicans in navy; the island is hidden, the stadium stands in its place */
+  --water-rgb:0, 77, 152; --water-alpha:.1; --island-rgb:24, 40, 92; --island-alpha:0; /* Golem Grad gives way to the stadium */
+  --bcn-sky:linear-gradient(180deg,#F4F8FF 0%,#DDE9FB 30%,#C3D6F4 52%,#E9C3D3 76%,#FFD7B0 100%);
+  --bcn-stars:linear-gradient(transparent,transparent);
+  --bcn-stripes:repeating-linear-gradient(90deg,rgba(0,77,152,.07) 0 46px,rgba(165,0,68,.06) 46px 92px);
+  --bcn-halo:rgba(255,236,190,.75); --bcn-beam:rgba(255,250,225,.5); --bcn-mast:#3A4A7A; --bcn-spires:rgba(70,95,150,.55);
+  --bcn-crowd:rgba(255,255,255,.95); --bcn-ripple:rgba(255,255,255,.75); --bcn-birds:#1F2F66;
+  --bcn-title:linear-gradient(90deg,#004D98,#A50044); --bcn-edge:rgba(0,77,152,.12);
+}
+/* ---------- colours, dark mode: the match at night ---------- */
+@media (prefers-color-scheme: dark){:root[data-skin="barcelona-nights"]:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#050B22; --surface:#101A3D; --ink:#F3F6FF;
+  --muted:rgba(215,225,255,.64); --faint:rgba(215,225,255,.3); --line:rgba(120,150,255,.22); --ring-off:rgba(200,215,255,.36);
+  --fill:rgba(120,150,255,.14); --fill-2:rgba(120,150,255,.22); --seg-on:#24306A;
+  --tint:#FF4F86; --tint-soft:rgba(255,79,134,.2); --green:#2EE59D;
+  --glass:rgba(10,18,50,.76); --glass-line:rgba(130,160,255,.18); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(0,77,152,.2);
+  --water-rgb:46, 134, 232; --water-alpha:.12; --island-rgb:4, 10, 32; --island-alpha:0;
+  --bcn-sky:linear-gradient(180deg,#020714 0%,#061440 30%,#0A2466 52%,#3A1056 74%,#8A0E45 92%,#B8235A 100%);
+  --bcn-stars:radial-gradient(1.4px 1.4px at 12% 9%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 31% 17%,#fff 50%,transparent 60%),radial-gradient(1.6px 1.6px at 58% 6%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 77% 14%,#fff 50%,transparent 60%),radial-gradient(1.3px 1.3px at 90% 27%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 46% 25%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 6% 33%,#fff 50%,transparent 60%);
+  --bcn-stripes:repeating-linear-gradient(90deg,rgba(0,77,152,.12) 0 46px,rgba(165,0,68,.1) 46px 92px);
+  --bcn-halo:rgba(255,226,150,.5); --bcn-beam:rgba(255,246,210,.28); --bcn-mast:#0B1438; --bcn-spires:#07103A;
+  --bcn-crowd:#FFF6C8; --bcn-ripple:rgba(170,205,255,.7); --bcn-birds:#030818;
+  --bcn-title:linear-gradient(90deg,#5EA2FF,#FF4F86); --bcn-edge:rgba(120,150,255,.16);
+}}
+:root[data-skin="barcelona-nights"][data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#050B22; --surface:#101A3D; --ink:#F3F6FF;
+  --muted:rgba(215,225,255,.64); --faint:rgba(215,225,255,.3); --line:rgba(120,150,255,.22); --ring-off:rgba(200,215,255,.36);
+  --fill:rgba(120,150,255,.14); --fill-2:rgba(120,150,255,.22); --seg-on:#24306A;
+  --tint:#FF4F86; --tint-soft:rgba(255,79,134,.2); --green:#2EE59D;
+  --glass:rgba(10,18,50,.76); --glass-line:rgba(130,160,255,.18); --glass-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(0,77,152,.2);
+  --water-rgb:46, 134, 232; --water-alpha:.12; --island-rgb:4, 10, 32; --island-alpha:0;
+  --bcn-sky:linear-gradient(180deg,#020714 0%,#061440 30%,#0A2466 52%,#3A1056 74%,#8A0E45 92%,#B8235A 100%);
+  --bcn-stars:radial-gradient(1.4px 1.4px at 12% 9%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 31% 17%,#fff 50%,transparent 60%),radial-gradient(1.6px 1.6px at 58% 6%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 77% 14%,#fff 50%,transparent 60%),radial-gradient(1.3px 1.3px at 90% 27%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 46% 25%,#fff 50%,transparent 60%),radial-gradient(1.2px 1.2px at 6% 33%,#fff 50%,transparent 60%);
+  --bcn-stripes:repeating-linear-gradient(90deg,rgba(0,77,152,.12) 0 46px,rgba(165,0,68,.1) 46px 92px);
+  --bcn-halo:rgba(255,226,150,.5); --bcn-beam:rgba(255,246,210,.28); --bcn-mast:#0B1438; --bcn-spires:#07103A;
+  --bcn-crowd:#FFF6C8; --bcn-ripple:rgba(170,205,255,.7); --bcn-birds:#030818;
+  --bcn-title:linear-gradient(90deg,#5EA2FF,#FF4F86); --bcn-edge:rgba(120,150,255,.16);
+}
+/* sheets are a little lighter than the page in dark mode */
+@media (prefers-color-scheme: dark){:root[data-skin="barcelona-nights"]:not([data-theme="light"]) .sheet{--bg:#0C1535;--surface:#16224D}}
+:root[data-skin="barcelona-nights"][data-theme="dark"] .sheet{--bg:#0C1535;--surface:#16224D}
+
+/* ---------- the scenery behind the lake (the waterline is about 176px above the bottom of a 390 × 844 phone) ---------- */
+[data-skin="barcelona-nights"] #skin{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--bcn-stars),var(--bcn-sky)}
+/* faint shirt stripes in the sky, fading out towards the water */
+[data-skin="barcelona-nights"] #skin::before{content:"";position:absolute;inset:0;background:var(--bcn-stripes);
+  -webkit-mask-image:linear-gradient(180deg,#000 10%,transparent 72%);mask-image:linear-gradient(180deg,#000 10%,transparent 72%)}
+/* the stadium on the lake, where Golem Grad stands in the other looks (the island spans 14–82% of the width), and the light it throws up */
+[data-skin="barcelona-nights"] #skin .s1{position:absolute;left:calc(48% - 150px);bottom:160px;width:300px;height:112px;z-index:1;
+  background:url("stadium.svg") center bottom/100% 100% no-repeat;filter:drop-shadow(0 -1px 0 rgba(255,255,255,.35))}
+[data-skin="barcelona-nights"] #skin .s1::before{content:"";position:absolute;left:-40px;right:-40px;bottom:30px;height:170px;z-index:-1;
+  background:radial-gradient(50% 60% at 50% 100%,var(--bcn-halo),transparent 70%);animation:bcn-breathe 5s ease-in-out infinite alternate}
+/* the theme's fan badge (badge.svg, not a club crest), standing on the stadium's far rim like a sign, glowing a little */
+[data-skin="barcelona-nights"] #skin .s1::after{content:"";position:absolute;left:calc(50% - 14px);bottom:90px;width:28px;height:34px;background:url("badge.svg") center/contain no-repeat;
+  filter:drop-shadow(0 0 6px var(--bcn-halo)) drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+/* two floodlight masts, each sweeping a beam across the sky */
+[data-skin="barcelona-nights"] #skin .s2::before,[data-skin="barcelona-nights"] #skin .s2::after{content:"";position:absolute;bottom:176px;width:5px;height:150px;border-radius:2px;
+  background:linear-gradient(180deg,#FFF8E0 0 9px,var(--bcn-mast) 9px)}
+[data-skin="barcelona-nights"] #skin .s2::before{left:calc(48% - 168px)}
+[data-skin="barcelona-nights"] #skin .s2::after{left:calc(48% + 163px)}
+[data-skin="barcelona-nights"] #skin .s3::before,[data-skin="barcelona-nights"] #skin .s3::after{content:"";position:absolute;bottom:322px;width:0;height:0;
+  border-left:46px solid transparent;border-right:46px solid transparent;border-top:330px solid var(--bcn-beam); /* narrow at the mast, fanning out upwards */
+  -webkit-mask-image:linear-gradient(0deg,#000,transparent 92%);mask-image:linear-gradient(0deg,#000,transparent 92%);
+  filter:blur(3px);transform-origin:50% 100%}
+[data-skin="barcelona-nights"] #skin .s3::before{left:calc(48% - 211.5px);animation:bcn-sweep 9s ease-in-out infinite alternate}
+[data-skin="barcelona-nights"] #skin .s3::after{left:calc(48% + 119.5px);animation:bcn-sweep 11s ease-in-out -4s infinite alternate-reverse}
+/* the spires of a basilica on the far left shore */
+[data-skin="barcelona-nights"] #skin .s6{position:absolute;left:4%;bottom:172px;width:60px;height:98px;background:var(--bcn-spires);
+  -webkit-mask:url("spires.svg") center bottom/contain no-repeat;mask:url("spires.svg") center bottom/contain no-repeat}
+/* confetti, two depths behind the lake: each layer falls exactly one tile per loop, and sways on its own */
+[data-skin="barcelona-nights"] #skin .s4{position:absolute;inset:0 -14px;z-index:2;animation:bcn-sway 7s ease-in-out infinite alternate}
+[data-skin="barcelona-nights"] #skin .s4::before,[data-skin="barcelona-nights"] #skin .s4::after{content:"";position:absolute;left:0;right:0;bottom:0}
+[data-skin="barcelona-nights"] #skin .s4::before{top:-170px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Crect x='105.7' y='18.4' width='4.8' height='2.3' rx='1' fill='%23004D98' transform='rotate%2896 108.1 19.6%29'/%3E%3Crect x='83.7' y='13.1' width='4.9' height='2.3' rx='1' fill='%23A50044' transform='rotate%2878 86.1 14.2%29'/%3E%3Crect x='71.4' y='134.0' width='4.2' height='2.0' rx='1' fill='%23EDBB00' transform='rotate%2822 73.5 135.0%29'/%3E%3Crect x='151.2' y='95.4' width='4.6' height='2.8' rx='1' fill='%232E86E8' transform='rotate%2871 153.5 96.8%29'/%3E%3Crect x='136.6' y='51.3' width='6.4' height='3.0' rx='1' fill='%23E0336F' transform='rotate%2826 139.8 52.8%29'/%3E%3Crect x='131.2' y='35.0' width='4.3' height='2.3' rx='1' fill='%23004D98' transform='rotate%28105 133.4 36.2%29'/%3E%3Crect x='89.5' y='16.6' width='5.6' height='3.0' rx='1' fill='%23A50044' transform='rotate%2811 92.3 18.1%29'/%3E%3Crect x='71.7' y='55.2' width='4.5' height='2.8' rx='1' fill='%23EDBB00' transform='rotate%28105 73.9 56.6%29'/%3E%3Crect x='127.5' y='114.1' width='5.1' height='2.7' rx='1' fill='%232E86E8' transform='rotate%2844 130.0 115.4%29'/%3E%3C/svg%3E") 0 0/170px 170px repeat;opacity:.75;animation:bcn-fall-s 13s linear infinite}
+[data-skin="barcelona-nights"] #skin .s4::after{top:-230px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='230'%3E%3Crect x='189.2' y='160.5' width='7.7' height='4.5' rx='1' fill='%23004D98' transform='rotate%2852 193.0 162.7%29'/%3E%3Crect x='93.5' y='166.3' width='8.9' height='4.3' rx='1' fill='%23A50044' transform='rotate%2827 98.0 168.5%29'/%3E%3Crect x='146.3' y='168.3' width='7.5' height='3.4' rx='1' fill='%23EDBB00' transform='rotate%28103 150.0 170.0%29'/%3E%3Crect x='151.3' y='132.3' width='8.6' height='4.6' rx='1' fill='%232E86E8' transform='rotate%28104 155.6 134.6%29'/%3E%3Crect x='203.8' y='107.2' width='7.4' height='4.9' rx='1' fill='%23E0336F' transform='rotate%28120 207.5 109.6%29'/%3E%3Crect x='142.5' y='215.6' width='6.2' height='3.9' rx='1' fill='%23004D98' transform='rotate%28148 145.6 217.6%29'/%3E%3C/svg%3E") 0 0/230px 230px repeat;animation:bcn-fall-m 10s linear infinite}
+/* fireworks over the stadium, now and then */
+[data-skin="barcelona-nights"] #skin .s5::before,[data-skin="barcelona-nights"] #skin .s5::after{content:"";position:absolute;width:4px;height:4px;border-radius:50%;opacity:0}
+[data-skin="barcelona-nights"] #skin .s5::before{left:28%;bottom:330px;color:#EDBB00;box-shadow:44.0px 0.0px 0 1.6px #EDBB00,26.7px 5.4px 0 1px #FFF3C4,40.7px 16.8px 0 1.6px #FFF3C4,22.6px 15.2px 0 1px #FFF3C4,31.1px 31.1px 0 1.6px #EDBB00,15.1px 22.7px 0 1px #FFF3C4,16.8px 40.7px 0 1.6px #FFF3C4,5.2px 26.8px 0 1px #FFF3C4,0.0px 44.0px 0 1.6px #EDBB00,-5.4px 26.7px 0 1px #FFF3C4,-16.8px 40.7px 0 1.6px #FFF3C4,-15.2px 22.6px 0 1px #FFF3C4,-31.1px 31.1px 0 1.6px #EDBB00,-22.7px 15.1px 0 1px #FFF3C4,-40.7px 16.8px 0 1.6px #FFF3C4,-26.8px 5.2px 0 1px #FFF3C4,-44.0px 0.0px 0 1.6px #EDBB00,-26.7px -5.4px 0 1px #FFF3C4,-40.7px -16.8px 0 1.6px #FFF3C4,-22.6px -15.2px 0 1px #FFF3C4,-31.1px -31.1px 0 1.6px #EDBB00,-15.1px -22.7px 0 1px #FFF3C4,-16.8px -40.7px 0 1.6px #FFF3C4,-5.2px -26.8px 0 1px #FFF3C4,-0.0px -44.0px 0 1.6px #EDBB00,5.4px -26.7px 0 1px #FFF3C4,16.8px -40.7px 0 1.6px #FFF3C4,15.2px -22.6px 0 1px #FFF3C4,31.1px -31.1px 0 1.6px #EDBB00,22.7px -15.1px 0 1px #FFF3C4,40.7px -16.8px 0 1.6px #FFF3C4,26.8px -5.2px 0 1px #FFF3C4;animation:bcn-burst 8s ease-out 1s infinite}
+[data-skin="barcelona-nights"] #skin .s5::after{left:72%;bottom:370px;box-shadow:38.0px 0.0px 0 1.6px #FF4F86,23.1px 4.7px 0 1px #7FB2FF,34.2px 16.5px 0 1.6px #7FB2FF,18.8px 14.2px 0 1px #7FB2FF,23.7px 29.7px 0 1.6px #FF4F86,10.7px 21.0px 0 1px #7FB2FF,8.5px 37.0px 0 1.6px #7FB2FF,0.6px 23.6px 0 1px #7FB2FF,-8.5px 37.0px 0 1.6px #FF4F86,-9.7px 21.5px 0 1px #7FB2FF,-23.7px 29.7px 0 1.6px #7FB2FF,-18.1px 15.1px 0 1px #7FB2FF,-34.2px 16.5px 0 1.6px #FF4F86,-22.8px 5.8px 0 1px #7FB2FF,-38.0px 0.0px 0 1.6px #7FB2FF,-23.1px -4.7px 0 1px #7FB2FF,-34.2px -16.5px 0 1.6px #FF4F86,-18.8px -14.2px 0 1px #7FB2FF,-23.7px -29.7px 0 1.6px #7FB2FF,-10.7px -21.0px 0 1px #7FB2FF,-8.5px -37.0px 0 1.6px #FF4F86,-0.6px -23.6px 0 1px #7FB2FF,8.5px -37.0px 0 1.6px #7FB2FF,9.7px -21.5px 0 1px #7FB2FF,23.7px -29.7px 0 1.6px #FF4F86,18.1px -15.1px 0 1px #7FB2FF,34.2px -16.5px 0 1.6px #7FB2FF,22.8px -5.8px 0 1px #7FB2FF;animation:bcn-burst 8s ease-out 5s infinite}
+
+/* ---------- in front of the lake (above the water, below the app) ---------- */
+[data-skin="barcelona-nights"] #skin-front{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+/* two stands in blue and garnet stripes in the bottom corners, with an Apple-style rim of light, and the crowd's lights twinkling */
+[data-skin="barcelona-nights"] #skin-front .f1,[data-skin="barcelona-nights"] #skin-front .f3{position:absolute;bottom:0;filter:drop-shadow(0 -1px 0 rgba(255,255,255,.55)) drop-shadow(0 -6px 14px rgba(0,20,60,.25))}
+[data-skin="barcelona-nights"] #skin-front .f1{left:0;width:180px;height:130px}
+[data-skin="barcelona-nights"] #skin-front .f3{right:0;width:160px;height:112px;transform:scaleX(-1)}
+[data-skin="barcelona-nights"] #skin-front .f1::before,[data-skin="barcelona-nights"] #skin-front .f3::before,[data-skin="barcelona-nights"] #skin-front .f1::after,[data-skin="barcelona-nights"] #skin-front .f3::after{content:"";position:absolute;inset:0;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 130' preserveAspectRatio='none'%3E%3Cpath d='M0 130V30C26 14 70 8 112 16C146 24 168 56 180 130Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 130' preserveAspectRatio='none'%3E%3Cpath d='M0 130V30C26 14 70 8 112 16C146 24 168 56 180 130Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
+[data-skin="barcelona-nights"] #skin-front .f1::before,[data-skin="barcelona-nights"] #skin-front .f3::before{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(0,0,0,.28)),
+  repeating-linear-gradient(90deg,#004D98 0 16px,#A50044 16px 32px)}
+[data-skin="barcelona-nights"] #skin-front .f1::after,[data-skin="barcelona-nights"] #skin-front .f3::after{background:
+  radial-gradient(circle at 12px 26px,var(--bcn-crowd) 0 1.2px,transparent 2px),radial-gradient(circle at 30px 40px,var(--bcn-crowd) 0 1px,transparent 1.8px),
+  radial-gradient(circle at 21px 12px,var(--bcn-crowd) 0 1px,transparent 1.8px),radial-gradient(circle at 38px 20px,var(--bcn-crowd) 0 1.2px,transparent 2px);
+  background-size:44px 48px;animation:bcn-twinkle 1.8s steps(2,end) infinite}
+[data-skin="barcelona-nights"] #skin-front .f3::after{animation-delay:-.9s}
+/* the corner flag on the right stand */
+[data-skin="barcelona-nights"] #skin-front .f2{position:absolute;right:92px;bottom:96px;width:40px;height:80px;background:url("flag.svg") center bottom/contain no-repeat;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+/* the football bounces across the lake every 16 s, spinning, and splashes in the middle */
+[data-skin="barcelona-nights"] #skin-front .f4::before{content:"";position:absolute;left:-44px;bottom:110px;width:34px;height:34px;background:url("ball.svg") center/contain no-repeat;
+  filter:drop-shadow(0 6px 5px rgba(0,0,0,.22));animation:bcn-across 16s linear infinite,bcn-bounce 16s linear infinite}
+[data-skin="barcelona-nights"] #skin-front .f4::after{content:"";position:absolute;left:calc(50% - 28px);bottom:150px;width:56px;height:16px;border-radius:50%;
+  border:2px solid var(--bcn-ripple);opacity:0;animation:bcn-ripple 16s ease-out infinite}
+/* big confetti in front, a little blurred */
+[data-skin="barcelona-nights"] #skin-front .f5{position:absolute;left:-14px;right:-14px;top:-310px;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='310' height='310'%3E%3Crect x='197.2' y='18.5' width='10.1' height='5.5' rx='1' fill='%23EDBB00' transform='rotate%2883 202.2 21.3%29'/%3E%3Crect x='26.7' y='227.8' width='9.7' height='4.6' rx='1' fill='%23A50044' transform='rotate%2823 31.5 230.1%29'/%3E%3Crect x='254.0' y='34.8' width='10.0' height='5.5' rx='1' fill='%23004D98' transform='rotate%2881 259.0 37.6%29'/%3E%3Crect x='238.8' y='253.2' width='11.2' height='7.5' rx='1' fill='%23FFFFFF' transform='rotate%2850 244.4 256.9%29'/%3E%3C/svg%3E") 0 0/310px 310px repeat;opacity:.85;filter:blur(.4px);
+  animation:bcn-fall-l 8s linear infinite,bcn-sway 6s ease-in-out infinite alternate}
+/* the pelicans, birds and fish of the lake are drawn in the colour of #water */
+[data-skin="barcelona-nights"] #water{color:var(--bcn-birds)}
+
+@keyframes bcn-breathe{from{opacity:.75}to{opacity:1}}
+@keyframes bcn-sweep{from{transform:rotate(-16deg)}to{transform:rotate(14deg)}}
+@keyframes bcn-sway{from{translate:-12px 0}to{translate:12px 0}}
+@keyframes bcn-fall-s{from{transform:translateY(0)}to{transform:translateY(170px)}}
+@keyframes bcn-fall-m{from{transform:translateY(0)}to{transform:translateY(230px)}}
+@keyframes bcn-fall-l{from{transform:translateY(0)}to{transform:translateY(310px)}}
+@keyframes bcn-burst{0%{opacity:0;transform:scale(.15)}4%{opacity:1}22%{opacity:.9;transform:scale(1)}34%{opacity:0;transform:scale(1.12) translateY(8px)}100%{opacity:0;transform:scale(1.12)}}
+@keyframes bcn-twinkle{0%{opacity:.35}50%{opacity:1}}
+/* across: over the first third of the loop; bounce: four bounces getting lower, a spin, and a squash on each landing */
+@keyframes bcn-across{0%{translate:0 0}33.33%,100%{translate:calc(100vw + 60px) 0}}
+@keyframes bcn-bounce{0%{transform:translateY(0) rotate(0) scale(1.12,.88)}1%{transform:translateY(-6px) rotate(20deg) scale(.95,1.06)}
+  4.5%{transform:translateY(-96px) rotate(140deg) scale(1)}8%{transform:translateY(-4px) rotate(260deg) scale(.96,1.04)}8.4%{transform:translateY(0) rotate(275deg) scale(1.12,.88)}
+  9.2%{transform:translateY(-6px) rotate(295deg) scale(.95,1.06)}12.5%{transform:translateY(-70px) rotate(400deg) scale(1)}16.3%{transform:translateY(-4px) rotate(500deg)}16.7%{transform:translateY(0) rotate(515deg) scale(1.12,.88)}
+  17.5%{transform:translateY(-5px) rotate(535deg) scale(.96,1.05)}20.6%{transform:translateY(-46px) rotate(620deg) scale(1)}24.6%{transform:translateY(0) rotate(700deg) scale(1.1,.9)}
+  25.4%{transform:translateY(-4px) rotate(715deg)}28.6%{transform:translateY(-26px) rotate(780deg)}33.33%,100%{transform:translateY(0) rotate(840deg) scale(1)}}
+@keyframes bcn-ripple{0%,16.3%{opacity:0;transform:scale(.3)}16.8%{opacity:1;transform:scale(.4)}23%{opacity:0;transform:scale(1.2)}100%{opacity:0;transform:scale(1.2)}}
+@media (prefers-reduced-motion: reduce){
+  [data-skin="barcelona-nights"] #skin-front .f4,[data-skin="barcelona-nights"] #skin .s5{display:none}
+  [data-skin="barcelona-nights"] #skin-front .f5,[data-skin="barcelona-nights"] #skin .s4::before,[data-skin="barcelona-nights"] #skin .s4::after{animation:none}
+}
+
+/* ---------- small touches: a blue-to-garnet title and a soft edge on the cards ---------- */
+[data-skin="barcelona-nights"] .navbar span{background:var(--bcn-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="barcelona-nights"] .head .titles:not(.rf) h1{background:var(--bcn-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-skin="barcelona-nights"] .group,[data-skin="barcelona-nights"] .card{box-shadow:0 0 0 1px var(--bcn-edge)}

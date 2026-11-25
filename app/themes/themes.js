@@ -26,6 +26,10 @@ export const THEMES=[
     short:'A tree, snow puffs and a Santa moon.',tag:'Holiday',available:true,price:10,
     color:{light:'#9DBDE3',dark:'#050B1A'},
     swatch:{light:'#9DBDE3',dark:'#0B1830'},tint:{light:'#D7263D',dark:'#FF4D5E'}},
+  {id:'barcelona-nights',name:'Barcelona Fan Edition',hint:'Blue and garnet under the floodlights: a stadium on the lake in place of the island, confetti and fireworks, the stands lit up and a football bouncing across the water.',
+    short:'Floodlights, confetti and a bouncing ball.',tag:'New',available:true,price:10,
+    color:{light:'#F4F8FF',dark:'#020714'},
+    swatch:{light:'#3D7CC9',dark:'#A50044'},tint:{light:'#A50044',dark:'#FF4F86'}},
 ];
 export const themeById=id=>THEMES.find(t=>t.id===id)||null;
 export const themeHref=id=>`themes/${id}/theme.css`;
