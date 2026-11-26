@@ -578,6 +578,23 @@ button.hero:active{transform:scale(.98)}
 .sheet .primary{margin-top:24px}
 .sheet .primary + .group{margin-top:14px}
 .inp{min-height:50px}
+/* text fields in a rounded group, like iOS Settings: no square focus ring (it was cut off at the round corners), just the caret in the accent colour */
+.group .inp,.group .rta{outline:none;caret-color:var(--tint)}
+.group .inp::placeholder,.group .rta::placeholder{color:var(--faint)}
+/* the routine's time (editor): a wheel like the iPhone Clock's alarm picker (ui.js wheelHtml). 7 rows of 34px; the middle one sits
+   on a grey band; the rows above and below fade and tilt away like a drum */
+.wheel{position:relative;display:flex;justify-content:center;height:238px;margin:0 8px 6px;
+  -webkit-mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent);mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent)}
+.wheel .wband{position:absolute;left:0;right:0;top:102px;height:34px;border-radius:9px;background:var(--fill);pointer-events:none}
+.wcol{position:relative;width:84px;height:100%;padding:102px 0;box-sizing:border-box;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior:contain;
+  scrollbar-width:none;perspective:520px;-webkit-tap-highlight-color:transparent;outline:none}
+.wcol::-webkit-scrollbar{display:none}
+.wcol b{display:block;height:34px;line-height:34px;scroll-snap-align:center;font-size:23px;font-weight:400;font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer;user-select:none;-webkit-user-select:none}
+.wcol.c-h b{text-align:right;padding-right:14px}
+.wcol.c-m b{text-align:left;padding-left:14px}
+.wcol.c-ap{width:64px}
+.wcol.c-ap b{text-align:left;padding-left:6px;font-size:20px}
+.wcol:focus-visible{border-radius:9px;box-shadow:inset 0 0 0 2px var(--tint)}
 .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
 .emo{height:44px;border:0;border-radius:12px;padding:0;background:transparent;font-size:26px;letter-spacing:0;display:grid;place-items:center}
 .emo[aria-pressed="true"]{background:var(--tint-soft);box-shadow:inset 0 0 0 2px var(--tint)}

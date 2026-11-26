@@ -79,6 +79,7 @@ localStorage key `kept-data-v1`:
       "color": "#34C759",
       "created": "2026-10-28",
       "stopped": null,
+      "time": null,
       "schedules": [
         { "from": "2026-10-28", "type": "daily" }
       ]
@@ -168,6 +169,10 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - How often: a segmented control with "Mon – Fri", "Some days" and "× per week".
     - Some days: M T W T F chips, plus S S chips shown black and disabled.
     - × per week: a stepper from 1 to 5.
+  - Time (26 Nov 2026): optional. An "At a set time" switch (off for a new routine); when on, a wheel like the iPhone Clock's alarm picker (starts at 08:00): hour and minute columns that spin, snap to a grey band and loop round, with AM / PM on a phone set to 12-hour time (ui.js `wheelHtml`).
+    - Saved on the routine as `time: "HH:MM"` (24h) or `null`. It is only a label, not part of the schedule history, so a change applies everywhere.
+    - The time shows before the hint in the phone's 12h or 24h style ("07:30 · Mon – Fri"). Today and the Routines list show timed routines first, earliest first, then the rest in their old order (logic.js `byTime`).
+    - No reminders (see section 13).
   - Always show the note "Saturday and Sunday are always rest days."
   - When editing, also show "Schedule changes apply from today. Past days keep their old schedule."
   - Buttons: Save; Stop tracking (edit only); Delete (edit only, two taps).

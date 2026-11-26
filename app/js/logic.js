@@ -21,6 +21,10 @@ const DEMO_COLORS={'#1F9D74':'#34C759','#2E7DD7':'#007AFF','#7B5CD6':'#AF52DE','
 const byFrom=(a,b)=>a.from<b.from?-1:a.from>b.from?1:0;
 /* one schedule entry, made valid. 'off' marks a stretch when tracking was stopped; 'weekend' is due on Saturday and/or Sunday
    (days 5 and 6) while weekends are open */
+/* a routine's optional time of day, "HH:MM" (24h); only a label and the order on Today, never part of its schedule */
+export const TIME_RE=/^([01]\d|2[0-3]):[0-5]\d$/;
+/* timed routines first, earliest first; the rest after, in their own order (Array sort is stable) */
+export const byTime=rs=>[...rs].sort((a,b)=>a.time?(b.time?(a.time<b.time?-1:a.time>b.time?1:0):-1):b.time?1:0);
 function cleanSched(s){
   if(s.type==='weekend'){
     const days=[...new Set((Array.isArray(s.days)?s.days:[]).map(Number))].filter(i=>i===5||i===6).sort();
@@ -50,7 +54,8 @@ export function normalize(d){
     const color=String(x.color).toUpperCase();
     ids.add(id);
     routines.push({id,name:String(x.name??'').trim().slice(0,40)||'Routine',emoji:typeof x.emoji==='string'&&x.emoji?x.emoji:'🌱',
-      color:DEMO_COLORS[color]||(/^#[0-9A-F]{6}$/.test(color)?color:'#34C759'),created,stopped:isKey(x.stopped)?x.stopped:null,schedules});
+      color:DEMO_COLORS[color]||(/^#[0-9A-F]{6}$/.test(color)?color:'#34C759'),created,stopped:isKey(x.stopped)?x.stopped:null,
+      time:typeof x.time==='string'&&TIME_RE.test(x.time)?x.time:null,schedules});
   }
   /* Open weekends: a history [{from, open}], sorted; one entry per day (the later one wins) */
   const weekends=(Array.isArray(d.weekends)?d.weekends:[]).filter(w=>w&&isKey(w.from)&&typeof w.open==='boolean')

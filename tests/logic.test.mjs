@@ -467,3 +467,12 @@ test('Checking off: today, and yesterday for 24 more hours after midnight; older
   toggle(m,'a','2026-11-27'); // unticking a made-up day takes the make-up away
   assert.deepEqual(m.checks,{'2026-11-27':['b']}); assert.deepEqual(m.madeUp,{});
 });
+
+test('A routine time is optional: normalize keeps a valid HH:MM only, and byTime puts timed routines first in time order', async()=>{
+  const {byTime}=await import('../app/js/logic.js');
+  const r=(id,time)=>({id,name:id,emoji:'🌱',color:'#34C759',created:'2026-10-01',stopped:null,schedules:[{from:'2026-10-01',type:'daily'}],...(time===undefined?{}:{time})});
+  const n=normalize({routines:[r('a','07:30'),r('b','25:00'),r('c','7:3'),r('d',42),r('e')],checks:{}});
+  assert.deepEqual(n.routines.map(x=>x.time),['07:30',null,null,null,null]);
+  const order=byTime([r('w'),r('x','21:00'),r('y'),r('z','06:45'),r('v','21:00')]).map(x=>x.id);
+  assert.deepEqual(order,['z','x','v','w','y']);
+});

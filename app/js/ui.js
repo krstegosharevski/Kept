@@ -1,7 +1,7 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,isWeekend,restOn,weekendsOpenOn,weekendsOpenSince,openWeekends,closeWeekends,weekendRoutines,canResume,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
   VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked,
-  coinsLeft,ownsTheme,cantBuy,buyTheme,grantTheme,checkable} from './logic.js';
+  coinsLeft,ownsTheme,cantBuy,buyTheme,grantTheme,checkable,byTime} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
@@ -79,6 +79,9 @@ function ago(iso){
   return days<=0?'Today':days===1?'Yesterday':`${days} days ago`;
 }
 
+/* a routine's time, in the phone's own 12h or 24h style, before its hint: "07:30 · Mon – Fri" */
+const fmtTime=t=>{const[h,m]=t.split(':').map(Number);const s=new Date(2000,0,1,h,m).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return /^\d:\d\d$/.test(s)?'0'+s:s}; // 24h: 06:45
+const withTime=(r,hint)=>r.time?`${fmtTime(r.time)} · ${hint}`:hint;
 function schedText(r,d){
   const s=schedOn(r,d||TODAY());
   if(s.type==='daily'||s.type==='off') return 'Mon – Fri';
@@ -122,7 +125,7 @@ function rankFrame(i,inner){
 
 function renderToday(){
   const t=TODAY(),d=viewDate,k=key(d),isToday=+d===+t,past=d<t,rest=restOn(S,d),away=!rest&&isVacation(S,d),yest=+d===+addDays(t,-1);
-  const due=S.routines.filter(r=>isDue(r,d,S));
+  const due=byTime(S.routines.filter(r=>isDue(r,d,S))); // routines with a time first, in time order
   const done=due.filter(r=>isDone(S,r,k)).length;
   const title=isToday?'Today':yest?'Yesterday':DAYS_FULL[dow(d)];
   const rk=S.routines.length?monthResult(S,monthStart(d),t):null; // the rank of the shown day's month, on every day, so the header never changes shape
@@ -149,7 +152,7 @@ function renderToday(){
     html+=locked?`<div class="lockline">${LOCK}Past day, view only. You can check off today, and yesterday until midnight.</div>`
       :past?`<div class="lockline grace">${CLOCK}You can still check off yesterday until midnight tonight.</div>`:'';
     html+='<div class="group tiles">'+due.map(r=>{const dn=isDone(S,r,k),weekly=schedOn(r,d).type==='weekly';
-      const hint=locked?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
+      const hint=withTime(r,locked?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d));
       const ctl=locked?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
       return `<div class="row item${fx(r.color)}${dn?' done':''}${locked?' locked':''}${locked&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
@@ -164,11 +167,11 @@ function renderToday(){
 }
 
 function renderRoutines(){
-  const active=S.routines.filter(r=>!r.stopped), stopped=S.routines.filter(r=>r.stopped);
+  const active=byTime(S.routines.filter(r=>!r.stopped)), stopped=S.routines.filter(r=>r.stopped);
   let html=`<header class="head"><div class="titles"><div class="eyebrow">${active.length} active · weekends ${weekendsOpenOn(S,TODAY())?'open':'off'}</div><h1>Routines</h1></div></header>`;
   html+=`<div class="group tiles"><button class="row link newroutine" data-act="new"><span class="addicon">${PLUS}</span>New routine</button></div>`;
   if(active.length) html+='<div class="group tiles">'+active.map(r=>`<button class="row${fx(r.color)}" style="--c:${shown(r.color)}" data-act="edit" data-id="${r.id}">
-    <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${schedText(r)}</div></div>${DISC}</button>`).join('')+'</div>';
+    <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${withTime(r,schedText(r))}</div></div>${DISC}</button>`).join('')+'</div>';
   if(stopped.length) html+=`<div class="gh">Stopped</div><div class="group tiles">${stopped.map(r=>`<div class="row stopped${fx(r.color)}" style="--c:${shown(r.color)}">
     <button class="rowbtn" data-act="edit" data-id="${r.id}"><div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">Stopped ${short(r.stopped)}</div></div></button>
     <button class="pill" data-act="resume" data-id="${r.id}">Resume</button></div>`).join('')}</div>
@@ -522,7 +525,7 @@ function showUnlock(t,mode){
 const $sheet=document.getElementById('sheetRoot');
 function openEditor(id){
   const r=S.routines.find(x=>x.id===id), {from,...s}=r?schedOn(r,TODAY()):{type:'daily'};
-  edit={id:r?.id??null,name:r?.name??'',emoji:r?.emoji??EMOJI[0],color:r?.color??COLORS[0],stopped:r?.stopped??null,
+  edit={id:r?.id??null,name:r?.name??'',emoji:r?.emoji??EMOJI[0],color:r?.color??COLORS[0],stopped:r?.stopped??null,time:r?.time??null,
     sched:{days:[0,2,4],target:3,wdays:[5,6],...(s.type==='off'?{type:'daily'}:s.type==='weekend'?{type:'weekend',wdays:s.days.slice()}:JSON.parse(JSON.stringify(s)))}};
   confirmDel=false; sheetOpening=true; renderSheet(); setTimeout(()=>{const i=document.getElementById('rname');if(i&&!edit.id)i.focus()},50);
 }
@@ -553,16 +556,57 @@ function renderSheet(){
       ${s.type==='weekly'?`<div class="stepper"><span><b class="num">${s.target}</b> ${s.target===1?'time':'times'} per week</span><span class="ctl"><button data-act="tgt" data-v="-1" aria-label="Fewer" ${s.target<=1?'disabled':''}>−</button><button data-act="tgt" data-v="1" aria-label="More" ${s.target>=5?'disabled':''}>+</button></span></div>`:''}
     </div>
     <p class="gf">${s.type==='weekend'?'Weekend routines are due on the days you pick.':wkOpen?'Mon – Fri, Some days and × a week are for Monday to Friday. Use Weekend for Saturday and Sunday.':'Saturday and Sunday are rest days. You can open them in Settings.'}${edit.id?' Schedule changes apply from today. Past days keep their old schedule.':''}</p>`}
+    <div class="gh">Time</div>
+    <div class="group"><div class="row"><div class="body">At a set time</div><button class="switch" role="switch" aria-checked="${!!edit.time}" aria-label="At a set time" data-act="timeOn"><span></span></button></div>
+      ${edit.time?wheelHtml(edit.time):''}</div>
+    <p class="gf">Optional. Today lists routines by time; ones without a time come after.</p>
     <button class="primary" data-act="saveR">${edit.id?'Save changes':'Add routine'}</button>
     ${edit.id?`<div class="group"><button class="row link center" data-act="${edit.stopped?'resume':'stopR'}" data-id="${edit.id}">${edit.stopped?'Resume tracking':'Stop tracking'}</button></div>
     ${edit.stopped?'':'<p class="gf">Stopping keeps its history. You can resume it later.</p>'}
     <div class="group"><button class="row danger center" data-act="delR">${confirmDel?'Delete routine and all its history':'Delete routine'}</button></div>
     ${confirmDel?'<p class="gf">Tap again to delete it for good. This cannot be undone.</p>':''}`:''}
   </div></div>`;
-  $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
+  initWheel(); $sheet.querySelector('.sheet').scrollTop=top; sheetOpening=false;
   syncFx();
 }
-function syncName(){const i=document.getElementById('rname');if(i&&edit)edit.name=i.value}
+function syncName(){const i=document.getElementById('rname');if(i&&edit)edit.name=i.value;readWheel()}
+
+/* ---------- the time wheel, like the iPhone Clock's alarm picker ----------
+   Hours and minutes (and AM / PM on a phone set to 12-hour time) on columns that spin, snap to the band in the middle and loop
+   round: each looping column repeats its numbers WLOOP times and, once it settles, jumps back to the same number in the middle copy.
+   The rows tilt away from the band like a drum. The value is read from the scroll positions (readWheel). */
+const H12=new Intl.DateTimeFormat([],{hour:'numeric'}).resolvedOptions().hour12===true;
+const WR=34, WLOOP=7, p2=n=>String(n).padStart(2,'0'); // WR: row height in px (keep in step with styles.css .wheel)
+function wheelCols(t){
+  const[h,m]=t.split(':').map(Number), hours=H12?['12',...Array.from({length:11},(_,i)=>String(i+1))]:Array.from({length:24},(_,i)=>p2(i));
+  return [{k:'h',label:'Hour',vals:hours,i:H12?h%12:h,loop:true},{k:'m',label:'Minute',vals:Array.from({length:60},(_,i)=>p2(i)),i:m,loop:true},
+    ...(H12?[{k:'ap',label:'AM or PM',vals:['AM','PM'],i:h<12?0:1,loop:false}]:[])];
+}
+function wheelHtml(t){
+  return `<div class="wheel${H12?' h12':''}" id="rwheel"><div class="wband" aria-hidden="true"></div>${wheelCols(t).map(c=>{
+    let items=''; for(let r=0;r<(c.loop?WLOOP:1);r++) c.vals.forEach((v,j)=>items+=`<b data-act="wpick" data-i="${r*c.vals.length+j}">${v}</b>`);
+    return `<div class="wcol c-${c.k}" data-k="${c.k}" data-n="${c.vals.length}" data-loop="${c.loop?1:0}" data-start="${c.i}" role="spinbutton" tabindex="0" aria-label="${c.label}" aria-valuetext="${c.vals[c.i]}">${items}</div>`}).join('')}</div>`;
+}
+function readWheel(){
+  const w=document.getElementById('rwheel'); if(!w||!edit||!edit.time) return;
+  const v={}; w.querySelectorAll('.wcol').forEach(c=>{const n=+c.dataset.n;v[c.dataset.k]=((Math.round(c.scrollTop/WR)%n)+n)%n});
+  edit.time=p2(H12?v.h+(v.ap?12:0):v.h)+':'+p2(v.m);
+}
+function initWheel(){
+  document.querySelectorAll('#rwheel .wcol').forEach(col=>{
+    const n=+col.dataset.n, loop=col.dataset.loop==='1', mid=loop?Math.floor(WLOOP/2)*n:0; let raf=0,timer=0;
+    col.scrollTop=(mid+ +col.dataset.start)*WR;
+    const paint=()=>{raf=0; const c=col.scrollTop/WR, it=col.children;
+      for(let i=Math.max(0,Math.floor(c)-5);i<=Math.min(it.length-1,Math.ceil(c)+5);i++){const d=i-c;
+        it[i].style.transform=`rotateX(${-Math.max(-70,Math.min(70,d*22))}deg)`; it[i].style.opacity=Math.max(.2,1-Math.abs(d)*.22)}};
+    const settle=()=>{const i=Math.round(col.scrollTop/WR), j=((i%n)+n)%n;
+      if(loop&&i!==mid+j) col.scrollTop=(mid+j)*WR; // jump back to the middle copy, so it never runs out
+      col.setAttribute('aria-valuetext',col.children[j].textContent); readWheel()};
+    col.addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(paint);clearTimeout(timer);timer=setTimeout(settle,140)},{passive:true});
+    col.addEventListener('keydown',e=>{const s=e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0;if(s){e.preventDefault();col.scrollBy({top:s*WR,behavior:'smooth'})}});
+    paint();
+  });
+}
 
 /* ---------- toast ---------- */
 /* ---------- Wildcard: on Saturday or Sunday, finish what was missed this week ---------- */
@@ -853,13 +897,15 @@ document.addEventListener('click',e=>{
     case 'stype': syncName(); edit.sched.type=el.dataset.v; renderSheet(); break;
     case 'wday': { syncName(); const i=+el.dataset.v, d=edit.sched.wdays; const p=d.indexOf(i); if(p>=0){if(d.length>1)d.splice(p,1)}else{d.push(i);d.sort()} renderSheet(); break; }
     case 'day': { syncName(); const i=+el.dataset.v, d=edit.sched.days; if(i>=5) break; const p=d.indexOf(i); if(p>=0){if(d.length>1)d.splice(p,1)}else d.push(i); renderSheet(); break; }
+    case 'timeOn': syncName(); edit.time=edit.time?null:'08:00'; renderSheet(); break;
+    case 'wpick': el.parentElement.scrollTo({top:+el.dataset.i*WR,behavior:'smooth'}); break; // tapping a number spins it to the band
     case 'tgt': syncName(); edit.sched.target=Math.min(5,Math.max(1,edit.sched.target+ +el.dataset.v)); renderSheet(); break;
     case 'saveR': {
       syncName(); const name=edit.name.trim();
       if(!name){toast('Give the routine a name');document.getElementById('rname').focus();break}
       const s=edit.sched, sched=s.type==='days'?{type:'days',days:s.days.slice().sort()}:s.type==='weekly'?{type:'weekly',target:s.target}:s.type==='weekend'?{type:'weekend',days:s.wdays.slice().sort()}:{type:'daily'};
-      if(edit.id){const r=S.routines.find(x=>x.id===edit.id);Object.assign(r,{name,emoji:edit.emoji,color:edit.color});if(!r.stopped)changeSchedule(r,sched,TODAY());toast('Routine saved')}
-      else{const k=key(TODAY());S.routines.push({id:'r_'+Date.now().toString(36),name,emoji:edit.emoji,color:edit.color,created:k,stopped:null,schedules:[{from:k,...sched}]});toast('Routine added')}
+      if(edit.id){const r=S.routines.find(x=>x.id===edit.id);Object.assign(r,{name,emoji:edit.emoji,color:edit.color,time:edit.time});if(!r.stopped)changeSchedule(r,sched,TODAY());toast('Routine saved')}
+      else{const k=key(TODAY());S.routines.push({id:'r_'+Date.now().toString(36),name,emoji:edit.emoji,color:edit.color,created:k,stopped:null,time:edit.time,schedules:[{from:k,...sched}]});toast('Routine added')}
       commit(); edit=null; renderSheet(); render(); break;
     }
     case 'stopR': { const r=S.routines.find(x=>x.id===el.dataset.id); stopRoutine(r,TODAY()); commit(); edit=null; renderSheet(); render(); toast('Stopped. Its history is kept.'); break; }
