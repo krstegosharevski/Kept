@@ -133,6 +133,8 @@ test('a month gets the rank of its %, counts only the days so far, and has no ra
   assert.equal(mid.final,false);
   assert.equal(RANKS[mid.rank].name,'Comfort Zone');
   assert.equal(monthResult(data,D('2026-10-01'),D('2026-10-31')).final,false); // the last day is still running
+  assert.equal(monthResult(data,D('2026-10-01'),D('2026-11-01')).final,false); // its last day can still be checked off on the 1st
+  assert.equal(monthResult(data,D('2026-10-01'),D('2026-11-02')).final,true);
   assert.equal(monthResult(data,D('2026-09-01'),D('2026-11-10')).rank,null); // before the routine existed
   assert.equal(monthResult(data,D('2026-11-01'),D('2026-11-01')).rank,null); // only a Sunday so far
   assert.equal(monthResult(data,D('2026-12-01'),D('2026-11-10')).rank,null); // a future month
@@ -449,4 +451,19 @@ test('Shop: every theme has a price, a sale switch and its card; the coins and e
       const f=shopImage(t.id,m); assert.ok(existsSync(new URL(`../app/${f}`,import.meta.url)),`missing ${f}`); assert.ok(sw.includes(`'${f}'`),`sw.js does not cache ${f}`);
     }
   }
+});
+
+test('Checking off: today, and yesterday for 24 more hours after midnight; older days and days off are locked', async()=>{
+  const {checkable,toggle}=await import('../app/js/logic.js');
+  const data={routines:[],checks:{},vacations:{'2026-11-24':'2026-11-20'},weekends:[],madeUp:{}}, t=D('2026-11-26'); // a Thursday
+  assert.equal(checkable(data,D('2026-11-26'),t),true);   // today
+  assert.equal(checkable(data,D('2026-11-25'),t),true);   // yesterday, until midnight tonight
+  assert.equal(checkable(data,D('2026-11-24'),t),false);  // two days ago (and a vacation day)
+  assert.equal(checkable(data,D('2026-11-23'),t),false);  // older: locked
+  assert.equal(checkable(data,D('2026-11-27'),t),false);  // the future
+  assert.equal(checkable(data,D('2026-11-29'),D('2026-11-30')),false); // Monday: yesterday was a rest Sunday
+  assert.equal(checkable(data,D('2026-11-24'),D('2026-11-25')),false); // yesterday was a vacation day
+  const m={routines:[],checks:{'2026-11-27':['a','b']},madeUp:{'2026-11-27':['a']}};
+  toggle(m,'a','2026-11-27'); // unticking a made-up day takes the make-up away
+  assert.deepEqual(m.checks,{'2026-11-27':['b']}); assert.deepEqual(m.madeUp,{});
 });

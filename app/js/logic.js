@@ -144,7 +144,12 @@ export function toggle(data,id,k){
   const a=data.checks[k]||[]; const i=a.indexOf(id);
   if(i>=0)a.splice(i,1);else a.push(id);
   if(a.length)data.checks[k]=a;else delete data.checks[k];
+  /* unticking a day that was made up with a Wildcard takes the make-up away too */
+  const m=data.madeUp?.[k]; if(i>=0&&m){const left=m.filter(x=>x!==id);if(left.length)data.madeUp[k]=left;else delete data.madeUp[k]}
 }
+/* which days can be checked off on day t: today, and yesterday for 24 more hours after midnight (a forgotten tick can still go in);
+   never a day off (a rest day or a vacation day). Older days are locked. */
+export const checkable=(data,d,t)=>{const k=key(d);return (k===key(t)||k===key(addDays(t,-1)))&&!isOff(data,d)};
 
 /* ---------- stats ---------- */
 /* check-ins on due days only */
@@ -215,7 +220,7 @@ export const monthStart=d=>new Date(d.getFullYear(),d.getMonth(),1);
 export function monthResult(data,first,t){
   const last=new Date(first.getFullYear(),first.getMonth()+1,0), end=minD(last,t);
   const st=end<first?{pct:0,per:[],exp:0}:rangeStats(data,first,end);
-  return {...st,first,rank:st.exp?rankIndex(st.pct):null,final:last<t};
+  return {...st,first,rank:st.exp?rankIndex(st.pct):null,final:last<addDays(t,-1)}; // final once its last day can no longer be checked off
 }
 /* the two neon routine colours (neon green, neon blue) are unlocked while this month's rank so far, as the Today card shows it,
    is Iron Will or higher */

@@ -1,7 +1,7 @@
 /* Kept UI: rendering and events. Rules and stats live in logic.js, storage in store.js. */
 import {key,parse,addDays,dow,isRest,isWeekend,restOn,weekendsOpenOn,weekendsOpenSince,openWeekends,closeWeekends,weekendRoutines,canResume,weekStart,TODAY,minD,schedOn,isDue,changeSchedule,stopRoutine,resumeRoutine,isDone,toggle,rangeStats,dayRatio,heatClass,weekDone,streaks,RANKS,pct1,rankFrom,monthStart,monthResult,rankMonths,WILDCARDS_PER_MONTH,wildcardsLeft,wildcardOpen,weekMissed,useWildcard,makeUp,isMadeUp,
   VACATION_DAYS,isVacation,isOff,half,bookUntil,vacationsLeft,weekTarget,canBook,bookVacation,cancelVacation,nextWorkday,RULE_MAX,neonUnlocked,
-  coinsLeft,ownsTheme,cantBuy,buyTheme,grantTheme} from './logic.js';
+  coinsLeft,ownsTheme,cantBuy,buyTheme,grantTheme,checkable} from './logic.js';
 import {load,save,loadMeta,saveMeta,eraseAll,backupFile,readBackup} from './store.js';
 import {startWater,doneDandelion,slowDandelion,flyingPelican} from './scene.js';
 import {emblem,badgeMarks} from './art.js';
@@ -90,6 +90,7 @@ function schedText(r,d){
 /* ---------- icons, drawn in the style of Apple's SF Symbols ---------- */
 const CHECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 const MOON='<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+const CLOCK='<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5.4l3.4 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const LOCK='<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="5" y="10.5" width="14" height="11" rx="2.5" fill="currentColor"/></svg>';
 const chev=d=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 const CHEV_L=chev('M14.5 5 7.5 12l7 7'), CHEV_R=chev('m9.5 5 7 7-7 7');
@@ -144,12 +145,14 @@ function renderToday(){
   } else if(!due.length){
     html+=`<div class="empty"><h3>Nothing scheduled</h3><p>No routines are due on this day.</p></div>`;
   } else {
-    if(past) html+=`<div class="lockline">${LOCK}Past day, view only. You can only check off today.</div>`;
+    const locked=past&&!checkable(S,d,t); // yesterday stays open until midnight tonight
+    html+=locked?`<div class="lockline">${LOCK}Past day, view only. You can check off today, and yesterday until midnight.</div>`
+      :past?`<div class="lockline grace">${CLOCK}You can still check off yesterday until midnight tonight.</div>`:'';
     html+='<div class="group tiles">'+due.map(r=>{const dn=isDone(S,r,k),weekly=schedOn(r,d).type==='weekly';
-      const hint=past?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
-      const ctl=past?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
+      const hint=locked?(dn?(isMadeUp(S,r.id,k)?'Made up with a Wildcard':'Completed'):(weekly?'Not done':'Missed')):schedText(r,d);
+      const ctl=locked?`<div class="status" role="img" aria-label="${dn?'Completed':'Not completed'}">${dn?CHECK:''}</div>`
         :`<button class="check" data-act="toggle" data-id="${r.id}" aria-pressed="${dn}" aria-label="Mark ${esc(r.name)} done"><span class="ci">${CHECK}</span></button>`;
-      return `<div class="row item${fx(r.color)}${dn?' done':''}${past?' locked':''}${past&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
+      return `<div class="row item${fx(r.color)}${dn?' done':''}${locked?' locked':''}${locked&&!dn&&!weekly?' missed':''}${r.id===popId?' pop':''}" style="--c:${shown(r.color)}">
       <div class="tile">${r.emoji}</div><div class="body"><div class="name">${esc(r.name)}</div><div class="hint">${hint}</div></div>${ctl}</div>`}).join('')+'</div>';
     if(done===due.length) html+=`<p class="note">${isToday?'All done for today. Nice work.':'Everything was done on this day.'}</p>`;
   }
@@ -263,7 +266,7 @@ function renderRanks(){
       <p class="goal"><b class="num">${p}%</b> completed${next?` · <b class="num">${Math.round((rankFrom(now+1)-p)*10)/10}%</b> to ${next.name}`:''}</p>`;
   }
   html+=`${now==null?'':'<h2 class="sh">All ranks</h2>'}<div class="ladder">${RANKS.map((r,i)=>`<div class="rung${now==null||i>now?' unreached':''}">${art('banner',i)}</div>`).join('')}</div>`;
-  html+=`<p class="gf">Your rank follows this month's completed %. It is final when the month ends. Iron Will and higher unlock five neon colours for your routines.</p>`;
+  html+=`<p class="gf">Your rank follows this month's completed %. It is final the day after the month ends. Iron Will and higher unlock five neon colours for your routines.</p>`;
   if(S.routines.length){
     const past=rankMonths(S,t).map(m=>monthResult(S,m,t)).filter(m=>m.final).reverse();
     html+='<h2 class="sh">Past months</h2>'+(past.length?`<div class="group months">${past.map(m=>`<button class="row" data-act="openMonth" data-k="${key(m.first)}">
@@ -799,13 +802,13 @@ document.addEventListener('click',e=>{
   const a=el.dataset.act;
   if((a==='closeBg'||a==='doneBg'||a==='rankBg')&&e.target!==el)return;
   switch(a){
-    case 'toggle': { if(+viewDate!==+TODAY()||isOff(S,viewDate)){toast(isVacation(S,viewDate)?'This is a vacation day':'Only today can be checked off');render();break}
+    case 'toggle': { if(!checkable(S,viewDate,TODAY())){toast(isVacation(S,viewDate)?'This is a vacation day':'Only today and yesterday can be checked off');render();break}
       const id=el.dataset.id,k=key(viewDate),before=rankNow(); toggle(S,id,k); commit();
       const ticked=isDone(S,{id},k), move=rankMove(before,rankNow());
       if(ticked) popId=id;
       render();
       const due=S.routines.filter(r=>isDue(r,viewDate,S)), allDone=ticked&&due.every(r=>isDone(S,r,k));
-      if(move) showRank(move,allDone); else if(allDone) showDone(due.length); // a rank change comes first; else, if that was the last one for today, "All done"
+      if(move) showRank(move,allDone&&+viewDate===+TODAY()); else if(allDone&&+viewDate===+TODAY()) showDone(due.length); else if(allDone) toast('Yesterday is all done'); // a rank change comes first; else, if that was the last one for the day, "All done"
       break; }
     case 'prevDay': viewDate=addDays(viewDate,-1); ringFrac=null; render(); break;
     case 'nextDay': if(viewDate<TODAY())viewDate=addDays(viewDate,1); ringFrac=null; render(); break;
@@ -920,7 +923,7 @@ document.addEventListener('change',async e=>{
 });
 /* the top bar turns to glass once content scrolls under it, like iOS */
 addEventListener('scroll',()=>document.body.classList.toggle('scrolled',scrollY>2),{passive:true});
-/* when the app is reopened on a new day, move to the new today (yesterday becomes locked) */
+/* when the app is reopened on a new day, move to the new today (the day before yesterday becomes locked) */
 let lastDay=key(TODAY());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const k=key(TODAY());if(k!==lastDay){if(key(viewDate)===lastDay)viewDate=TODAY();lastDay=k;render()}});
 applyTheme();

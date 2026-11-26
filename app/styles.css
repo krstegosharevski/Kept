@@ -165,6 +165,7 @@ button.row:active{background-color:var(--fill-2)}
 .item.missed .hint{color:var(--danger)}
 .lockline{display:flex;align-items:center;gap:6px;font-size:13px;letter-spacing:-.006em;color:var(--muted);padding:0 16px 8px}
 .lockline svg{flex:none}
+.lockline.grace{color:var(--tint)} /* yesterday, still open until midnight */
 
 .empty{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:40px 16px 16px;color:var(--muted)}
 .dslot{width:150px;aspect-ratio:300/320;color:var(--ink)} /* keeps its size once the dandelion is gone, so nothing jumps */

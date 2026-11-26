@@ -48,8 +48,9 @@ Initialize a git repository and commit after each milestone.
 
 ## 3. Core rules (the owner asked for these explicitly)
 
-1. **Only today can be checked off.**
-   - Past days can be viewed but never changed: no completing and no un-completing.
+1. **Only today can be checked off, and yesterday until midnight (since 25 Nov 2026).**
+   - A forgotten tick can still go in: for 24 hours after midnight, yesterday can be checked off and un-checked (logic.js `checkable`; never a rest or vacation day). Older days can be viewed but never changed: no completing and no un-completing.
+   - A month's rank is final once its last day can no longer be checked off, i.e. from the 2nd of the next month.
    - Future days cannot be opened.
 2. **Saturday and Sunday are always rest days.**
    - Nothing is due on them, and nothing can be checked.
@@ -143,7 +144,7 @@ The bottom tab bar is Today · Routines · Stats · Ranks · Settings.
   - The list shows routines due today, each with a big check circle. Tapping it toggles done.
   - The hint under each name shows the schedule: "Mon – Fri", "Mon · Wed · Fri", or "1 of 2 this week" for weekly routines.
 - **A past weekday:**
-  - A lock line at the top reads "Past day, view only. You can only check off today."
+  - A lock line at the top reads "Past day, view only. You can check off today, and yesterday until midnight." Yesterday instead shows "You can still check off yesterday until midnight tonight." in the tint colour, with its check buttons; finishing it shows the toast "Yesterday is all done" (the "All done" pop-up is for today).
   - Each routine shows a status that cannot be tapped: a filled circle with ✓ means Completed, a dashed circle means Missed ("Not done" for weekly routines). No buttons are shown.
 - **A rest day (today or in the past):**
   - A black card reads "Rest day. Saturdays and Sundays are for resting, so there is nothing to check off."
@@ -394,6 +395,6 @@ Alternative without Azure: Netlify Drop. Drag the `app` folder onto app.netlify.
 ## 14. Done when
 
 - Kept is installed on the owner's iPhone, opens full screen without Safari bars, and works in airplane mode.
-- Only today can be checked off, past days are read-only, and weekends are black rest days everywhere, except a weekend unlocked with a Wildcard, which can finish that week's missed routines. Booked vacation days are sky-blue rest days, 10 per half-year.
+- Only today (and yesterday, until midnight) can be checked off, older days are read-only, and weekends are black rest days everywhere, except a weekend unlocked with a Wildcard, which can finish that week's missed routines. Booked vacation days are sky-blue rest days, 10 per half-year.
 - The stats match the definitions in section 5, and all tests pass.
 - A backup saves to Files or iCloud Drive and restores correctly.
